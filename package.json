@@ -1,0 +1,64 @@
+{
+  "name": "myapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint",
+    "dev": "concurrently \"npm run server\" \"npm run serve\"",
+    "server": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^0.19.0",
+    "axios-rate-limit": "^1.1.2",
+    "body-parser": "^1.19.0",
+    "concurrently": "^4.1.2",
+    "cookie-parser": "^1.4.4",
+    "core-js": "^2.6.5",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "finale-rest": "^1.0.7",
+    "lodash": "^4.17.15",
+    "method-override": "^3.0.0",
+    "papaparse": "^5.0.2",
+    "plaid": "^4.3.0",
+    "register-service-worker": "^1.6.2",
+    "restify": "^8.4.0",
+    "restify-cors-middleware": "^1.1.1",
+    "sequelize": "^5.18.4",
+    "sequelize-fixtures": "^1.0.2",
+    "shelljs": "^0.8.3",
+    "sqlite": "^3.0.3",
+    "sqlite3": "^4.1.0",
+    "vue": "^2.6.10",
+    "vue-class-component": "^7.0.2",
+    "vue-multiselect": "^2.1.6",
+    "vue-plaid-link": "^0.4.0",
+    "vue-property-decorator": "^8.1.0",
+    "vue-router": "^3.0.3",
+    "vuetify": "^2.0.15",
+    "vuex": "^3.0.1"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^3.11.0",
+    "@vue/cli-plugin-pwa": "^3.11.0",
+    "@vue/cli-plugin-typescript": "^3.11.0",
+    "@vue/cli-service": "^3.11.0",
+    "sass": "^1.17.4",
+    "sass-loader": "^7.1.0",
+    "typescript": "^3.4.3",
+    "vue-cli-plugin-vuetify": "^0.6.3",
+    "vue-template-compiler": "^2.6.10",
+    "vuetify-loader": "^1.2.2"
+  },
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
+  ]
+}
