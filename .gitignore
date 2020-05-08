@@ -10,6 +10,9 @@ node_modules
 #DB
 test.sqlite
 
+#ItemToken seeders
+server/seeders/itemTokens.js
+
 # Log files
 npm-debug.log*
 yarn-debug.log*

@@ -1,163 +1,246 @@
 <template>
-
-<v-content>
- <v-card>
-     <v-text-field
-        v-model="search"
-        prepend-inner-icon="search"
-        label="Search"
-        single-line
-        hide-details
-      ></v-text-field>
-  <v-data-table
-    :headers="headers"
-    :items="transactions"
-    :search="search"
-    multi-sort
-    class="elevation-1"
-  >
-      <template v-slot:item.category="{ item }">
-      <v-card-text class="pa-0" @click="openEditMenu($event, item)">{{item.category}}</v-card-text>
-      </template> 
-  </v-data-table>
-
-      </v-card>
-
-      <v-menu v-model="editMenu" :position-x="x" :position-y="y" absolute offset-y>
-          <v-list class="pa-0">
-        <v-menu offset-x open-on-hover
-              v-for="(cat, index) in filterTopCategory(categories)"
-              :key="index"
+  <v-content v-if="apiStateLoaded">
+    <v-card class="d-flex mb-6">
+      <v-col class="flex-grow-0 flex-shrink-1 mx-auto">
+        <v-expansion-panels
+          v-model="panel"
+          style="minWidth: 340px; maxWidth: 340px;"
+          accordion
+          multiple
         >
-          <template v-slot:activator="{ on }">
-            <v-hover v-slot:default="{ hover }">
-            <v-list-item
-              @click="editCategory(cat.topCategory)"
-              v-on="on"
-            :class="`${hover? 'class1': 'class2'}`"
-            >
-            <v-list-item-title 
-            >
-              {{cat.topCategory}}
-            </v-list-item-title>
-            </v-list-item>
-            </v-hover>
-          </template>
-          <v-list
-              v-for="(subcat, index) in filterSubCategory(cat.topCategory,categories)"
-              :key="index"
-              class="pa-0"
-          >
-            <v-hover v-slot:default="{ hover }">
-            <v-list-item
-              @click="editCategory(subcat.subCategory)"
-              :class="`${hover? 'class1': 'class2'}`"
-            >
-            <v-list-item-title
-            >
-            {{subcat.subCategory}}
-            </v-list-item-title>
-            </v-list-item>
-            </v-hover>
-            </v-list>
-            </v-menu>
-          </v-list>
-        </v-menu>      
-    </v-content>
-
+          <v-expansion-panel class="ma-0" v-for="(type, i) in accountTypes" :key="i">
+            <v-card outlined>
+              <v-expansion-panel-header class="px-4 py-2">
+                <v-col align="center" class="pa-0">
+                  <v-row justify="center" class="subtitle my-2">{{type}}</v-row>
+                  <v-row no-gutters align="center" class="pr-2" style="flex-wrap: wrap">
+                    <v-col
+                      v-for="(val, v) in AmountMethod(accounts, type, 'sum')"
+                      :key="v"
+                      :class="{ 'green--text': type !== 'Credit' }"
+                      class="ma-2"
+                    >{{val.amount}}</v-col>
+                  </v-row>
+                </v-col>
+              </v-expansion-panel-header>
+            </v-card>
+            <v-expansion-panel-content class="nopad">
+              <v-list class="pa-0">
+                <v-list-item-group v-model="model[i]" multiple color="indigo">
+                  <v-list-item
+                    v-for="(acct, index) in printAccounts[i]"
+                    :key="index"
+                    class="pa-0"
+                    @click="showTransactionsForAccount($event, acct)"
+                  >
+                    <v-row no-gutters align="center" class="px-4" style="flex-wrap: nowrap">
+                      <v-col cols="8" class="flex-grow-1 flex-shrink-0 pa-0">
+                        <v-list-item-content class="pa-0">
+                          <v-list-item-title class="body-2">{{acct.name}}</v-list-item-title>
+                          <v-list-item-subtitle class="caption">{{acct.institution}}</v-list-item-subtitle>
+                        </v-list-item-content>
+                      </v-col>
+                      <v-col cols="4" class="flex-grow-0 flex-shrink-1 pa-0">
+                        <v-list-item-content class="text-right pa-0">
+                          <v-list-item-title
+                            class="body-2"
+                          >{{formatBalance(acct.balance, acct.currency)}}</v-list-item-title>
+                          <v-list-item-subtitle class="caption">{{timeSince(acct.updatedAt)}}</v-list-item-subtitle>
+                        </v-list-item-content>
+                      </v-col>
+                    </v-row>
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </v-col>
+      <TransactionsTable v-bind:transactionsToDisplay="filteredItems"></TransactionsTable>
+      <!-- <TransactionsTable v-if="apiStateLoaded" v-bind:transactionsToDisplay="filteredItems"></TransactionsTable> -->
+    </v-card>
+  </v-content>
 </template>
 
 <style>
-.class1 {
-  background-color:#BDBDBD;
+.v-expansion-panel-content__wrap {
+  padding: 0px;
 }
-
-.class2 {
-}
-
 </style>
 
 <script>
-import api from '@/api' 
-export default { 
-  data () {
-     return {
-      search: '',
-      editMenu: false,
-      editedIndex: -1,
-      x: 0,
-      y: 0,
-      currentItem: {},
-      currentTopCategory: null,
-      offset: true,
-      headers: [
-        {text: 'Date', value: 'date' },
-        {text: 'Description', value: 'description' },
-        {text: 'Category', value: 'category' },
-        {text: 'Amount', value: 'amount' },
-        {text: 'Account', value: 'accountName' },
-      ],
-      loading: false,
+import TransactionsTable from "../components/TransactionsTable.vue";
+export default {
+  data() {
+    return {
+      apiStateLoaded: "",
+      accountTypes: ["Cash", "Credit", "Investment"],
+      panel: [0, 1, 2],
       transactions: [],
+      accounts: [],
       categories: [],
-      topCategories: [],
-      subCategories: [],
+      model: [],
+      cashAccountTypes: [
+        "account",
+        "bonus",
+        "debit_card",
+        "ewallet",
+        "savings",
+        "card",
+        "depository"
+      ],
+      creditAccountTypes: ["credit", "credit_card"],
+      investmentAccountTypes: ["investment"],
+      printedAccounts: []
+      // console
+    };
+  },
+  computed: {
+    //Filters transactions based on accounts selected in accounts pane
+    filteredItems() {
+      if (this.model.every(element => element.length === 0))
+        return this.transactions;
+      let accountsToFilter = [];
+      for (let i in this.model) {
+        for (let j in this.model[i]) {
+          accountsToFilter.push(
+            this.printedAccounts[i][this.model[i][j]].account_id
+          );
+        }
+      }
+      let filteredTrans = this.transactions.filter(x => {
+        return accountsToFilter.indexOf(x.account_id) !== -1;
+      });
+      return filteredTrans;
+    },
+    //Sets list of accounts to print in the accounts pane
+    printAccounts() {
+      for (let index in this.accountTypes) {
+        this.printedAccounts[index] = this.AmountMethod(
+          this.accounts,
+          this.accountTypes[index],
+          "account"
+        );
+        // console.log(this.printedAccounts);
+      }
+      return this.printedAccounts;
     }
   },
-  async created () {
-    this.refreshTransactions()
-    this.refreshCategories()
+  async created() {
+    //Checks if API has loaded into Vuex store, then loads data
+    this.apiStateLoaded = this.$store.state.apiStateLoaded;
+    if (this.apiStateLoaded) {
+      this.importFromStore();
+    }
+    this.unsub = this.$store.subscribe((mutation, state) => {
+      if (mutation.type === "doneLoading") {
+        if (mutation.payload) {
+          this.importFromStore();
+        }
+        this.apiStateLoaded = mutation.payload;
+      }
+    });
+  },
+  beforeDestroy() {
+    this.unsub();
   },
   methods: {
-    async refreshCategories () {
-      this.loading = true
-      this.categories = await api.getCategories()
-      //console.log(JSON.stringify(this.categories))
-      var topArr = []
-      this.categories.forEach(function (obj) {topArr.push(obj.topCategory)})
-      this.topCategories = [...new Set(topArr)]
-      //console.log(JSON.stringify(this.topCategories))
-      this.loading = false
+    //Initializes data from Vuex
+    importFromStore() {
+      this.categories = this.$store.getters.getAllCategories;
+      this.accounts = this.$store.getters.getAllAccounts;
+      this.transactions = this.$store.getters.getAllTransactions;
     },
-    async refreshTransactions () {
-      this.loading = true
-      this.transactions = await api.getTransactions()
-      this.loading = false
-    },
-    openEditMenu: function(event, item) {
-      event.preventDefault()
-      this.editMenu = false
-      this.x = event.clientX
-      this.y = event.clientY
-      this.editedIndex = this.transactions.indexOf(item)
+    //Triggers display event when account is clicked in accounts pane
+    showTransactionsForAccount: function(event, id) {
       this.$nextTick(() => {
-        this.editMenu = true
-      })
+        let y = id;
+        let x = this.model;
+        return;
+        // console.log(this.model.every(element => element.length === 0));
+      });
     },
-    editCategory(cat) {
-      var catToSave = cat
-       //console.log("Before - " + this.transactions[this.editedIndex].category)
-       this.transactions[this.editedIndex].category = catToSave
-       api.updateTransaction(this.transactions[this.editedIndex].id, this.transactions[this.editedIndex])
-       //console.log("After - " + this.transactions[this.editedIndex].category)
-       this.editMenu = false
+    //Formats balance to display correctly in the accounts pane
+    formatBalance: function(bal, code) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: code
+      }).format(bal);
     },
-    filterSubCategory(topCat, categories) {
-      var filterTop = topCat 
-      //console.log(this.currentTopCategory)
-      var filtered=categories.filter(function(item){
-        return item.topCategory==filterTop
-      })
-      //console.log(JSON.stringify(filtered))
-      return filtered
+    //General function to filter, sort, and sum accounts for the accounts pane
+    AmountMethod(accounts, typeToCheck, evalType) {
+      var filtered = accounts.filter(item => {
+        switch (typeToCheck) {
+          case "Cash":
+            return this.cashAccountTypes.includes(item.type);
+            break;
+          case "Credit":
+            return this.creditAccountTypes.includes(item.type);
+            break;
+          case "Investment":
+            return this.investmentAccountTypes.includes(item.type);
+        }
+      });
+      if (evalType === "account") {
+        filtered.sort(
+          (a, b) =>
+            a.institution.localeCompare(b.institution) ||
+            a.name.localeCompare(b.name)
+        );
+        return filtered;
+      }
+      if (evalType === "sum") {
+        let currencyIndex = [];
+        let currencies = [...new Set(filtered.map(item => item.currency))];
+        for (let currency of currencies) {
+          let accountsToSum = filtered.filter(x => x.currency === currency);
+          let currencyToPush = {};
+          let initialAmount = 0;
+          let numAmount = accountsToSum.reduce(
+            (a, b) => a + b.balance,
+            initialAmount
+          );
+          currencyToPush.amount = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: currency
+          }).format(numAmount);
+          currencyToPush.currencyName = currency;
+          currencyIndex.push(currencyToPush);
+        }
+        currencyIndex.sort((a, b) =>
+          a.currencyName.localeCompare(b.currencyName)
+        );
+        return currencyIndex;
+      }
     },
-    filterTopCategory(categories) {
-      var filtered=categories.filter(function(item){
-        return item.topCategory==item.subCategory
-      })
-      //console.log(JSON.stringify(filtered))
-      return filtered
-    },
+    //Gets time in a nice date for the last refresh in accounts pane
+    timeSince(date) {
+      date = Date.parse(date);
+      var seconds = Math.floor((new Date() - date) / 1000);
+
+      var interval = Math.floor(seconds / 31536000);
+
+      if (interval > 1) {
+        return interval + " years ago";
+      }
+      interval = Math.floor(seconds / 2592000);
+      if (interval > 1) {
+        return interval + " months ago";
+      }
+      interval = Math.floor(seconds / 86400);
+      if (interval > 1) {
+        return interval + " days ago";
+      }
+      interval = Math.floor(seconds / 3600);
+      if (interval > 1) {
+        return interval + " hours ago";
+      }
+      interval = Math.floor(seconds / 60);
+      if (interval > 1) {
+        return interval + " minutes ago";
+      }
+      return Math.floor(seconds) + " seconds ago";
+    }
   }
-}
+};
 </script>

@@ -15,6 +15,7 @@
       "webpack-env",
       "vuetify"
     ],
+    "outDir": "../dist",
     "paths": {
       "@/*": [
         "src/*"
@@ -33,7 +34,9 @@
     "src/**/*.tsx",
     "src/**/*.vue",
     "tests/**/*.ts",
-    "tests/**/*.tsx"
+    "tests/**/*.tsx",
+    "src/store.js",
+    "src/actions.js"
   ],
   "exclude": [
     "node_modules"

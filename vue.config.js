@@ -1,9 +1,18 @@
 const path = require('path')
+const WorkerPlugin = require('worker-plugin')
 
 const host = '0.0.0.0'
 const port = 9028
 
 module.exports = {
+  configureWebpack: {
+      output: {
+        globalObject: "this"
+      },
+      plugins: [
+        new WorkerPlugin()
+      ]
+    },
 
   devServer: {
     public: process.env.VUE_APP_BASE_URL,
@@ -19,10 +28,21 @@ module.exports = {
       'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
     },
     proxy: {
-      '/api/': {
+      '^/api': {
         target: 'http://localhost:3000',
         secure: false,
         ws: false,
+      },
+      '^/socket.io': {
+        target: 'http://localhost:3000',
+        secure: false,
+        ws: true,
+      },
+      '^/db': {
+        target: 'http://0.0.0.0:8080',
+        secure: false,
+        ws: false,
+        changeOrigin: true,
       }
     },
   }

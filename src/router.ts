@@ -10,28 +10,37 @@ const router = new Router({
   routes: [
     {
       path: '/',
-      name: 'summary',
-      component: Summary,
+      redirect: '/transactions',
     },
     {
       path: '/transactions',
       name: 'transactions',
       component: () => import('./views/Transactions.vue'),
     },
-    {
-      path: '/bills',
-      name: 'bills',
-      component: () => import('./views/Bills.vue'),
-    },
-    {
-      path: '/investments',
-      name: 'investments',
-      component: () => import('./views/Investments.vue'),
-    },
+    // {
+    //   path: '/bills',
+    //   name: 'bills',
+    //   component: () => import('./views/Bills.vue'),
+    // },
+    // {
+    //   path: '/investments',
+    //   name: 'investments',
+    //   component: () => import('./views/Investments.vue'),
+    // },
     {
       path: '/analysis',
       name: 'analysis',
       component: () => import('./views/Analysis.vue'),
+    },
+    // {
+    //   path: '/categories',
+    //   name: 'categories',
+    //   component: () => import('./views/Categories.vue'),
+    // },
+    {
+      path: '/database',
+      name: 'database',
+      component: () => import('./views/Database.vue'),
     },
     {
       path: '/accounts',

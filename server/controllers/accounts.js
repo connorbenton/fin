@@ -6,7 +6,7 @@ module.exports = {
 	index(req, res){
 		Account.findAll({
 			// return the transactions associated with each account
-			include: Transaction
+			// include: Transaction
 		}).then(function(accounts){
 			sendResult(res, accounts);
 		}).catch(function(error){

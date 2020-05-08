@@ -23,13 +23,13 @@
                 @click="drawer = !drawer"
             ></v-app-bar-nav-icon>
             <v-spacer class="hidden-md-and-up"></v-spacer>
-            <v-btn
+            <!-- <v-btn
                 text
                 class="hidden-sm-and-down nav-menu"
                 to="/"
                 data-cy="summaryBtn"
                 >Summary</v-btn
-            >
+            > -->
             <v-btn
                 text
                 class="hidden-sm-and-down nav-menu"
@@ -37,7 +37,7 @@
                 data-cy="transactionsBtn"
                 >Transactions</v-btn
             >
-            <v-btn
+            <!-- <v-btn
                 text
                 class="hidden-sm-and-down nav-menu"
                 to="/bills"
@@ -50,7 +50,7 @@
                 to="/invesments"
                 data-cy="investmentsBtn"
                 >Investments</v-btn
-            >
+            > -->
             <v-btn
                 text
                 class="hidden-sm-and-down nav-menu"
@@ -58,7 +58,14 @@
                 data-cy="analysisBtn"
                 >Analysis</v-btn
             >
-            <v-spacer class="hidden-sm-and-down"></v-spacer>
+            <!-- <v-btn
+                text
+                class="hidden-sm-and-down nav-menu"
+                to="/categories"
+                data-cy="categoriesBtn"
+                >Categories</v-btn
+            > -->
+            <!-- <v-spacer class="hidden-sm-and-down"></v-spacer> -->
             <v-btn
                 text
                 class="hidden-sm-and-down nav-menu"
@@ -66,6 +73,13 @@
                 data-cy="accountsBtn"
                 >Accounts</v-btn
             >
+            <v-btn
+                text
+                class="hidden-sm-and-down nav-menu"
+                to="/database"
+                data-cy="dbBtn"
+                >DB Editor</v-btn >
+            
         </v-app-bar>
     </span>
 </template>
@@ -75,15 +89,17 @@ export default {
     name: 'AppNavigation',
     data() {
         return {
-            appTitle: 'FinTrack',
+            appTitle: 'Fintrack',
             drawer: false,
             items: [
-                { title: 'Summary', url: '/' },
+                // { title: 'Summary', url: '/' },
                 { title: 'Transactions', url: '/transactions' },
-                { title: 'Bills', url: '/bills' },
-                { title: 'Investments', url: '/investments' },
+                // { title: 'Bills', url: '/bills' },
+                // { title: 'Investments', url: '/investments' },
                 { title: 'Analysis', url: '/analysis' },
-                { title: 'Accounts', url: '/accounts' }
+                // { title: 'Categories', url: '/categories' },
+                { title: 'Accounts', url: '/accounts' },
+                { title: 'DB Editor', url: '/database' },
             ]
         };
     }
@@ -95,4 +111,5 @@ a {
     color: white;
     text-decoration: none;
 }
+/* html {overflow-y: auto} */
 </style>

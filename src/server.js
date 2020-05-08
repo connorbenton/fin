@@ -1,3 +1,6 @@
+//This server not used anymore (using parent directory server)
+
+
 const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')

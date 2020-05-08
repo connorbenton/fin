@@ -9,11 +9,18 @@
 
 module.exports = function(sequelize, DataTypes) {
   var Account = sequelize.define('Account', {
-    title: DataTypes.STRING,
-    description: DataTypes.STRING,
+    name: DataTypes.STRING,
     institution: DataTypes.STRING,
+    account_id: { type: DataTypes.STRING, unique: 'compositeIndex'},
+    item_id: DataTypes.STRING,
     type: DataTypes.STRING,
-    runningTotal: DataTypes.INTEGER
+    subtype: DataTypes.STRING,
+    balance: DataTypes.FLOAT,
+    limit: DataTypes.FLOAT,
+    available: DataTypes.FLOAT,
+    currency: DataTypes.STRING,
+    provider: { type: DataTypes.STRING, unique: 'compositeIndex'},
+    runningTotal: DataTypes.FLOAT
   }, {
     //set the timestamps to be underscored: (created_at, updated_at)
     underscored: true,
@@ -23,6 +30,7 @@ module.exports = function(sequelize, DataTypes) {
         Account.hasMany(models.Transaction, {
           onDelete: 'cascade' // when author is deleted, delete their books
         });
+        Account.belongsTo(models.ItemToken);
       }
     }
   });

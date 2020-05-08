@@ -4,12 +4,18 @@ import router from './router';
 import store from './store';
 import './registerServiceWorker';
 import vuetify from './plugins/vuetify';
+import { createNamespacedHelpers } from 'vuex';
+import TransactionsTable from './components/TransactionsTable';
 
 Vue.config.productionTip = false;
+Vue.component('TransactionsTable', TransactionsTable);
 
-new Vue({
+export const vm = new Vue({
   router,
   store,
   vuetify,
+  created() {
+    this.$store.dispatch('getAll')
+  },
   render: (h) => h(App)
 }).$mount('#app');

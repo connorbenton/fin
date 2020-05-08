@@ -13,7 +13,7 @@ module.exports = function(sequelize, DataTypes) {
     subCategory: DataTypes.TEXT,
     excludeFromAnalysis: DataTypes.BOOLEAN
   }, {
-    //set the timestamps to be underscored: (created_at, updated_at)
+    // set the timestamps to be underscored: (created_at, updated_at)
     underscored: true,
   });
   return Category;
