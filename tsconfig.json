@@ -2,13 +2,19 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "strict": true,
+    // "strict": true,
+    "allowJs": true,
+
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
     "jsx": "preserve",
     "importHelpers": true,
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "baseUrl": ".",
     "types": [
@@ -35,8 +41,8 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx",
-    "src/store.js",
-    "src/actions.js"
+    "src/store.ts",
+    "src/actions.ts"
   ],
   "exclude": [
     "node_modules"

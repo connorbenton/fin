@@ -5,7 +5,7 @@ import moment from 'moment';
 
 Vue.use(Vuex);
 
-const workerActions = new Worker('./actions.js', {type: 'module'});
+const workerActions = new Worker('./actions.ts', {type: 'module'});
 
 // function buildTxData(state, key, start = 0, end = 0) {
 //   return new Promise((resolve, reject) => {
@@ -316,19 +316,24 @@ const store = new Vuex.Store({
     },
     updateTransactions(state, transactions) {
       state.transactions = transactions;
-      let cats = state.categories;
-      let accs = state.accounts;
+      let cats: any[] = state.categories;
+      let accs: any[] = state.accounts;
       for (let i in state.transactions) {
-        state.transactions[i].catName = cats.find(
-          x => x.id === state.transactions[i].category
+        let trans: any = state.transactions[i];
+        trans.catName = cats.find(
+          x => x.id === trans.category
         ).subCategory;
-        state.transactions[i].accName = accs.find(
-          x => x.account_id === state.transactions[i].account_id
+        // state.transactions[i].catName = cats.find(
+          // x => x.id === state.transactions[i].category
+        // ).subCategory;
+        trans.accName = accs.find(
+          x => x.account_id === trans.account_id
         ).name;
       }
     },
     updateTransaction(state, transaction) {
-      let transToUpdate = state.transactions.find(x => x.id === transaction.id);
+      let transSet: any[] = state.transactions;
+      let transToUpdate = transSet.find(x => x.id === transaction.id);
       transToUpdate.category = transaction.category;
       transToUpdate.catName = transaction.catName;
     },
@@ -417,11 +422,11 @@ const store = new Vuex.Store({
       ]).then(([cats, accs, trans, toks]) => {
         // ]).then((values) => {
         // console.log(values);
-        this.state.customEnd = moment();
-        this.state.customEnd = this.state.customEnd.format('YYYY-MM-DD');
-        this.state.customStart = moment();
-        this.state.customStart = this.state.customStart.subtract(29, 'days');
-        this.state.customStart = this.state.customStart.format('YYYY-MM-DD');
+        // this.state.customEnd = moment();
+        this.state.customEnd = moment().format('YYYY-MM-DD');
+        // this.state.customStart = moment();
+        this.state.customStart = moment().subtract(29, 'days').format('YYYY-MM-DD');
+        // this.state.customStart = this.state.customStart.format('YYYY-MM-DD');
         commit('updateCategories', cats);
         commit('updateAccounts', accs);
         commit('updateTransactions', trans);
