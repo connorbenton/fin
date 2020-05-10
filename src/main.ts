@@ -5,7 +5,7 @@ import store from './store';
 import './registerServiceWorker';
 import vuetify from './plugins/vuetify';
 import { createNamespacedHelpers } from 'vuex';
-import TransactionsTable from './components/TransactionsTable';
+import TransactionsTable from './components/TransactionsTable.vue';
 
 Vue.config.productionTip = false;
 Vue.component('TransactionsTable', TransactionsTable);
@@ -15,7 +15,7 @@ export const vm = new Vue({
   store,
   vuetify,
   created() {
-    this.$store.dispatch('getAll')
+    this.$store.dispatch('getAll');
   },
-  render: (h) => h(App)
+  render: (h) => h(App),
 }).$mount('#app');

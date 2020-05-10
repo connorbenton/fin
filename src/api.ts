@@ -1,43 +1,43 @@
-import Vue from 'vue'
-import axios from 'axios'
-import App from './App.vue'
-import store from './store'
-import io from 'socket.io-client'
-//import rateLimit from 'axios-rate-limit'
+import Vue from 'vue';
+import axios from 'axios';
+import App from './App.vue';
+import store from './store';
+import io from 'socket.io-client';
+// import rateLimit from 'axios-rate-limit'
 
 const client = axios.create({
 //  maxRequests: 50,
 //  perMilliseconds: 10,
-  timeout: 60 * 4 * 1000, //wait 4 min for the long import calls
+  timeout: 60 * 4 * 1000, // wait 4 min for the long import calls
   // json: true
-})
+});
 
 export default {
-  async execute (method: any, resource: any, data: any = '') {
+  async execute(method: any, resource: any, data: any = '') {
     // inject the accessToken for each request
-    //let accessToken = await Vue.prototype.$auth.getAccessToken()
+    // let accessToken = await Vue.prototype.$auth.getAccessToken()
     return client({
       method,
       url: resource,
       data,
-      //headers: {
+      // headers: {
       //  Authorization: `Bearer ${accessToken}`
-      //}
-    }).then(req => {
-      return req.data
-    })
+      // }
+    }).then((req) => {
+      return req.data;
+    });
   },
-  getTransactions () {
-    return this.execute('get', '/api/transactions')
+  getTransactions() {
+    return this.execute('get', '/api/transactions');
   },
-  getTransaction (id: any) {
-    return this.execute('get', `/api/transactions/${id}`)
+  getTransaction(id: any) {
+    return this.execute('get', `/api/transactions/${id}`);
   },
-  createTransaction (data: any) {
-    return this.execute('post', '/api/transactions', data)
+  createTransaction(data: any) {
+    return this.execute('post', '/api/transactions', data);
   },
   async importTransactions(data: any) {
-    let ioClient = io();
+    const ioClient = io();
     try {
     ioClient.on('compare', (compareSet: any, fn: any) => {
         if (compareSet.type === 'trans') {
@@ -59,8 +59,8 @@ export default {
             }
           });
         }
-      })
-    let res: any = await client.post(`/api/importTransactions`, data)
+      });
+    const res: any = await client.post(`/api/importTransactions`, data);
     //  .then( ioClient.on('compare', function(data) {
       // store.state.compareMatch = true;
       // store.state.trans1 = data.trans1;
@@ -68,46 +68,45 @@ export default {
       // console.log(data);
     //  })
     // ).then(function (response: any) {
-      ioClient.off('compare');
+    ioClient.off('compare');
       // console.log(response);
-      return res;
-    }
-    catch (error) {
-
+    return res;
+    } catch (error) {
+      // console.error(error);
     }
     // return this.execute('post', '/api/importTransactions', data)
   },
-  updateTransaction (id: any, data: any) {
+  updateTransaction(id: any, data: any) {
     // return this.execute('put', `/api/transactions/${id}`, data)
-    return this.execute('put', `/api/transactions`, data)
+    return this.execute('put', `/api/transactions`, data);
   },
-  deleteTransaction (id: any) {
-    return this.execute('delete', `/api/transactions/${id}`)
+  deleteTransaction(id: any) {
+    return this.execute('delete', `/api/transactions/${id}`);
   },
-  getCategories () {
-    return this.execute('get', '/api/categories')
+  getCategories() {
+    return this.execute('get', '/api/categories');
   },
-  getCategory (id: any) {
-    return this.execute('get', `/api/categories/${id}`)
+  getCategory(id: any) {
+    return this.execute('get', `/api/categories/${id}`);
   },
-  createCategory (data: any) {
-    return this.execute('post', '/api/categories', data)
+  createCategory(data: any) {
+    return this.execute('post', '/api/categories', data);
   },
-  updateCategory (id: any, data: any) {
-    return this.execute('put', `/api/categories/${id}`, data)
+  updateCategory(id: any, data: any) {
+    return this.execute('put', `/api/categories/${id}`, data);
   },
-  deleteCategory (id: any) {
-    return this.execute('delete', `/api/categories/${id}`)
+  deleteCategory(id: any) {
+    return this.execute('delete', `/api/categories/${id}`);
   },
-  getAccounts () {
-    return this.execute('get', '/api/accounts')
+  getAccounts() {
+    return this.execute('get', '/api/accounts');
   },
-  getAccount (id: any) {
-    return this.execute('get', `/api/accounts/${id}`)
+  getAccount(id: any) {
+    return this.execute('get', `/api/accounts/${id}`);
   },
-  async fetchTransactions () {
+  async fetchTransactions() {
     // let ioClient = io("https://192.168.2.2:3000");
-    let ioClient = io();
+    const ioClient = io();
     //   reconnectionDelay: 1000,
     //   reconnection: true,
     //   reconnectionAttemps: 10,
@@ -118,7 +117,7 @@ export default {
     // });
     // ioClient.on("seq-num", (msg) => console.info(msg));
     // client.get(`/api/itemTokensFetchTransactions`)
-    //  .then(x => x.request.response).then(store.state.isFetchTransactions = false).catch(error => error); 
+    //  .then(x => x.request.response).then(store.state.isFetchTransactions = false).catch(error => error);
 
     store.commit('isFetch', true);
     // store.state.isFetchTransactions = true;
@@ -147,70 +146,69 @@ export default {
       // store.state.fetchTransactionsItemTotal = data.len;
       store.commit('newName', data.name);
       // store.state.currName = data.name;
-      console.log(data.curr);
-     })
-    let res: any = await client.get(`/api/itemTokensFetchTransactions`)
+      // console.log(data.curr);
+     });
+     const res: any = await client.get(`/api/itemTokensFetchTransactions`);
     // ).then(function (response) {
-      ioClient.off('check');
-      store.commit('isFetch', false);
+     ioClient.off('check');
+     store.commit('isFetch', false);
       // store.state.isFetchTransactions = false;
-      store.dispatch('getAll');
-    return res;
+     store.dispatch('getAll');
+     return res;
       // console.log(response);
+    } catch (error) {
+      // console.error(error);
     }
-    catch (error) {
-
-    }
-    // }).catch(error => error); 
-    //  .then(x => x.request.response).then(store.state.isFetchTransactions = false).catch(error => error); 
+    // }).catch(error => error);
+    //  .then(x => x.request.response).then(store.state.isFetchTransactions = false).catch(error => error);
 
     // return this.execute('get', `/api/itemTokensFetchTransactions`)
     // return x.request.response
   },
-  createAccount (data: any) {
-    return this.execute('post', '/api/accounts', data)
+  createAccount(data: any) {
+    return this.execute('post', '/api/accounts', data);
   },
-  updateAccount (id: any, data: any) {
-    return this.execute('put', `/api/accounts/${id}`, data)
+  updateAccount(id: any, data: any) {
+    return this.execute('put', `/api/accounts/${id}`, data);
   },
-  deleteAccount (id: any) {
-    return this.execute('delete', `/api/accounts/${id}`)
+  deleteAccount(id: any) {
+    return this.execute('delete', `/api/accounts/${id}`);
   },
-  getItemTokens () {
-    return this.execute('get', '/api/itemTokens')
+  getItemTokens() {
+    return this.execute('get', '/api/itemTokens');
   },
-  getItemToken (id: any) {
-    return this.execute('get', `/api/itemTokens/${id}`)
+  getItemToken(id: any) {
+    return this.execute('get', `/api/itemTokens/${id}`);
   },
-  plaidCreateItemToken (data: any) {
-    return this.execute('post', '/api/plaidItemTokens', data)
+  plaidCreateItemToken(data: any) {
+    return this.execute('post', '/api/plaidItemTokens', data);
   },
-  plaidGeneratePublicToken (data: any) {
-    return this.execute('post', '/api/plaidGeneratePublicToken', data)
+  plaidGeneratePublicToken(data: any) {
+    return this.execute('post', '/api/plaidGeneratePublicToken', data);
   },
-  updateItemToken (id: any, data: any) {
-    return this.execute('put', `/api/itemTokens/${id}`, data)
+  updateItemToken(id: any, data: any) {
+    return this.execute('put', `/api/itemTokens/${id}`, data);
   },
-  deleteItemToken (id: any) {
-    return this.execute('delete', `/api/itemTokens/${id}`)
+  deleteItemToken(id: any) {
+    return this.execute('delete', `/api/itemTokens/${id}`);
   },
-  getSaltEdgeCategories () {
-    return this.execute('get', '/api/saltEdge_Categories')
+  getSaltEdgeCategories() {
+    return this.execute('get', '/api/saltEdge_Categories');
   },
-  getPlaidCategories () {
-    return this.execute('get', '/api/plaid_Categories')
+  getPlaidCategories() {
+    return this.execute('get', '/api/plaid_Categories');
   },
-  getSaltEdgeConnections () {
+  getSaltEdgeConnections() {
     // setTimeout(() => {store.state.isFetchTransactions = false}, 2000);
-    return this.execute('get', '/api/saltEdgeConnections')
+    return this.execute('get', '/api/saltEdgeConnections');
   },
-  refreshInteractive (id: any) {
-    return this.execute('get', `/api/saltEdgeRefreshInteractive/${id}`)
+  refreshInteractive(id: any) {
+    return this.execute('get', `/api/saltEdgeRefreshInteractive/${id}`);
   },
-  createInteractive (id: any) {
-    return this.execute('get', `/api/saltEdgeCreateInteractive/`)
+  createInteractive(id: any) {
+    return this.execute('get', `/api/saltEdgeCreateInteractive/`);
   },
-  resetDB () {
-    return this.execute('get', `/api/resetDB/`)
+  resetDB() {
+    return this.execute('get', `/api/resetDB/`);
   },
-}
+};

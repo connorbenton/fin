@@ -5,7 +5,7 @@ import moment from 'moment';
 
 Vue.use(Vuex);
 
-const workerActions = new Worker('./actions.ts', {type: 'module'});
+const workerActions = new Worker('./actions.ts', { type: 'module' });
 
 // function buildTxData(state, key, start = 0, end = 0) {
 //   return new Promise((resolve, reject) => {
@@ -274,30 +274,30 @@ const store = new Vuex.Store({
 
     itemTokens: [],
 
-    transactions: [],
+    transactions: [] as any,
 
     categories: [],
 
     accounts: [],
 
     apiStateLoaded: false,
-    
+
     doneReloading: false,
   },
   getters: {
-    ItemsDone: state => { return state.fetchTransactionsItemDone; },
-    ItemsTotal: state => { return state.fetchTransactionsItemTotal; },
-    getName: state => { return state.currName; },
-    getAllTransactions: state => { return state.transactions },
-    getAllCategories: state => { return state.categories },
-    getAllAccounts: state => { return state.accounts },
-    getAllItemTokens: state => { return state.itemTokens },
-    getTrans1: state => { return state.trans1; },
-    getTrans2: state => { return state.trans2; }
+    ItemsDone: (state) => state.fetchTransactionsItemDone,
+    ItemsTotal: (state) => state.fetchTransactionsItemTotal,
+    getName: (state) => state.currName,
+    getAllTransactions: (state) => state.transactions,
+    getAllCategories: (state) => state.categories,
+    getAllAccounts: (state) => state.accounts,
+    getAllItemTokens: (state) => state.itemTokens,
+    getTrans1: (state) => state.trans1,
+    getTrans2: (state) => state.trans2,
   },
   mutations: {
     incrementItem(state) {
-      state.fetchTransactionsItemDone++
+      state.fetchTransactionsItemDone++;
     },
     newName(state, payload) {
       state.currName = payload;
@@ -316,34 +316,34 @@ const store = new Vuex.Store({
     },
     updateTransactions(state, transactions) {
       state.transactions = transactions;
-      let cats: any[] = state.categories;
-      let accs: any[] = state.accounts;
-      for (let i in state.transactions) {
-        let trans: any = state.transactions[i];
+      const cats: any[] = state.categories;
+      const accs: any[] = state.accounts;
+      for (const trans of state.transactions) {
+        // const trans: any = state.transactions[i];
         trans.catName = cats.find(
-          x => x.id === trans.category
+          (x) => x.id === trans.category,
         ).subCategory;
         // state.transactions[i].catName = cats.find(
-          // x => x.id === state.transactions[i].category
+        // x => x.id === state.transactions[i].category
         // ).subCategory;
         trans.accName = accs.find(
-          x => x.account_id === trans.account_id
+          (x) => x.account_id === trans.account_id,
         ).name;
       }
     },
     updateTransaction(state, transaction) {
-      let transSet: any[] = state.transactions;
-      let transToUpdate = transSet.find(x => x.id === transaction.id);
+      const transSet: any[] = state.transactions;
+      const transToUpdate = transSet.find((x) => x.id === transaction.id);
       transToUpdate.category = transaction.category;
       transToUpdate.catName = transaction.catName;
     },
     updateCategories(state, categories) {
       state.categories = categories;
-    //   var topArr = [];
-    //   state.categories.forEach((obj) => {
-    //     topArr.push(obj.topCategory);
-    //   });
-    //   state.topCategories = [...new Set(topArr)];
+      //   var topArr = [];
+      //   state.categories.forEach((obj) => {
+      //     topArr.push(obj.topCategory);
+      //   });
+      //   state.topCategories = [...new Set(topArr)];
     },
     updateAccounts(state, accounts) {
       state.accounts = accounts;
@@ -386,19 +386,19 @@ const store = new Vuex.Store({
   },
   actions: {
     async getTransactions({ commit }) {
-      let res = await api.getTransactions();
+      const res = await api.getTransactions();
       commit('updateTransactions', res);
     },
     async getCategories({ commit }) {
-      let res = await api.getCategories();
+      const res = await api.getCategories();
       commit('updateCategories', res);
     },
     async getAccounts({ commit }) {
-      let res = await api.getAccounts();
+      const res = await api.getAccounts();
       commit('updateAccounts', res);
     },
-    async customFilter({ commit }, {startFromPage, endFromPage}) {
-      commit('setCustomRange', {start:startFromPage, end:endFromPage});
+    async customFilter({ commit }, { startFromPage, endFromPage }) {
+      commit('setCustomRange', { start: startFromPage, end: endFromPage });
       this.state.webWorkerType = 'custom';
       workerActions.postMessage(this.state);
       // await buildTxData(this.state, 'customTxSet', start, end);
@@ -414,12 +414,15 @@ const store = new Vuex.Store({
       // commit('updateAccounts', res);
     },
     async getAll({ commit }) {
-      Promise.all([
-        api.getCategories(),
-        api.getAccounts(),
-        api.getTransactions(),
-        api.getItemTokens()
-      ]).then(([cats, accs, trans, toks]) => {
+      try {
+        const [cats, accs, trans, toks] =
+          await Promise.all([api.getCategories(), api.getAccounts(), api.getTransactions(), api.getItemTokens()]);
+        // Promise.all([
+        //   api.getCategories(),
+        //   api.getAccounts(),
+        //   api.getTransactions(),
+        //   api.getItemTokens(),
+        // ]).then(([cats, accs, trans, toks]) => {
         // ]).then((values) => {
         // console.log(values);
         // this.state.customEnd = moment();
@@ -436,14 +439,17 @@ const store = new Vuex.Store({
         // commit('analysisDataInitial');
         // commit('doneLoading', true);
 
-        //Send this to worker as well
+        // Send this to worker as well
         // commit('analysisData');
 
 
-      // }).then(() => {
-          // this.state.webWorkerType = 'afterInitial';
-          // workerActions.postMessage(this.state);
-      }).catch(e => console.error(e));
+        // }).then(() => {
+        // this.state.webWorkerType = 'afterInitial';
+        // workerActions.postMessage(this.state);
+      } catch (e) {
+        // console.error(e);
+      }
+      // }).catch((e) => console.error(e));
       // // let res2 = await api.getCategories();
       // commit('updateCategories', await api.getCategories());
       // // let res3 = await api.getAccounts();
@@ -453,12 +459,12 @@ const store = new Vuex.Store({
       // commit('analysisDataInitial');
       // commit('doneLoading', true);
       // commit('analysisData');
-    }
+    },
 
   },
 });
 
-workerActions.onmessage = e => {
+workerActions.onmessage = (e) => {
   store.commit(e.data.type, e.data.payload);
 };
 

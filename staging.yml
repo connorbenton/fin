@@ -1,0 +1,19 @@
+version: '3.3'
+services:
+    myapp:
+        env_file: 
+          - '$PWD/../.env' 
+        volumes:
+            - '${PWD}:/usr/src/app'
+            - /usr/src/app/node_modules
+        network_mode: cbb_server_docker_default
+        container_name: fintrack
+        ports:
+            - '9222:9222'
+        expose:
+            - '9028'
+        image: myapp
+        deploy:
+          resources:
+            limits:
+              cpus: '2'

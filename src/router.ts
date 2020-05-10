@@ -46,7 +46,7 @@ const router = new Router({
       path: '/accounts',
       name: 'accounts',
       component: () => import('./views/Accounts.vue'),
-    }
+    },
   ],
 });
 
