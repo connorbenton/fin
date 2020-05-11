@@ -2,19 +2,27 @@
 FROM node:10.15.0
 # FROM node:alpine
  
-# set working directory
 RUN mkdir /usr/src/app
-WORKDIR /usr/src/app
+RUN mkdir /usr/src/app/backend
+WORKDIR /usr/src/app/backend
+COPY ./backend/package*.json ./
+RUN npm install
+
+# set working directory
+# RUN mkdir /usr/src/app
  
 # add `/usr/src/app/node_modules/.bin` to $PATH
-ENV PATH /usr/src/app/node_modules/.bin:$PATH
+# ENV PATH /usr/src/app/node_modules/.bin:$PATH
 
 # RUN ls /usr/local/bin
 # install and cache app dependencies
-COPY package.json /usr/src/app/package.json
+RUN mkdir /usr/src/app/frontend
+WORKDIR /usr/src/app/frontend
+COPY ./frontend/package*.json ./
 RUN npm install
 RUN npm install -g @vue/cli @vue/cli-service vue-template-compiler vuetify
 # RUN ls /usr/src/app
+
 
 # FROM coleifer/sqlite
 
@@ -27,6 +35,7 @@ RUN npm install -g @vue/cli @vue/cli-service vue-template-compiler vuetify
 # ENV PATH /usr/src/app/.local/lib
 
 # RUN apk add --no-cache --virtual .build-reqs build-base gcc make \
+WORKDIR /usr/src/app
 RUN apt-get update && apt-get install -y gcc make python3 python3-pip\
     #   && pip install --no-cache-dir cython \
     #   && pip install --no-cache-dir flask peewee sqlite-web \
@@ -49,9 +58,13 @@ ENV PATH /usr/local/lib/python3.7/site-packages:$PATH
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 # RUN chmod +x /tini
 
-ADD start.sh /
-RUN chmod +x /start.sh
-CMD ["/bin/sh", "/start.sh"]
+ADD start-dev.sh /
+RUN chmod +x /start-dev.sh
+# RUN ls /
+# RUN ls ./
+# RUN ls /usr/src/app
+# RUN ls /usr/src/app/server
+CMD ["/bin/sh", "/start-dev.sh"]
 # ENTRYPOINT ["/tini", "--", "/start.sh"]
 # CMD ["/start.sh"]
 

@@ -1,4 +1,4 @@
-# myapp
+# fintrack
 
 ## Project setup
 ```

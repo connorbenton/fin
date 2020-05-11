@@ -1,5 +1,6 @@
 const path = require('path')
 const WorkerPlugin = require('worker-plugin')
+// const VuetifyLoaderPlugin = require('vuetify-loader/lib/plugin')
 
 const host = '0.0.0.0'
 const port = 9028
@@ -10,7 +11,8 @@ module.exports = {
         globalObject: "this"
       },
       plugins: [
-        new WorkerPlugin()
+        new WorkerPlugin(),
+        // new VuetifyLoaderPlugin()
       ]
     },
 

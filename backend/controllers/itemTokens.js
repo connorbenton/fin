@@ -4,7 +4,7 @@ Account = require('../models').Account;
 Transaction = require('../models').Transaction;
 SaltEdge = require('../controllers/saltedge.js');
 const moment = require('moment');
-var Server = require('../../index.js');
+var Server = require('../index.js');
 var ioSock;
 var realSock;
 

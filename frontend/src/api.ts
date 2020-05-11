@@ -1,6 +1,4 @@
-import Vue from 'vue';
 import axios from 'axios';
-import App from './App.vue';
 import store from './store';
 import io from 'socket.io-client';
 // import rateLimit from 'axios-rate-limit'

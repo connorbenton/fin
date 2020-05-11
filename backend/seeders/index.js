@@ -7,10 +7,10 @@ var models = require('../models/');
 
 
 sequelize_fixtures.loadFiles([
-	'./server/seeders/categories.js', 
-	'./server/seeders/saltedge_categories.js',
-	'./server/seeders/plaid_categories.js',
-	'./server/seeders/currencyRates.js'
+	'./seeders/categories.js', 
+	'./seeders/saltedge_categories.js',
+	'./seeders/plaid_categories.js',
+	'./seeders/currencyRates.js'
 ], models).then(function(){
 	// saltedge.getCategories();
 	console.log('Seed data loaded!');

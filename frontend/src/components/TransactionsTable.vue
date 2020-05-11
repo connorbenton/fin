@@ -142,7 +142,8 @@ export default {
       ],
       sortDesc: true,
       sortBy: "date",
-      transactions: this.transactionsToDisplay.map(t => Object.assign({}, t)),
+      // transactions: this.transactionsToDisplay.map(t => Object.assign({}, t)),
+      transactions: this.transactionsToDisplay,
       accounts: [],
       categories: []
       // console
@@ -151,7 +152,9 @@ export default {
   watch: {
     //Loads new transactions from the parent when accounts are set to filter there
     transactionsToDisplay(newVal, oldVal) {
-      this.transactions = newVal.map(t => Object.assign({}, t));
+      // this.transactions = newVal.map(t => Object.assign({}, t));
+      this.transactions = [];
+      this.transactions = newVal;
     }
   },
   created() {

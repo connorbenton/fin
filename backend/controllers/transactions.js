@@ -1,6 +1,8 @@
 Transaction = require('../models').Transaction;
-var Server = require('../../index.js');
+var Server = require('../index.js');
 CurrencyRate = require('../models').CurrencyRate;
+const seq = require('../models/index');
+const { QueryTypes } = require('sequelize');
 const axios = require('axios');
 var ioSock;
 var realSock;
@@ -13,14 +15,24 @@ module.exports = {
   function(socket) {
     realSock = socket;
   },
-  index(req, res) {
-    Transaction.findAll()
-      .then(function (transactions) {
-        res.status(200).json(transactions);
-      })
-      .catch(function (error) {
+  //Speed up the Transactions response by using raw SQL
+  async index(req, res) {
+    try {
+    // let tx = await Transaction.findAll();
+    // const { QueryTypes } = require('sequelize');
+    // const tx = await seq.sequelize.query("SELECT * FROM `transactions`", {type: QueryTypes.SELECT});
+    // //testing out direct SQL queries
+    const tx = await seq.sequelize.query("SELECT * FROM `transactions` WHERE date > date('now', '-30 days')", {type: QueryTypes.SELECT});
+    res.status(200).json(tx);
+    }
+    catch (error) {
         res.status(500).json(error);
-      });
+    }
+      // .then(function (transactions) {
+        // res.status(200).json(transactions);
+      // })
+      // .catch(function (error) {
+      // });
   },
 
   show(req, res) {

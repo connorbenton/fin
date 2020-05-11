@@ -6,9 +6,7 @@ var server = http.createServer(app);
 // var io = require('socket.io').listen(server);
 var io = require('socket.io')(server);
 
-const itemTokens = require('./server/controllers/itemTokens');
-// const itemTokens = require('./server/controllers/itemTokens')(io);
-// var ioPass = require('./server/controllers/itemTokens.js')(io);
+const itemTokens = require('./controllers/itemTokens');
 
 bodyParser = require('body-parser'),
   cookieParser = require('cookie-parser'),
@@ -16,14 +14,14 @@ bodyParser = require('body-parser'),
   cors = require('cors'),
   router = express.Router(),
   path = require('path'),
-  seq = require('./server/models/index')
-accounts = require('./server/controllers/accounts'),
-  categories = require('./server/controllers/categories'),
-  currencyRates = require('./server/controllers/currencyRates'),
-  plaid_categories = require('./server/controllers/plaid_categories'),
-  saltedge_categories = require('./server/controllers/saltedge_categories'),
-  transactions = require('./server/controllers/transactions'),
-  saltedge = require('./server/controllers/saltedge');
+  seq = require('./models/index')
+accounts = require('./controllers/accounts'),
+  categories = require('./controllers/categories'),
+  currencyRates = require('./controllers/currencyRates'),
+  plaid_categories = require('./controllers/plaid_categories'),
+  saltedge_categories = require('./controllers/saltedge_categories'),
+  transactions = require('./controllers/transactions'),
+  saltedge = require('./controllers/saltedge');
 
 server.timeout = 60 * 4 * 1000; //4 min for long calls
 
@@ -98,14 +96,14 @@ router.get('/resetDB', async function(req, res) {
 
     const sequelize_fixtures = require('sequelize-fixtures');
 
-    let models = require('./server/models/');
+    let models = require('./models/');
     // var saltedge = require ('../controllers/saltedge');
 
     sequelize_fixtures.loadFiles([
-      './server/seeders/categories.js',
-      './server/seeders/saltedge_categories.js',
-      './server/seeders/plaid_categories.js',
-      './server/seeders/currencyRates.js'
+      './seeders/categories.js',
+      './seeders/saltedge_categories.js',
+      './seeders/plaid_categories.js',
+      './seeders/currencyRates.js'
     ], models).then(function () {
       // saltedge.getCategories();
       console.log('Database reset and re-seeded!')
@@ -133,7 +131,7 @@ seq.sequelize.sync()
     // console.log(process.env)
     console.log("Database & tables created!")
     // seed the database
-    require('./server/seeders');
+    require('./seeders');
 
     // start server
     server.listen(port, function () {

@@ -1,6 +1,6 @@
 {
-  "name": "myapp",
-  "short_name": "myapp",
+  "name": "fintrack",
+  "short_name": "fintrack",
   "icons": [
     {
       "src": "./img/icons/android-chrome-192x192.png",
