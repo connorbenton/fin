@@ -177,8 +177,8 @@ export default {
       vh: null,
       transactions: [],
       files: null,
-      environment: process.env.VUE_APP_ENVIRONMENT,
-      PLAID_PUBLIC_KEY: process.env.VUE_APP_PLAID_PUBLIC_KEY,
+      environment: process.env.VUE_APP_ENVIRONMENT || window._env_.VUE_APP_ENVIRONMENT,
+      PLAID_PUBLIC_KEY: process.env.VUE_APP_PLAID_PUBLIC_KEY || window._env_.VUE_APP_PLAID_PUBLIC_KEY,
       updateToken: null,
       itemTokens: [],
       accounts: [],
@@ -210,7 +210,7 @@ export default {
   //   }
   // },
   created() {
-    //console.log(this.PLAID_PUBLIC_KEY)
+    console.log(this.PLAID_PUBLIC_KEY);
     this.apiStateLoaded = this.$store.state.apiStateLoaded;
     if (this.apiStateLoaded) {
       this.initialData();

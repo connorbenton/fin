@@ -15,7 +15,7 @@ bodyParser = require('body-parser'),
   router = express.Router(),
   path = require('path'),
   seq = require('./models/index')
-accounts = require('./controllers/accounts'),
+  accounts = require('./controllers/accounts'),
   categories = require('./controllers/categories'),
   currencyRates = require('./controllers/currencyRates'),
   plaid_categories = require('./controllers/plaid_categories'),
@@ -90,7 +90,7 @@ router.get('/saltEdgeConnections', saltedge.getConnections);
 router.get('/saltEdgeRefreshInteractive/:id', saltedge.refreshConnectionInteractive);
 router.get('/saltEdgeCreateInteractive', saltedge.createConnectionInteractive);
 
-router.get('/resetDB', async function(req, res) {
+router.get('/resetDB', async function (req, res) {
   try {
     console.log('Resetting database!');
     await seq.sequelize.sync({ force: true });

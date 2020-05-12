@@ -156,9 +156,9 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
         ).name;
         const matchCat = cats.find((x: any) => x.id === set.category);
         set.catName = matchCat.subCategory;
-        if (typeof matchCat.count === 'undefined') { matchCat.count = 0; }
+        if (matchCat.count === undefined) { matchCat.count = 0; }
         matchCat.count = matchCat.count + 1;
-        if (typeof matchCat.total === 'undefined') { matchCat.total = 0; }
+        if (matchCat.total === undefined) { matchCat.total = 0; }
         matchCat.total =
           matchCat.total + parseFloat(set.normalized_amount);
 
@@ -226,8 +226,8 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
             const value = child.total;
             const count = child.count;
             subCatChildToPush.value =
-              typeof value === 'undefined' ? 0 : -1 * value;
-            subCatChildToPush.count = typeof count === 'undefined' ? 0 : count;
+              value === undefined ? 0 : -1 * value;
+            subCatChildToPush.count = count === undefined ? 0 : count;
             subCatChildToPush.trueValue = subCatChildToPush.value;
             subCatChildToPush.trueCount = subCatChildToPush.count;
             // subCatChildToPush.percent = "";
@@ -296,7 +296,7 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
       const txTreeNoInvest = JSON.parse(JSON.stringify(txTree));
       // txTreeNoInvest.name = "Transactions by Category (Financial Excluded)"
       if (txTreeNoInvest.value) {
-        const fin = txTreeNoInvest.children[5];
+        const fin = txTreeNoInvest.children[7];
         if (fin.value) {
           txTreeNoInvest.value = txTreeNoInvest.value - fin.value;
           txTreeNoInvest.count = txTreeNoInvest.count - fin.count;

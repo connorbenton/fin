@@ -13,7 +13,7 @@ RUN apk --no-cache --virtual .gyp add \
     && apk del .gyp 
 # RUN npm install
 COPY ./frontend .
-RUN npm run build
+RUN npm run build-prod
 
 # #sqlite stage
 # FROM coleifer/sqlite as build-stage
@@ -39,6 +39,13 @@ RUN npm ci --only=production
 COPY ./backend .
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY gzip.conf /etc/nginx/gzip.conf
+WORKDIR /usr/share/nginx/html
+COPY ./env.sh .
+COPY .env .
+RUN apk add --no-cache bash
+RUN chmod +x env.sh
+
 # EXPOSE 80
 # CMD ["nginx", "-g", "daemon off;"]
 

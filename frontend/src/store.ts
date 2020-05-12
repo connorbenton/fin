@@ -92,9 +92,9 @@ const workerActions = new Worker('./actions.ts', { type: 'module' });
 //         ).name;
 //         let matchCat = cats.find(x => x.id === txSet[i].category);
 //         txSet[i].catName = matchCat.subCategory;
-//         if (typeof matchCat.count === "undefined") matchCat.count = 0;
+//         if (matchCat.count === undefined) matchCat.count = 0;
 //         matchCat.count = matchCat.count + 1;
-//         if (typeof matchCat.total === "undefined") matchCat.total = 0;
+//         if (matchCat.total === undefined) matchCat.total = 0;
 //         matchCat.total =
 //           matchCat.total + parseFloat(txSet[i].normalized_amount);
 
@@ -135,8 +135,8 @@ const workerActions = new Worker('./actions.ts', { type: 'module' });
 //             let value = children[k].total;
 //             let count = children[k].count;
 //             subCatChildToPush.value =
-//               typeof value === "undefined" ? 0 : -1 * value;
-//             subCatChildToPush.count = typeof count === "undefined" ? 0 : count;
+//               value === undefined ? 0 : -1 * value;
+//             subCatChildToPush.count = count === undefined ? 0 : count;
 //             // subCatChildToPush.percent = "";
 //             // if (newChild.name === 'Income' || child.value < 0) {
 //             if (children[k].topCategory === 'Income' || subCatChildToPush.value < 0) {

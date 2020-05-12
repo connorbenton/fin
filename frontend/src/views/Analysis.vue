@@ -286,7 +286,7 @@
                     dy=".65em"
                     x="6"
                     y="-24"
-                    v-if="typeof selectedNode.data != 'undefined'"
+                    v-if="selectedNode.data != undefined"
                   >{{ selectedNode.id }} - {{selectedNode.data.count}} Transactions 
                   ({{selectedNode.data.trueCount}} Total) - {{formatBalance(selectedNode.data.value, 'USD')}}</text>
                     <!-- v-if="selectedNode.id != 'Transactions by Category'" -->
@@ -777,9 +777,9 @@ export default {
     //     ).name;
     //     let matchCat = cats.find(x => x.id === this.transactions[i].category);
     //     this.transactions[i].catName = matchCat.subCategory;
-    //     if (typeof matchCat.count === "undefined") matchCat.count = 0;
+    //     if (matchCat.count === undefined) matchCat.count = 0;
     //     matchCat.count = matchCat.count + 1;
-    //     if (typeof matchCat.total === "undefined") matchCat.total = 0;
+    //     if (matchCat.total === undefined) matchCat.total = 0;
     //     matchCat.total =
     //       matchCat.total + parseFloat(this.transactions[i].normalized_amount);
 
@@ -819,8 +819,8 @@ export default {
     //         let value = children[k].total;
     //         let count = children[k].count;
     //         subCatChildToPush.value =
-    //           typeof value === "undefined" ? 0 : -1 * value;
-    //         subCatChildToPush.count = typeof count === "undefined" ? 0 : count;
+    //           value === undefined ? 0 : -1 * value;
+    //         subCatChildToPush.count = count === undefined ? 0 : count;
     //         subCatChildToPush.percent = "";
     //         newChild.value = newChild.value + subCatChildToPush.value;
     //         newChild.count = newChild.count + subCatChildToPush.count;
@@ -862,7 +862,7 @@ export default {
           .eachBefore(function(d) {
             d.id = (d.parent ? d.parent.id + "." : "") + d.data.name;
           })
-          // .eachAfter(function (d) { d.parent.count = (typeof d.parent.count === 'undefined') ? d.count : d.parent.count + d.count})
+          // .eachAfter(function (d) { d.parent.count = (d.parent.count === undefined) ? d.count : d.parent.count + d.count})
           .sum(d => d.value)
           // .eachAfter(function (d) { if (d.parent != null) {
           //   d.count = Number.isInteger(d.data.count) ? d.data.count : 0;

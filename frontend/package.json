@@ -5,9 +5,11 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
+    "build-prod": "vue-cli-service build --mode production",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@types/plaid-link": "^2.0.6",
     "@types/socket.io": "^2.1.4",
     "@types/socket.io-client": "^1.4.32",
     "axios": "^0.19.2",

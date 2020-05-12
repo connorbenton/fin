@@ -323,7 +323,7 @@ module.exports = {
         else item.interactive = false;
         item.lastRefresh = moment(conn.last_success_at);
         let next = conn.next_refresh_possible_at;
-        item.nextRefreshPossible = (typeof next === 'undefined') ? moment() : moment(conn.next_refresh_possible_at);
+        item.nextRefreshPossible = (next === undefined) ? moment() : moment(conn.next_refresh_possible_at);
         item.item_id = conn.id;
         // console.log(acc);
         // console.log('item');
@@ -356,7 +356,7 @@ module.exports = {
           acc.account_id = saltAcc.id;
           acc.item_id = saltAcc.connection_id;
           // let match = accounts.find(x => (x.provider === "SaltEdge" && x.item_id === acc.item_id));
-          // acc.id = (typeof match === 'undefined') ? null : match.id; 
+          // acc.id = (match === undefined) ? null : match.id; 
           acc.type = saltAcc.nature;
           acc.limit = saltAcc.extra.credit_limit;
           acc.available = saltAcc.extra.available_amount;
@@ -380,12 +380,12 @@ module.exports = {
       let resTokens = await ItemToken.findAll({ attributes: { exclude: ['access_token'] } });
       let resAccounts = await Account.findAll({});
       let resJSON = { resTokens: resTokens, resAccounts: resAccounts };
-      if (typeof res2 !== 'undefined') res2.status(200).json(resJSON);
+      if (res2 !== undefined) res2.status(200).json(resJSON);
       // }
     }
     catch (error) {
       // reject(res2.status(500).json(error));
-      if (typeof res2 !== 'undefined') res2.status(500).json('An error occured');
+      if (res2 !== undefined) res2.status(500).json('An error occured');
     }
     // if (success) res.status(200);
     // });
