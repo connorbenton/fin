@@ -78,6 +78,7 @@ router.delete('/itemTokens', itemTokens.delete);
 router.get('/itemTokensFetchTransactions', itemTokens.fetchTransactions);
 // define transactions routes
 router.get('/transactions', transactions.index);
+router.get('/transactionsRange/:range', transactions.index);
 router.get('/transactions/:id', transactions.show);
 router.post('/transactions', transactions.create);
 router.put('/transactions', transactions.update);

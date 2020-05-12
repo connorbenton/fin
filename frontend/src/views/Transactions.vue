@@ -1,5 +1,6 @@
 <template>
-  <v-content v-if="apiStateLoaded">
+  <!-- <v-content v-if="apiStateLoaded"> -->
+  <v-content :key="apiStateLoaded">
     <v-card class="d-flex mb-6">
       <v-col class="flex-grow-0 flex-shrink-1 mx-auto">
         <v-expansion-panels

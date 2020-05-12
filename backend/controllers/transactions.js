@@ -20,6 +20,24 @@ module.exports = {
     try {
     // let tx = await Transaction.findAll();
     // const { QueryTypes } = require('sequelize');
+    const tx = await seq.sequelize.query("SELECT * FROM `transactions`", {type: QueryTypes.SELECT});
+    // //testing out direct SQL queries
+    // const tx = await seq.sequelize.query("SELECT * FROM `transactions` WHERE date > date('now', '-30 days')", {type: QueryTypes.SELECT});
+    res.status(200).json(tx);
+    }
+    catch (error) {
+        res.status(500).json(error);
+    }
+      // .then(function (transactions) {
+        // res.status(200).json(transactions);
+      // })
+      // .catch(function (error) {
+      // });
+  },
+  async indexRange(req, res) {
+    try {
+    // let tx = await Transaction.findAll();
+    // const { QueryTypes } = require('sequelize');
     // const tx = await seq.sequelize.query("SELECT * FROM `transactions`", {type: QueryTypes.SELECT});
     // //testing out direct SQL queries
     const tx = await seq.sequelize.query("SELECT * FROM `transactions` WHERE date > date('now', '-30 days')", {type: QueryTypes.SELECT});
@@ -34,7 +52,6 @@ module.exports = {
       // .catch(function (error) {
       // });
   },
-
   show(req, res) {
     Transaction.findById(req.params.id)
       .then(function (transaction) {

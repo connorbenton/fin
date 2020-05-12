@@ -21,22 +21,3 @@ services:
           resources:
             limits:
               cpus: '2'
-    fintrack-stage:
-        build:
-          context: .
-          dockerfile: ./docker/staging/Dockerfile
-        env_file: 
-          - './.env' 
-        volumes:
-            - ./test.sqlite:/usr/src/app/test.sqlite
-        network_mode: cbb_server_docker_default
-        container_name: fintrack-stage 
-        # ports:
-            # - '9222:9222'
-        expose:
-            - '9028'
-        image: fintrack-stage
-        deploy:
-          resources:
-            limits:
-              cpus: '2'
