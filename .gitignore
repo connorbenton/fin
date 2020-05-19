@@ -4,15 +4,23 @@ node_modules/
 
 # local env files
 .env
+.env.dev
+.env.prod
 .env.local
 .env.*.local
 .env.sh
 
+backend_go/bin
+
 #DB
-test.sqlite
+/db
+data.sqlite
+*.sqlite
 
 #ItemToken seeders
-server/seeders/itemTokens.js
+itemTokenSeeds.js
+itemTokens.sql
+
 
 # Log files
 npm-debug.log*

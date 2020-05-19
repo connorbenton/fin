@@ -79,7 +79,14 @@
                 to="/database"
                 data-cy="dbBtn"
                 >DB Editor</v-btn >
+            <v-btn
+                text
+                class="hidden-sm-and-down nav-menu"
+                to="/databasego"
+                data-cy="dbgoBtn"
+                >Go DB Editor</v-btn >
             
+
         </v-app-bar>
     </span>
 </template>
@@ -100,6 +107,7 @@ export default {
                 // { title: 'Categories', url: '/categories' },
                 { title: 'Accounts', url: '/accounts' },
                 { title: 'DB Editor', url: '/database' },
+                { title: 'Go DB Editor', url: '/databasego' },
             ]
         };
     }

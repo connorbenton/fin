@@ -38,6 +38,11 @@ const router = new Router({
     //   component: () => import('./views/Categories.vue'),
     // },
     {
+      path: '/databasego',
+      name: 'databasego',
+      component: () => import('./views/DatabaseGo.vue'),
+    },
+    {
       path: '/database',
       name: 'database',
       component: () => import('./views/Database.vue'),

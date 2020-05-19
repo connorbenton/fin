@@ -1,0 +1,32 @@
+# github.com/gorilla/mux v1.7.4
+## explicit
+github.com/gorilla/mux
+# github.com/jmoiron/sqlx v1.2.0
+## explicit
+github.com/jmoiron/sqlx
+github.com/jmoiron/sqlx/reflectx
+github.com/jmoiron/sqlx/types
+# github.com/joho/godotenv v1.3.0
+## explicit
+# github.com/kelseyhightower/envconfig v1.4.0
+## explicit
+github.com/kelseyhightower/envconfig
+# github.com/kr/pretty v0.1.0
+## explicit
+# github.com/mattn/go-sqlite3 v2.0.3+incompatible
+## explicit
+github.com/mattn/go-sqlite3
+# github.com/plaid/plaid-go v0.0.0-20200515230911-ec588277465e
+## explicit
+github.com/plaid/plaid-go/internal
+github.com/plaid/plaid-go/plaid
+# golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+## explicit
+golang.org/x/sync/errgroup
+# google.golang.org/appengine v1.6.6
+## explicit
+# gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
+## explicit
+# gopkg.in/yaml.v2 v2.3.0
+## explicit
+gopkg.in/yaml.v2

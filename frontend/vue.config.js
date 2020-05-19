@@ -40,6 +40,12 @@ module.exports = {
         secure: false,
         ws: true,
       },
+      '^/dbgo': {
+        target: 'http://0.0.0.0:8085',
+        secure: false,
+        ws: false,
+        changeOrigin: true,
+      },
       '^/db': {
         target: 'http://0.0.0.0:8080',
         secure: false,

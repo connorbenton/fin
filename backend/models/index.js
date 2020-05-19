@@ -19,8 +19,9 @@ var db        = {};
 //Create a Sequelize connection with an SQLITE database
 var sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: '../test.sqlite',
+  storage: '../data.sqlite',
   logging: false
+  // logging: console.log,
 })
 
 //Load all the models

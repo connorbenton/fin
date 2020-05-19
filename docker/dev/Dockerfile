@@ -8,6 +8,30 @@ WORKDIR /usr/src/app/backend
 COPY ./backend/package*.json ./
 RUN npm install
 
+# # RUN mkdir /usr/local
+# WORKDIR /usr/local
+# RUN wget https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz
+# RUN tar -xvf go1.14.2.linux-amd64.tar.gz 
+# ENV GOROOT /usr/local/go
+# ENV PATH="/usr/local/go/bin:${PATH}"
+# RUN mkdir /usr/local/gosrc
+# ENV GOPATH /usr/local/gosrc
+# RUN go get -u github.com/derekparker/delve/cmd/dlv
+# ENV PATH="/usr/local/gosrc/bin:${PATH}"
+# # RUN ls /usr/local/go/bin
+# # RUN ls /usr/local/gosrc/bin
+
+# # RUN go get github.com/codegangsta/gin
+
+# RUN apt-get -y update && apt-get -y install inotify-tools
+# RUN mkdir /usr/src/app/backend_go
+# WORKDIR /usr/src/app/backend_go
+# COPY ./backend_go ./
+# # RUN go build -o /server main.go 
+# RUN go build -gcflags "all=-N -l" -o /server main.go 
+# # RUN go build -gcflags="-N -l" -o /server main.go 
+# RUN chmod +x /usr/src/app/backend_go/start_script.sh
+
 # set working directory
 # RUN mkdir /usr/src/app
  
@@ -48,7 +72,7 @@ ENV PATH /usr/local/lib/python3.7/site-packages:$PATH
 # RUN ls /usr/local/lib/python3.7/site-packages
 # RUN ls /usr/src/app/
 # RUN ls /usr/local/bin
-# CMD sqlite_web -H 0.0.0.0 -x test.sqlite
+# CMD sqlite_web -H 0.0.0.0 -x data.sqlite
 
 # RUN pip show sqlite-web
 # COPY sqlite_web sqlite_web

@@ -98,7 +98,7 @@ RUN chmod +x env.sh
 # # RUN ls /usr/local/lib/python3.7/site-packages
 # # RUN ls /usr/src/app/
 # # RUN ls /usr/local/bin
-# # CMD sqlite_web -H 0.0.0.0 -x test.sqlite
+# # CMD sqlite_web -H 0.0.0.0 -x data.sqlite
 
 # # RUN pip show sqlite-web
 # # COPY sqlite_web sqlite_web

@@ -14,6 +14,7 @@ services:
         container_name: fintrack
         ports:
             - '9222:9222'
+            - '7080:7080'
         expose:
             - '9028'
         image: fintrack
@@ -28,7 +29,7 @@ services:
         env_file: 
           - './.env' 
         volumes:
-            - ./test.sqlite:/usr/src/app/test.sqlite
+            - ./data.sqlite:/usr/src/app/data.sqlite
         network_mode: cbb_server_docker_default
         container_name: fintrack-stage 
         # ports:
