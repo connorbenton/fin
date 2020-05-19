@@ -66,12 +66,12 @@ func insertXMLData(data []byte, ignoreBool bool) {
 	txn := CurrencyDBCon.MustBegin()
 	// txn, err := CurrencyDBCon.Begin()
 	// if err != nil {
-	// log.Fatal(err)
+	// 	log.Fatal(err)
 	// }
 	//Create tables if does not exist
 	// tblSt, err := txn.Prepare(`CREATE TABLE IF NOT EXISTS $1 ("fx_date" DATE PRIMARY KEY, "rate" TEXT)`)
 	tblStr1 := `CREATE TABLE IF NOT EXISTS `
-	tblStr2 := ` (fx_date DATE PRIMARY KEY, rate NUMERIC);`
+	tblStr2 := ` (fx_date DATE PRIMARY KEY, rate STRING);`
 	// Don't need these, SQLite creates on its own
 	// indexStr1 := `CREATE UNIQUE INDEX IF NOT EXISTS fx ON `
 	// indexStr2 := ` ("fx_date");`
@@ -84,8 +84,8 @@ func insertXMLData(data []byte, ignoreBool bool) {
 		upsertStr2 = ` (fx_date, rate) VALUES($1,$2);`
 	} else {
 		// upsertStr1 = `INSERT INTO ARS(fx_date, rate) VALUES($1,$2) ON CONFLICT (fx_date) DO UDPATE SET counter = counter + 1`
-		upsertStr1 = `INSERT INTO `
-		upsertStr2 = `(fx_date, rate) VALUES($1,$2) ON CONFLICT ('fx_date') DO UDPATE SET rate = EXCLUDED.rate;`
+		upsertStr1 = "INSERT INTO "
+		upsertStr2 = "(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UDPATE SET rate = excluded.rate"
 		// upsertStr2 = `(fx_date, rate) VALUES($1,$2) ON CONFLICT (fx_date) DO NOTHING;`
 	}
 	// upsertSt, err := txn.Prepare(upsertStr)
@@ -95,6 +95,7 @@ func insertXMLData(data []byte, ignoreBool bool) {
 			if key.ID == "CURRENCY" {
 				curr = key.Value
 				txn.MustExec(tblStr1 + curr + tblStr2)
+				// txn.Exec(tblStr1 + curr + tblStr2)
 				// txn.MustExec(indexStr1 + curr + tblStr2)
 				// if _, err = tblSt.Exec(key.Value); err != nil {
 				// 	log.Fatal(err)
@@ -103,11 +104,19 @@ func insertXMLData(data []byte, ignoreBool bool) {
 		}
 		for _, fx := range currency.Rates {
 			if isNumDot(fx.Rate.Value) {
-				if ignoreBool {
-					txn.MustExec(upsertStr1+curr+upsertStr2, fx.Date.Value, fx.Rate.Value)
-				} else {
-					txn.Exec(upsertStr1+curr+upsertStr2, fx.Date.Value, fx.Rate.Value)
-				}
+				// if ignoreBool {
+				txStr := upsertStr1 + curr + upsertStr2
+				txn.MustExec(txStr, fx.Date.Value, fx.Rate.Value)
+				// if _, err = txn.Exec(upsertStr1+curr+upsertStr2, fx.Date.Value, fx.Rate.Value); err != nil {
+				// 	panic(err)
+				// }
+				// } else {
+				// 	str1 := "INSERT INTO ARS(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate"
+				// 	str2 := upsertStr1 + curr + upsertStr2
+				// 	log.Println(str1)
+				// 	log.Println(str2)
+				// 	txn.MustExec("INSERT INTO ARS(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate", fx.Date.Value, fx.Rate.Value)
+				// }
 				// txn.MustExec(upsertStr1+curr+upsertStr2, fx.Date.Value, fx.Rate.Value)
 			}
 			// if _, err = upsertSt.Exec(curr, fx.Date.Value, fx.Rate.Value); err != nil {
