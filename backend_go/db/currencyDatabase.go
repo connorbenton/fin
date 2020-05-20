@@ -85,7 +85,7 @@ func insertXMLData(data []byte, ignoreBool bool) {
 	} else {
 		// upsertStr1 = `INSERT INTO ARS(fx_date, rate) VALUES($1,$2) ON CONFLICT (fx_date) DO UDPATE SET counter = counter + 1`
 		upsertStr1 = "INSERT INTO "
-		upsertStr2 = "(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UDPATE SET rate = excluded.rate"
+		upsertStr2 = "(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate"
 		// upsertStr2 = `(fx_date, rate) VALUES($1,$2) ON CONFLICT (fx_date) DO NOTHING;`
 	}
 	// upsertSt, err := txn.Prepare(upsertStr)
@@ -106,12 +106,17 @@ func insertXMLData(data []byte, ignoreBool bool) {
 			if isNumDot(fx.Rate.Value) {
 				// if ignoreBool {
 				txStr := upsertStr1 + curr + upsertStr2
+				// log.Println(txStr)
 				txn.MustExec(txStr, fx.Date.Value, fx.Rate.Value)
 				// if _, err = txn.Exec(upsertStr1+curr+upsertStr2, fx.Date.Value, fx.Rate.Value); err != nil {
 				// 	panic(err)
 				// }
 				// } else {
-				// 	str1 := "INSERT INTO ARS(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate"
+				// txStr := []byte(upsertStr1 + curr + upsertStr2)
+				// str1 := []byte("INSERT INTO ARS(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate")
+				// log.Println(txStr)
+				// log.Println(str1)
+				// txn.MustExec(str1, fx.Date.Value, fx.Rate.Value)
 				// 	str2 := upsertStr1 + curr + upsertStr2
 				// 	log.Println(str1)
 				// 	log.Println(str2)
@@ -172,9 +177,10 @@ func GetNewXML() {
 	daysDiff := utc.Sub(fx.FxDate).Hours() / 24
 	// log.Println(utc)
 	// log.Println(daysDiff)
-	hours, _, _ := utc.Clock()
+	// hours, _, _ := utc.Clock()
 
-	if daysDiff > 1 && hours > 15 {
+	// if daysDiff > 1 && hours > 15 {
+	if daysDiff > 1.66 {
 		// log.Println("ready to fetch")
 		url1 := "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/D..EUR.SP00.A?updatedAfter="
 		url2 := "T16%3A30%3A00%2B00%3A00&detail=dataonly"
