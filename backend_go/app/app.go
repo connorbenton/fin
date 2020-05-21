@@ -4,6 +4,7 @@ import (
 	// "database/sql"
 	// "encoding/json"
 	// "log"
+
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -100,6 +101,7 @@ func (app *App) SetupRouter() {
 		socket.ServeWs(socket.ExportHub, w, r)
 	})
 
+	// app.Router.HandleFunc("/ws", itemTokens.FetchTransactionsFunction())
 	// app.Router.
 	// Methods("GET").
 	// Path("/").

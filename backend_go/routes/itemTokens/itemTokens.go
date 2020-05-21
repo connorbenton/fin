@@ -13,8 +13,8 @@ import (
 	_ "github.com/jmoiron/sqlx"
 )
 
-// type wsMsg struct {
-type message struct {
+type wsMsg struct {
+	// type message struct {
 	Name string                 `json:"name"`
 	Data map[string]interface{} `json:"data"`
 }
@@ -63,6 +63,30 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 
 func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
+		// var upgrader = websocket.Upgrader{}
+		// c, err := upgrader.Upgrade(res, req, nil)
+		// if err != nil {
+		// log.Print("upgrade:", err)
+		// return
+		// }
+		// defer c.Close()
+		// for {
+		// 	mt, message, err := c.ReadMessage()
+		// 	if err != nil {
+		// 		log.Println("read:", err)
+		// 		break
+		// 	}
+		// 	log.Printf("recv: %s", message)
+		// err = c.WriteMessage(mt,
+		message := []byte(`{ "username": "Booh", }`)
+		socket.ExportHub.Broadcast <- message
+
+		// err = c.WriteJSON(message)
+		// if err != nil {
+		// log.Println("write:", err)
+		// break
+		// }
+		// }
 
 		// // First get all item tokens
 		// itemTokens := []ItemToken{}
@@ -71,12 +95,12 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 		// 	log.Fatal(err)
 		// }
 
-		socket.ExportHub.broadcast <- message{
-			"user joined",
-			map[string]interface{}{
-				"username": "Booh",
-			},
-		}
+		// socket.ExportHub.Broadcast <- message{
+		// 	"user joined",
+		// 	map[string]interface{}{
+		// 		"username": "Booh",
+		// 	},
+		// }
 		// Then we iterate through item tokens and process in either saltedge or plaid
 		// Opening a websocket connection to transmit which item is being currently worked on
 
@@ -88,7 +112,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 		// rates, _ := string([]byte{json.Marshal(currencyRates[0].DataJSON)})
 		// log.Println(rates)
 
-		res.WriteHeader(http.StatusOK)
+		// res.WriteHeader(http.StatusOK)
 		// if err := json.NewEncoder(res).Encode(itemTokens); err != nil {
 		// 	panic(err)
 		// }
