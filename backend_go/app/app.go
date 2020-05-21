@@ -4,7 +4,7 @@ import (
 	// "database/sql"
 	// "encoding/json"
 	// "log"
-	// "net/http"
+	"net/http"
 
 	"github.com/gorilla/mux"
 	// "github.com/jmoiron/sqlx"
@@ -17,11 +17,11 @@ import (
 	"fintrack-go/routes/resetDB"
 	"fintrack-go/routes/saltedge"
 	"fintrack-go/routes/transactions"
+	"fintrack-go/socket"
 )
 
-
 type App struct {
-	Router   *mux.Router
+	Router *mux.Router
 	// Database *sqlx.DB
 }
 
@@ -96,8 +96,12 @@ func (app *App) SetupRouter() {
 		Path("/resetDB").
 		HandlerFunc(resetDB.ForceResetDBFunction())
 
+	app.Router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		socket.ServeWs(socket.ExportHub, w, r)
+	})
+
 	// app.Router.
-		// Methods("GET").
-		// Path("/").
-		// HandlerFunc()
+	// Methods("GET").
+	// Path("/").
+	// HandlerFunc()
 }

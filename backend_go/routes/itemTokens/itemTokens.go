@@ -8,10 +8,16 @@ import (
 
 	// "fmt"
 	"fintrack-go/db"
+	"fintrack-go/socket"
 
 	_ "github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/types"
 )
+
+// type wsMsg struct {
+type message struct {
+	Name string                 `json:"name"`
+	Data map[string]interface{} `json:"data"`
+}
 
 type ItemToken struct {
 	Id                         int       `json:"id"`
@@ -28,14 +34,14 @@ type ItemToken struct {
 	UpdatedAt                  time.Time `json:"updated_at" db:"updated_at"`
 }
 
-type CurrencyRate struct {
-	Id    int            `json:"id"`
-	Date  time.Time      `json:"date" db:"date"`
-	Rates types.JSONText `json:"rates" db:"rates"`
+// type CurrencyRate struct {
+// 	Id    int            `json:"id"`
+// 	Date  time.Time      `json:"date" db:"date"`
+// 	Rates types.JSONText `json:"rates" db:"rates"`
 
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-}
+// 	CreatedAt time.Time `json:"created_at" db:"created_at"`
+// 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+// }
 
 func GetFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -58,27 +64,33 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
-		// First get all item tokens
-		itemTokens := []ItemToken{}
-		err := db.DBCon.Select(&itemTokens, "SELECT * FROM `item_tokens`")
-		if err != nil {
-			log.Fatal(err)
-		}
+		// // First get all item tokens
+		// itemTokens := []ItemToken{}
+		// err := db.DBCon.Select(&itemTokens, "SELECT * FROM `item_tokens`")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 
+		socket.ExportHub.broadcast <- message{
+			"user joined",
+			map[string]interface{}{
+				"username": "Booh",
+			},
+		}
 		// Then we iterate through item tokens and process in either saltedge or plaid
-		// Opening a socket IO connection to transmit which item is being currently worked on
+		// Opening a websocket connection to transmit which item is being currently worked on
 
-		currencyRates := []CurrencyRate{}
-		err2 := db.DBCon.Select(&currencyRates, "SELECT * FROM `currency_rates`")
-		if err2 != nil {
-			log.Fatal(err)
-		}
+		// currencyRates := []CurrencyRate{}
+		// err2 := db.DBCon.Select(&currencyRates, "SELECT * FROM `currency_rates`")
+		// if err2 != nil {
+		// 	log.Fatal(err)
+		// }
 		// rates, _ := string([]byte{json.Marshal(currencyRates[0].DataJSON)})
 		// log.Println(rates)
 
 		res.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(res).Encode(itemTokens); err != nil {
-			panic(err)
-		}
+		// if err := json.NewEncoder(res).Encode(itemTokens); err != nil {
+		// 	panic(err)
+		// }
 	}
 }

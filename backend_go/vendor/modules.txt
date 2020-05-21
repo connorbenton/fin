@@ -1,11 +1,13 @@
 # github.com/gorilla/mux v1.7.4
 ## explicit
 github.com/gorilla/mux
+# github.com/gorilla/websocket v1.4.2
+## explicit
+github.com/gorilla/websocket
 # github.com/jmoiron/sqlx v1.2.0
 ## explicit
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
-github.com/jmoiron/sqlx/types
 # github.com/joho/godotenv v1.3.0
 ## explicit
 # github.com/kelseyhightower/envconfig v1.4.0

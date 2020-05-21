@@ -11,6 +11,7 @@ import (
 	//  "fintrack-go/app/server"
 	"fintrack-go/app"
 	"fintrack-go/db"
+	"fintrack-go/socket"
 
 	"github.com/gorilla/mux"
 
@@ -53,9 +54,9 @@ func main() {
 		log.Fatal("main: cannot initialize Currency DB: %s", err.Error())
 		//   logger := logrus.WithError(err)
 		//   logger.Fatalln("main: cannot initialize DB")
-  }
-  
-  db.GetNewXML()
+	}
+
+	db.GetNewXML()
 
 	// Start the server
 	//  g := errgroup.Group{}
@@ -65,6 +66,8 @@ func main() {
 	// "Host": config.Server.Host,
 	//    },
 	//   ).Info("starting the http server")
+
+	socket.StartHub()
 
 	app := &app.App{
 		Router: mux.NewRouter().StrictSlash(true),
