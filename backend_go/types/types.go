@@ -1,24 +1,28 @@
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/shopspring/decimal"
+)
 
 type Account struct {
-	ID                 int       `json:"id"`
-	Name               string    `json:"name" db:"name"`
-	Institution        string    `json:"institution" db:"institution"`
-	IgnoreTransactions string    `json:"ignore_transactions" db:"ignore_transactions"`
-	AccountID          string    `json:"account_id" db:"account_id"`
-	ItemID             string    `json:"item_id" db:"item_id"`
-	Type               string    `json:"type" db:"type"`
-	Subtype            string    `json:"subtype" db:"subtype"`
-	Balance            float64   `json:"balance" db:"balance"`
-	Limit              float64   `json:"limit" db:"limit"`
-	Available          float64   `json:"available" db:"available"`
-	Currency           string    `json:"currency" db:"currency"`
-	Provider           string    `json:"provider" db:"provider"`
-	RunningTotal       float64   `json:"running_total" db:"running_total"`
-	CreatedAt          time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
+	ID                 int             `json:"id"`
+	Name               string          `json:"name" db:"name"`
+	Institution        string          `json:"institution" db:"institution"`
+	IgnoreTransactions string          `json:"ignore_transactions" db:"ignore_transactions"`
+	AccountID          string          `json:"account_id" db:"account_id"`
+	ItemID             string          `json:"item_id" db:"item_id"`
+	Type               string          `json:"type" db:"type"`
+	Subtype            string          `json:"subtype" db:"subtype"`
+	Balance            decimal.Decimal `json:"balance" db:"balance"`
+	Limit              decimal.Decimal `json:"limit" db:"limit"`
+	Available          decimal.Decimal `json:"available" db:"available"`
+	Currency           string          `json:"currency" db:"currency"`
+	Provider           string          `json:"provider" db:"provider"`
+	RunningTotal       decimal.Decimal `json:"running_total" db:"running_total"`
+	CreatedAt          time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time       `json:"updated_at" db:"updated_at"`
 }
 
 type ItemToken struct {
@@ -45,6 +49,17 @@ type Category struct {
 	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
 }
 
+type Transaction struct {
+	ID                  int       `json:"id"`
+	Date                time.Time `json:"date" db:"date"`
+	TransactionID       string    `json:"top_category" db:"top_category"`
+	Description         string    `json:"sub_category" db:"sub_category"`
+	OriginalDescription int       `json:"exclude_from_analysis" db:"exclude_from_analysis"`
+	Amount              time.Time `json:"created_at" db:"created_at"`
+	NormalizedAmount    time.Time `json:"updated_at" db:"updated_at"`
+	TransactionType     time.Time `json:"updated_at" db:"updated_at"`
+}
+
 type EcbFX struct {
 	Currencies []struct {
 		SeriesKey struct {
@@ -67,8 +82,8 @@ type EcbFX struct {
 
 // Fx type exported for currency rate lookups
 type Fx struct {
-	FxDate time.Time `db:"fx_date"`
-	Rate   float64   `db:"rate"`
+	FxDate time.Time       `db:"fx_date"`
+	Rate   decimal.Decimal `db:"rate"`
 }
 
 type SEConnection struct {
@@ -135,24 +150,45 @@ type SEConnection struct {
 }
 
 type SEAccount struct {
-	ID           string  `json:"id"`
-	ConnectionID string  `json:"connection_id"`
-	Name         string  `json:"name"`
-	Nature       string  `json:"nature"`
-	Balance      float64 `json:"balance"`
-	CurrencyCode string  `json:"currency_code"`
+	ID           string          `json:"id"`
+	ConnectionID string          `json:"connection_id"`
+	Name         string          `json:"name"`
+	Nature       string          `json:"nature"`
+	Balance      decimal.Decimal `json:"balance"`
+	CurrencyCode string          `json:"currency_code"`
 	Extra        struct {
-		Iban              string  `json:"iban"`
-		ClientName        string  `json:"client_name"`
-		AccountName       string  `json:"account_name"`
-		CardType          string  `json:"card_type"`
-		CreditLimit       float64 `json:"credit_limit"`
-		AvailableAmount   float64 `json:"available_amount"`
+		Iban              string          `json:"iban"`
+		ClientName        string          `json:"client_name"`
+		AccountName       string          `json:"account_name"`
+		CardType          string          `json:"card_type"`
+		CreditLimit       decimal.Decimal `json:"credit_limit"`
+		AvailableAmount   decimal.Decimal `json:"available_amount"`
 		TransactionsCount struct {
 			Posted  int `json:"posted"`
 			Pending int `json:"pending"`
 		} `json:"transactions_count"`
 		LastPostedTransactionID string `json:"last_posted_transaction_id"`
+	} `json:"extra,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type SETransaction struct {
+	ID           string          `json:"id"`
+	AccountID    string          `json:"account_id"`
+	Duplicated   bool            `json:"duplicated"`
+	Mode         string          `json:"mode"`
+	Status       string          `json:"status"`
+	MadeOn       string          `json:"made_on"`
+	Amount       decimal.Decimal `json:"amount"`
+	CurrencyCode string          `json:"currency_code"`
+	Description  string          `json:"description"`
+	Category     string          `json:"category"`
+	Extra        struct {
+		PostingDate              string          `json:"posting_date"`
+		ClosingBalance           decimal.Decimal `json:"closing_balance"`
+		AccountBalanceSnapshot   decimal.Decimal `json:"account_balance_snapshot"`
+		CategorizationConfidence int             `json:"categorization_confidence"`
 	} `json:"extra,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -172,4 +208,19 @@ type ConnectionResponse struct {
 		NextID   interface{} `json:"next_id"`
 		NextPage interface{} `json:"next_page"`
 	} `json:"meta"`
+}
+
+type TransactionsResponse struct {
+	Data []SETransaction `json:"data"`
+	Meta struct {
+		NextID   interface{} `json:"next_id"`
+		NextPage interface{} `json:"next_page"`
+	} `json:"meta"`
+}
+
+type CreateRefreshResponse struct {
+	Data struct {
+		ExpiresAt  time.Time `json:"expires_at"`
+		ConnectURL string    `json:"connect_url"`
+	} `json:"data"`
 }

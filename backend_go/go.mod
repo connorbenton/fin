@@ -11,6 +11,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/plaid/plaid-go v0.0.0-20200515230911-ec588277465e
+	github.com/shopspring/decimal v1.2.0
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	google.golang.org/appengine v1.6.6 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect

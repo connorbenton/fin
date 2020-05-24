@@ -16,6 +16,7 @@ import (
 	"fintrack-go/db"
 	"fintrack-go/types"
 
+	"github.com/gorilla/mux"
 	_ "github.com/jmoiron/sqlx"
 )
 
@@ -232,64 +233,152 @@ func RefreshConnectionsFunction() func(http.ResponseWriter, *http.Request) {
 func RefreshConnectionInteractiveFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
-		dbdata := []types.Account{}
-		// err := app.Database.Query("SELECT * FROM `categories`", id).Scan(&dbdata.id, &dbdata.topCategory, &dbdata.subCategory)
-		err := db.DBCon.Select(&dbdata, "SELECT * FROM `categories`")
+		var err error
+
+		vars := mux.Vars(req)
+		connID := vars["id"]
+
+		url := "https://www.saltedge.com/api/v5/connect_sessions/refresh"
+		params := fmt.Sprintf(`{
+			"data": {
+				"connection_id": %q,
+				"attempt": {
+				"return_to": %q
+				}
+			}
+		}`, connID, os.Getenv("BASE_URL"))
+		// go saltEdgeReq("GET", url, "", chAccounts, &wgAccounts)
+		refresh := saltEdgeReq("POST", url, params)
+		// log.Println(refresh)
+
+		data := types.CreateRefreshResponse{}
+
+		err = json.Unmarshal([]byte(refresh), &data)
 		if err != nil {
-			log.Fatal("Database SELECT failed")
-			// fmt.Println("Database SELECT failed")
-			// fmt.Println(err)
-			// return
+			fmt.Printf("Error with Create Connection Interactive: %v \n", err)
 		}
 
 		log.Println("You fetched a thing!")
 		res.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(res).Encode(dbdata); err != nil {
-			panic(err)
+		_, err = res.Write([]byte(data.Data.ConnectURL))
+		if err != nil {
+			fmt.Printf("Error with Create Connection Interactive: %v \n", err)
 		}
+
+		// dbdata := []types.Account{}
+		// // err := app.Database.Query("SELECT * FROM `categories`", id).Scan(&dbdata.id, &dbdata.topCategory, &dbdata.subCategory)
+		// err := db.DBCon.Select(&dbdata, "SELECT * FROM `categories`")
+		// if err != nil {
+		// 	log.Fatal("Database SELECT failed")
+		// 	// fmt.Println("Database SELECT failed")
+		// 	// fmt.Println(err)
+		// 	// return
+		// }
+
+		// log.Println("You fetched a thing!")
+		// res.WriteHeader(http.StatusOK)
+		// if err := json.NewEncoder(res).Encode(dbdata); err != nil {
+		// 	panic(err)
+		// }
 	}
 }
 
 func CreateConnectionInteractiveFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
-		dbdata := []types.Account{}
-		// err := app.Database.Query("SELECT * FROM `categories`", id).Scan(&dbdata.id, &dbdata.topCategory, &dbdata.subCategory)
-		err := db.DBCon.Select(&dbdata, "SELECT * FROM `categories`")
+		url := "https://www.saltedge.com/api/v5/connect_sessions/create"
+		params := fmt.Sprintf(`{
+			"data": {
+				"customer_id": %q,
+				"consent": {
+				"scopes": [
+					"account_details",
+					"transactions_details"
+				]
+				},
+				"attempt": {
+				"return_to": %q
+				}
+			}
+		}`, os.Getenv("SALTEDGE_CUSTOMER_ID"), os.Getenv("BASE_URL"))
+		create := saltEdgeReq("POST", url, params)
+
+		data := types.CreateRefreshResponse{}
+
+		err := json.Unmarshal([]byte(create), &data)
 		if err != nil {
-			log.Fatal("Database SELECT failed")
-			// fmt.Println("Database SELECT failed")
-			// fmt.Println(err)
-			// return
+			fmt.Printf("Error with Create Connection Interactive: %v \n", err)
 		}
 
-		log.Println("You fetched a thing!")
+		// log.Println("You fetched a thing!")
 		res.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(res).Encode(dbdata); err != nil {
-			panic(err)
+		_, err2 := res.Write([]byte(data.Data.ConnectURL))
+		if err2 != nil {
+			fmt.Printf("Error with Create Connection Interactive: %v \n", err2)
 		}
+		// if err := json.NewEncoder(res).Encode(dbdata); err != nil {
+		// 	panic(err)
+		// }
 	}
 }
 
 func FetchTransactionsForItemToken(ItemID string) {
 
 	url := "https://www.saltedge.com/api/v5/transactions?connection_id" + ItemID
-	fmt.Println("URL:>", url)
+	// fmt.Println("URL:>", url)
 
-	var jsonStr = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	req.Header.Set("X-Custom-Header", "myvalue")
-	req.Header.Set("Content-Type", "application/json")
+	res := saltEdgeReq("GET", url, "")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
+	var data types.TransactionsResponse
+	// json.Unmarshal([]byte(responses[0]), &data)
+	json.Unmarshal([]byte(res), &data)
+	// fmt.Printf("Results: %v\n", data)
+
+	txn := db.DBCon.MustBegin()
+
+	var wg sync.WaitGroup
+	for _, transaction := range data.Data {
+		wg.Add(1)
+		go func(tx types.SETransaction) {
+			defer wg.Done()
+			trans := types.Transaction{}
+			item.Institution = conn.ProviderName
+			item.Provider = "SaltEdge"
+			if conn.LastAttempt.Interactive {
+				item.Interactive = true
+			} else {
+				item.Interactive = false
+			}
+			item.LastRefresh = conn.LastSuccessAt
+			item.NextRefreshPossible = conn.NextRefreshPossibleAt
+			item.ItemID = conn.ID
+
+			query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
+							VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id) 
+							ON CONFLICT (item_id, provider) DO UPDATE SET
+							interactive = excluded.interactive,
+							last_refresh = excluded.last_refresh,
+							next_refresh_possible = excluded.next_refresh_possible`
+			_, err := txn.NamedExec(query, item)
+			if err != nil {
+				panic(err)
+			}
+		}(transaction)
 	}
-	defer resp.Body.Close()
+	// var jsonStr = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
+	// req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	// req.Header.Set("X-Custom-Header", "myvalue")
+	// req.Header.Set("Content-Type", "application/json")
 
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	// client := &http.Client{}
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer resp.Body.Close()
+
+	// fmt.Println("response Status:", resp.Status)
+	// fmt.Println("response Headers:", resp.Header)
+	// body, _ := ioutil.ReadAll(resp.Body)
+	// fmt.Println("response Body:", string(body))
 }
