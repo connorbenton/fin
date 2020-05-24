@@ -80,7 +80,7 @@ func (app *App) SetupRouter() {
 	app.Router.
 		Methods("GET").
 		Path("/saltEdgeConnections").
-		HandlerFunc(saltedge.GetConnectionsFunction())
+		HandlerFunc(saltedge.RefreshConnectionsFunction())
 
 	app.Router.
 		Methods("GET").

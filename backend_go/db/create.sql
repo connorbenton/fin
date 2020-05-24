@@ -1,6 +1,6 @@
 -- PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
-CREATE TABLE IF NOT EXISTS `accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` VARCHAR(255), `institution` VARCHAR(255), `account_id` VARCHAR(255), `item_id` VARCHAR(255), `type` VARCHAR(255), `subtype` VARCHAR(255), `balance` TEXT, `limit` TEXT, `available` TEXT, `currency` VARCHAR(255), `provider` VARCHAR(255), `running_total` TEXT, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE (`account_id`, `provider`));
+CREATE TABLE IF NOT EXISTS `accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` VARCHAR(255), `institution` VARCHAR(255), `ignore_transactions` TINYINT(1), `account_id` VARCHAR(255), `item_id` VARCHAR(255), `type` VARCHAR(255), `subtype` VARCHAR(255), `balance` TEXT, `limit` TEXT, `available` TEXT, `currency` VARCHAR(255), `provider` VARCHAR(255), `running_total` TEXT, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE (`account_id`, `provider`));
 CREATE TRIGGER IF NOT EXISTS UpdateLastTime1 UPDATE ON accounts
 BEGIN
     UPDATE accounts SET updated_at=CURRENT_TIMESTAMP WHERE id=id;

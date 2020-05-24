@@ -8,7 +8,10 @@ import (
 
 	// "fmt"
 	"fintrack-go/db"
+	"fintrack-go/routes/plaid"
+	"fintrack-go/routes/saltedge"
 	"fintrack-go/socket"
+	"fintrack-go/types"
 
 	_ "github.com/jmoiron/sqlx"
 )
@@ -17,21 +20,6 @@ type wsMsg struct {
 	// type message struct {
 	Name string                 `json:"name"`
 	Data map[string]interface{} `json:"data"`
-}
-
-type ItemToken struct {
-	Id                         int       `json:"id"`
-	Institution                string    `json:"institution" db:"institution"`
-	Access_token               string    `json:"access_token" db:"access_token"`
-	Item_id                    string    `json:"item_id" db:"item_id"`
-	Provider                   string    `json:"provider" db:"provider"`
-	Interactive                bool      `json:"interactive" db:"interactive"`
-	NeedsReLogin               bool      `json:"needs_re_login" db:"needs_re_login"`
-	LastRefresh                time.Time `json:"last_refresh" db:"last_refresh"`
-	NextRefreshPossible        time.Time `json:"next_refresh_possible" db:"next_refresh_possible"`
-	LastDownloadedTransactions time.Time `json:"last_downloaded_transactions" db:"last_downloaded_transactions"`
-	CreatedAt                  time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt                  time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // type CurrencyRate struct {
@@ -43,14 +31,23 @@ type ItemToken struct {
 // 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 // }
 
+func SelectAll() []types.ItemToken {
+	dbdata := []types.ItemToken{}
+	err := db.DBCon.Select(&dbdata, "SELECT * FROM `item_tokens`")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return dbdata
+}
+
 func GetFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
-		dbdata := []ItemToken{}
-		err := db.DBCon.Select(&dbdata, "SELECT * FROM `item_tokens`")
-		if err != nil {
-			log.Fatal(err)
-		}
+		dbdata := SelectAll()
+		// err := db.DBCon.Select(&dbdata, "SELECT * FROM `item_tokens`")
+		// if err != nil {
+		// log.Fatal(err)
+		// }
 
 		res.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(res).Encode(dbdata); err != nil {
@@ -59,50 +56,44 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-//Need a 'refresh item tokens for new accounts' method to go along with a new button on Accounts tab
+//Need a 'refresh item tokens for new accounts' method to go along with a new button on Accounts tab, instead of refreshing SaltEdge and Plaid connections on each try
 
 func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
-		// var upgrader = websocket.Upgrader{}
-		// c, err := upgrader.Upgrade(res, req, nil)
-		// if err != nil {
-		// log.Print("upgrade:", err)
-		// return
-		// }
-		// defer c.Close()
-		// for {
-		// 	mt, message, err := c.ReadMessage()
-		// 	if err != nil {
-		// 		log.Println("read:", err)
-		// 		break
-		// 	}
-		// 	log.Printf("recv: %s", message)
-		// err = c.WriteMessage(mt,
-		message := []byte(`{ "username": "Booh", }`)
-		socket.ExportHub.Broadcast <- message
 
-		// err = c.WriteJSON(message)
-		// if err != nil {
-		// log.Println("write:", err)
-		// break
-		// }
-		// }
+		// First get all item tokens
+		itemTokens := []types.ItemToken{}
+		err := db.DBCon.Select(&itemTokens, "SELECT * FROM `item_tokens`")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		// // First get all item tokens
-		// itemTokens := []ItemToken{}
-		// err := db.DBCon.Select(&itemTokens, "SELECT * FROM `item_tokens`")
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
+		// Make sure currencies are up to date
 
-		// socket.ExportHub.Broadcast <- message{
-		// 	"user joined",
-		// 	map[string]interface{}{
-		// 		"username": "Booh",
-		// 	},
-		// }
+		// Refresh Plaid and SaltEdge connections
+
 		// Then we iterate through item tokens and process in either saltedge or plaid
-		// Opening a websocket connection to transmit which item is being currently worked on
+
+		for _, itemToken := range itemTokens {
+			// Think these can be done in goroutines
+			// Using websocket connection to transmit which item is being currently worked on
+			message := []byte(`{ "username": "Booh", }`)
+			socket.ExportHub.Broadcast <- message
+			if itemToken.Provider == "SaltEdge" {
+				saltedge.FetchTransactionsForItemToken(itemToken.ItemID)
+				if itemToken.Interactive {
+					// Needs to be direct DB call
+					itemToken.LastDownloadedTransactions = itemToken.LastRefresh
+				} else {
+					// Needs to be direct DB call
+					itemToken.LastDownloadedTransactions = time.Now()
+				}
+			} else {
+				plaid.FetchTransactionsForItemToken(itemToken.ItemID)
+				// Needs direct DB call here to set LastDownloadedTransactions
+			}
+
+		}
 
 		// currencyRates := []CurrencyRate{}
 		// err2 := db.DBCon.Select(&currencyRates, "SELECT * FROM `currency_rates`")

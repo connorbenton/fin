@@ -10,31 +10,13 @@ import (
 	"net/http"
 	"time"
 
+	"fintrack-go/types"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var CurrencyDBCon *sqlx.DB
-
-type EcbFX struct {
-	Currencies []struct {
-		SeriesKey struct {
-			Text   string `xml:",chardata"`
-			Values []struct {
-				ID    string `xml:"id,attr"`
-				Value string `xml:"value,attr"`
-			} `xml:"Value"`
-		} `xml:"SeriesKey"`
-		Rates []struct {
-			Date struct {
-				Value string `xml:"value,attr"`
-			} `xml:"ObsDimension"`
-			Rate struct {
-				Value string `xml:"value,attr"`
-			} `xml:"ObsValue"`
-		} `xml:"Obs"`
-	} `xml:"DataSet>Series"`
-}
 
 //CreateCurrencyDatabase starts currency database and loads it with initial info from the XML
 func CreateCurrencyDatabase() (*sqlx.DB, error) {
@@ -51,16 +33,18 @@ func CreateCurrencyDatabase() (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	insertXMLData(raw2, true)
+	xmlString := string(raw2)
+
+	insertXMLData(xmlString, true)
 
 	return DBCon, nil
 }
 
-func insertXMLData(data []byte, ignoreBool bool) {
-	m := &EcbFX{}
+func insertXMLData(data string, ignoreBool bool) {
+	m := &types.EcbFX{}
 
-	if err := xml.Unmarshal(data, &m); err != nil {
-		log.Fatal(err)
+	if err := xml.Unmarshal([]byte(data), &m); err != nil {
+		panic(err)
 	}
 
 	txn := CurrencyDBCon.MustBegin()
@@ -153,12 +137,6 @@ func isNumDot(s string) bool {
 	return true
 }
 
-// Fx type exported for currency rate lookups
-type Fx struct {
-	FxDate time.Time `db:"fx_date"`
-	Rate   float32   `db:"rate"`
-}
-
 func GetNewXML() {
 
 	//Get last updated date from fx data for search (using USD)
@@ -166,7 +144,7 @@ func GetNewXML() {
 	if err != nil {
 		panic(err)
 	}
-	var fx Fx
+	var fx types.Fx
 	for rows.Next() {
 		err = rows.StructScan(&fx)
 		if err != nil {
@@ -194,6 +172,17 @@ func GetNewXML() {
 
 		if resp.StatusCode != http.StatusOK {
 			xmlerr := fmt.Errorf("Status error: %v", resp.StatusCode)
+			if resp.StatusCode == 404 {
+				return
+			}
+			if resp.StatusCode == 500 {
+				log.Println("500 Server error - ECB SDMX")
+				return
+			}
+			if resp.StatusCode == 503 {
+				log.Println("503 Server temporarily unavailable - ECB SDMX")
+				return
+			}
 			log.Println(xmlerr.Error())
 		}
 
@@ -203,7 +192,9 @@ func GetNewXML() {
 			log.Println(xmlerr.Error())
 		}
 
-		insertXMLData(data, false)
+		xmlString := string(data)
+
+		insertXMLData(xmlString, false)
 
 	}
 
