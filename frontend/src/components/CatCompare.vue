@@ -142,6 +142,9 @@ export default {
       this.compareCats[this.editedIndex].assignedCat = categories.find(
         x => x.subCategory === catToSave
       ).id;
+      this.compareCats[this.editedIndex].assignedCatName = categories.find(
+        x => x.subCategory === catToSave
+      ).subCategory;
       //  api.updateTransaction(this.transactions[this.editedIndex].id, this.transactions[this.editedIndex])
       this.editMenu = false;
       this.redrawTable = catToSave;

@@ -2,15 +2,15 @@ package itemTokens
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"time"
+	"os"
+	"strings"
+	"sync"
 
 	// "fmt"
 	"fintrack-go/db"
 	"fintrack-go/routes/plaid"
 	"fintrack-go/routes/saltedge"
-	"fintrack-go/socket"
 	"fintrack-go/types"
 
 	_ "github.com/jmoiron/sqlx"
@@ -35,7 +35,7 @@ func SelectAll() []types.ItemToken {
 	dbdata := []types.ItemToken{}
 	err := db.DBCon.Select(&dbdata, "SELECT * FROM `item_tokens`")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return dbdata
 }
@@ -57,16 +57,36 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 }
 
 //Need a 'refresh item tokens for new accounts' method to go along with a new button on Accounts tab, instead of refreshing SaltEdge and Plaid connections on each try
+//Actually don't, we'll do refresh toks/accs on every trans fetch
 
 func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
+		baseCurrency := strings.ToUpper(os.Getenv("BASE_CURRENCY"))
+
 		// First get all item tokens
-		itemTokens := []types.ItemToken{}
-		err := db.DBCon.Select(&itemTokens, "SELECT * FROM `item_tokens`")
-		if err != nil {
-			log.Fatal(err)
-		}
+		// itemTokens := []types.ItemToken{}
+		// err := db.DBCon.Select(&itemTokens, "SELECT * FROM `item_tokens`")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+
+		itemTokens := SelectAll()
+
+		txn := db.DBCon.MustBegin()
+
+		var wgPre sync.WaitGroup
+		wgPre.Add(1)
+		go func() {
+			defer wgPre.Done()
+			saltedge.RefreshConnectionsFunction(txn)
+		}()
+		wgPre.Add(1)
+		go func() {
+			defer wgPre.Done()
+			db.GetNewXML()
+		}()
+		wgPre.Wait()
 
 		// Make sure currencies are up to date
 
@@ -74,26 +94,33 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 
 		// Then we iterate through item tokens and process in either saltedge or plaid
 
-		for _, itemToken := range itemTokens {
-			// Think these can be done in goroutines
-			// Using websocket connection to transmit which item is being currently worked on
-			message := []byte(`{ "username": "Booh", }`)
-			socket.ExportHub.Broadcast <- message
-			if itemToken.Provider == "SaltEdge" {
-				saltedge.FetchTransactionsForItemToken(itemToken.ItemID)
-				if itemToken.Interactive {
-					// Needs to be direct DB call
-					itemToken.LastDownloadedTransactions = itemToken.LastRefresh
+		var wg sync.WaitGroup
+		for _, itemTok := range itemTokens {
+			wg.Add(1)
+			go func(itemToken types.ItemToken) {
+				defer wg.Done()
+				// Think these can be done in goroutines
+				// Using websocket connection to transmit which item is being currently worked on
+				// message := []byte(`{ "username": "Booh", }`)
+				// socket.ExportHub.Broadcast <- message
+
+				if itemToken.Provider == "SaltEdge" {
+					saltedge.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
+					// if itemToken.Interactive {
+					// 	// Needs to be direct DB call
+					// 	itemToken.LastDownloadedTransactions = itemToken.LastRefresh
+					// } else {
+					// 	// Needs to be direct DB call
+					// 	itemToken.LastDownloadedTransactions = time.Now()
+					// }
 				} else {
-					// Needs to be direct DB call
-					itemToken.LastDownloadedTransactions = time.Now()
+					plaid.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
+					// Needs direct DB call here to set LastDownloadedTransactions
 				}
-			} else {
-				plaid.FetchTransactionsForItemToken(itemToken.ItemID)
-				// Needs direct DB call here to set LastDownloadedTransactions
-			}
+			}(itemTok)
 
 		}
+		wg.Wait()
 
 		// currencyRates := []CurrencyRate{}
 		// err2 := db.DBCon.Select(&currencyRates, "SELECT * FROM `currency_rates`")

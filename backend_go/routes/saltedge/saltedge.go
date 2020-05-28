@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	// "strings"
 	"sync"
 	"time"
 
@@ -17,7 +19,7 @@ import (
 	"fintrack-go/types"
 
 	"github.com/gorilla/mux"
-	_ "github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx"
 )
 
 func saltEdgeReq(verb string, url string, params string) string {
@@ -60,175 +62,184 @@ func saltEdgeReq(verb string, url string, params string) string {
 
 }
 
-func RefreshConnectionsFunction() func(http.ResponseWriter, *http.Request) {
-	return func(res http.ResponseWriter, req *http.Request) {
+// This is going to go away as HTTP req (will need to pass txn), going to force transaction sync on refresh function
+// func RefreshConnectionsFunction() func(http.ResponseWriter, *http.Request) {
+// 	return func(res http.ResponseWriter, req *http.Request) {
+func RefreshConnectionsFunction(txn *sqlx.Tx) {
 
-		var wgConnections sync.WaitGroup
-		url := "https://www.saltedge.com/api/v5/connections?customer_id=" + os.Getenv("SALTEDGE_CUSTOMER_ID")
+	var wgConnections sync.WaitGroup
+	url := "https://www.saltedge.com/api/v5/connections?customer_id=" + os.Getenv("SALTEDGE_CUSTOMER_ID")
 
-		// ch := make(chan string)
-		// var responses []string
-		// var user string
-		// var wg sync.WaitGroup
-		// wg.Add(1)
-		// go saltEdgeReq("GET", url, "", ch, &wg)
+	// ch := make(chan string)
+	// var responses []string
+	// var user string
+	// var wg sync.WaitGroup
+	// wg.Add(1)
+	// go saltEdgeReq("GET", url, "", ch, &wg)
 
-		// go func() {
-		// wg.Wait()
-		// close(ch)
-		// }()
+	// go func() {
+	// wg.Wait()
+	// close(ch)
+	// }()
 
-		// for res := range ch {
-		// responses = append(responses, res)
-		// }
+	// for res := range ch {
+	// responses = append(responses, res)
+	// }
 
-		// responses[0]
-		connections := saltEdgeReq("GET", url, "")
-		// log.Println(connections)
+	// responses[0]
+	connections := saltEdgeReq("GET", url, "")
+	// log.Println(connections)
 
-		// log.Println(responses[0])
-		var data types.ConnectionResponse
-		// json.Unmarshal([]byte(responses[0]), &data)
-		json.Unmarshal([]byte(connections), &data)
-		// fmt.Printf("Results: %v\n", data)
+	// log.Println(responses[0])
+	var data types.ConnectionResponse
+	// json.Unmarshal([]byte(responses[0]), &data)
+	json.Unmarshal([]byte(connections), &data)
+	// fmt.Printf("Results: %v\n", data)
 
-		txn := db.DBCon.MustBegin()
+	// txn := db.DBCon.MustBegin()
 
-		// chAccounts := make(chan string)
-		// var responsesAccounts []string
-		// wgAccounts.Add(11)
+	// chAccounts := make(chan string)
+	// var responsesAccounts []string
+	// wgAccounts.Add(11)
 
-		for _, connection := range data.Data {
-			wgConnections.Add(1)
-			go func(conn types.SEConnection) {
-				defer wgConnections.Done()
-				item := types.ItemToken{}
-				item.Institution = conn.ProviderName
-				item.Provider = "SaltEdge"
-				if conn.LastAttempt.Interactive {
-					item.Interactive = true
-				} else {
-					item.Interactive = false
-				}
-				item.LastRefresh = conn.LastSuccessAt
-				item.NextRefreshPossible = conn.NextRefreshPossibleAt
-				item.ItemID = conn.ID
+	for _, connection := range data.Data {
+		wgConnections.Add(1)
+		go func(conn types.SEConnection) {
+			defer wgConnections.Done()
+			item := types.ItemToken{}
+			item.Institution = conn.ProviderName
+			item.Provider = "SaltEdge"
+			if conn.LastAttempt.Interactive {
+				item.Interactive = true
+			} else {
+				item.Interactive = false
+			}
+			item.LastRefresh = conn.LastSuccessAt
+			item.NextRefreshPossible = conn.NextRefreshPossibleAt
+			item.ItemID = conn.ID
 
-				query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
+			query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
 							VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id) 
 							ON CONFLICT (item_id, provider) DO UPDATE SET
 							interactive = excluded.interactive,
 							last_refresh = excluded.last_refresh,
 							next_refresh_possible = excluded.next_refresh_possible`
-				_, err := txn.NamedExec(query, item)
-				if err != nil {
-					panic(err)
-				}
-				// wgAccounts.Add(1)
-				url2 := "https://www.saltedge.com/api/v5/accounts?connection_id=" + conn.ID
-				// go saltEdgeReq("GET", url, "", chAccounts, &wgAccounts)
-				accounts := saltEdgeReq("GET", url2, "")
-				// log.Println(accounts)
+			_, err := txn.NamedExec(query, item)
+			if err != nil {
+				panic(err)
+			}
+			// wgAccounts.Add(1)
+			url2 := "https://www.saltedge.com/api/v5/accounts?connection_id=" + conn.ID
+			// go saltEdgeReq("GET", url, "", chAccounts, &wgAccounts)
+			accounts := saltEdgeReq("GET", url2, "")
+			// log.Println(accounts)
 
-				// res.WriteHeader(http.StatusOK)
-				// res.Write([]byte(accounts))
-				// if err := json.NewEncoder(res).Encode(dbdata); err != nil {
-				// if err := json.NewEncoder(res).Encode(accounts); err != nil {
-				// panic(err)
-				// }
-				// log.Println(accounts)
-				var data types.AccountResponse
-				json.Unmarshal([]byte(accounts), &data)
-				// var wgAccounts sync.WaitGroup
-				var wgAccounts sync.WaitGroup
-				for _, account := range data.Data {
-					wgAccounts.Add(1)
-					go func(SEAcc types.SEAccount) {
-						defer wgAccounts.Done()
-						acc := types.Account{}
-						if SEAcc.Extra.AccountName == "" {
-							acc.Name = SEAcc.Name
-						} else {
-							acc.Name = SEAcc.Extra.AccountName
-						}
-						acc.Institution = item.Institution
-						acc.Provider = "SaltEdge"
-						acc.AccountID = SEAcc.ID
-						acc.ItemID = SEAcc.ConnectionID
-						acc.Type = SEAcc.Nature
-						acc.Limit = SEAcc.Extra.CreditLimit
-						acc.Available = SEAcc.Extra.AvailableAmount
-						acc.Balance = SEAcc.Balance
-						acc.Currency = SEAcc.CurrencyCode
-						query := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency)
+			// res.WriteHeader(http.StatusOK)
+			// res.Write([]byte(accounts))
+			// if err := json.NewEncoder(res).Encode(dbdata); err != nil {
+			// if err := json.NewEncoder(res).Encode(accounts); err != nil {
+			// panic(err)
+			// }
+			// log.Println(accounts)
+			var data types.AccountResponse
+			json.Unmarshal([]byte(accounts), &data)
+			// var wgAccounts sync.WaitGroup
+			var wgAccounts sync.WaitGroup
+			for _, account := range data.Data {
+				wgAccounts.Add(1)
+				go func(SEAcc types.SEAccount) {
+					defer wgAccounts.Done()
+					acc := types.Account{}
+					if SEAcc.Extra.AccountName == "" {
+						acc.Name = SEAcc.Name
+					} else {
+						acc.Name = SEAcc.Extra.AccountName
+					}
+					acc.Institution = item.Institution
+					acc.Provider = "SaltEdge"
+					acc.AccountID = SEAcc.ID
+					acc.ItemID = SEAcc.ConnectionID
+					acc.Type = SEAcc.Nature
+					acc.Limit = SEAcc.Extra.CreditLimit
+					acc.Available = SEAcc.Extra.AvailableAmount
+					acc.Balance = SEAcc.Balance
+					acc.Currency = SEAcc.CurrencyCode
+					query := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency)
 							VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency) 
 							ON CONFLICT (account_id, provider) DO UPDATE SET
 							'limit' = excluded.'limit',
 							available = excluded.available,
 							balance = excluded.balance`
-						_, err := txn.NamedExec(query, acc)
-						if err != nil {
-							panic(err)
-						}
-						// fmt.Printf("%v\n", acc.AccountID)
-						// fmt.Printf("%v\n", account.Extra.AccountName)
-						// fmt.Printf("%v\n", acc.Name)
-					}(account)
-				}
-				wgAccounts.Wait()
-			}(connection)
+					_, err := txn.NamedExec(query, acc)
+					if err != nil {
+						panic(err)
+					}
+					// fmt.Printf("%v\n", acc.AccountID)
+					// fmt.Printf("%v\n", account.Extra.AccountName)
+					// fmt.Printf("%v\n", acc.Name)
+				}(account)
+			}
+			wgAccounts.Wait()
+		}(connection)
 
-		}
-
-		// wgAccounts.Wait()
-		wgConnections.Wait()
-		err := txn.Commit()
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println("finished sync group")
-
-		// close the channel in the background
-		// go func() {
-		// wgAccounts.Wait()
-		// close(chAccounts)
-		// }()
-		// read from channel as they come in until its closed
-		// for res := range chAccounts {
-		// responsesAccounts = append(responsesAccounts, res)
-		// }
-		// var params = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
-		// req, err := http.NewRequest("GET", url)
-
-		// req := saltEdgeGet(url)
-
-		// client := &http.Client{}
-		// resp, err := client.Do(req)
-		// if err != nil {
-		// panic(err)
-		// }
-		// defer resp.Body.Close()
-
-		// dbdata := []types.Account{}
-		// // err := app.Database.Query("SELECT * FROM `categories`", id).Scan(&dbdata.id, &dbdata.topCategory, &dbdata.subCategory)
-		// err := db.DBCon.Select(&dbdata, "SELECT * FROM `accounts`")
-		// if err != nil {
-		// 	log.Println("Database SELECT failed")
-		// 	panic(err)
-		// 	// fmt.Println("Database SELECT failed")
-		// 	// fmt.Println(err)
-		// 	// return
-		// }
-
-		// log.Println("You fetched a thing!")
-		// res.WriteHeader(http.StatusOK)
-		// // if err := json.NewEncoder(res).Encode(dbdata); err != nil {
-		// if err := json.NewEncoder(res).Encode(data); err != nil {
-		// 	panic(err)
-		// }
 	}
+
+	// wgAccounts.Wait()
+	wgConnections.Wait()
+
+	// Needs to be handled by passed txn
+	// err := txn.Commit()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// fmt.Println("finished fetching & upserting itemTokens and accounts")
+	// return
 }
+
+// close the channel in the background
+// go func() {
+// wgAccounts.Wait()
+// close(chAccounts)
+// }()
+// read from channel as they come in until its closed
+// for res := range chAccounts {
+// responsesAccounts = append(responsesAccounts, res)
+// }
+// var params = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
+// req, err := http.NewRequest("GET", url)
+
+// req := saltEdgeGet(url)
+
+// client := &http.Client{}
+// resp, err := client.Do(req)
+// if err != nil {
+// panic(err)
+// }
+// defer resp.Body.Close()
+
+// dbdata := []types.Account{}
+// // err := app.Database.Query("SELECT * FROM `categories`", id).Scan(&dbdata.id, &dbdata.topCategory, &dbdata.subCategory)
+// err := db.DBCon.Select(&dbdata, "SELECT * FROM `accounts`")
+// if err != nil {
+// 	log.Println("Database SELECT failed")
+// 	panic(err)
+// 	// fmt.Println("Database SELECT failed")
+// 	// fmt.Println(err)
+// 	// return
+// }
+
+// log.Println("You fetched a thing!")
+// res.WriteHeader(http.StatusOK)
+// // if err := json.NewEncoder(res).Encode(dbdata); err != nil {
+// if err := json.NewEncoder(res).Encode(data); err != nil {
+// 	panic(err)
+// }
+
+// Does there need to be a returned ItemTokens and Accounts object here?
+// res.WriteHeader(http.StatusOK)
+// }
+// }
 
 func RefreshConnectionInteractiveFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -307,14 +318,27 @@ func CreateConnectionInteractiveFunction() func(http.ResponseWriter, *http.Reque
 
 		err := json.Unmarshal([]byte(create), &data)
 		if err != nil {
-			fmt.Printf("Error with Create Connection Interactive: %v \n", err)
+			errString := fmt.Sprintf("Error with Create Connection Interactive: %v \n", err)
+			log.Println(errString)
+			res.WriteHeader(http.StatusInternalServerError)
+			res.Write([]byte(errString))
 		}
 
 		// log.Println("You fetched a thing!")
-		res.WriteHeader(http.StatusOK)
-		_, err2 := res.Write([]byte(data.Data.ConnectURL))
-		if err2 != nil {
-			fmt.Printf("Error with Create Connection Interactive: %v \n", err2)
+		// res.WriteHeader(http.StatusOK)
+		if data.Data.ConnectURL != "" {
+			_, err2 := res.Write([]byte(data.Data.ConnectURL))
+			if err2 != nil {
+				errString := fmt.Sprintf("Error with Create Connection Interactive: %v \n", err)
+				log.Println(errString)
+				res.WriteHeader(http.StatusInternalServerError)
+				res.Write([]byte(errString))
+			}
+		} else {
+			errString := fmt.Sprintf("ConnectURL field empty")
+			log.Println(errString)
+			res.WriteHeader(http.StatusInternalServerError)
+			res.Write([]byte(errString))
 		}
 		// if err := json.NewEncoder(res).Encode(dbdata); err != nil {
 		// 	panic(err)
@@ -322,9 +346,9 @@ func CreateConnectionInteractiveFunction() func(http.ResponseWriter, *http.Reque
 	}
 }
 
-func FetchTransactionsForItemToken(ItemID string) {
+func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurrency string) {
 
-	url := "https://www.saltedge.com/api/v5/transactions?connection_id" + ItemID
+	url := "https://www.saltedge.com/api/v5/transactions?connection_id" + iTok.ItemID
 	// fmt.Println("URL:>", url)
 
 	res := saltEdgeReq("GET", url, "")
@@ -334,37 +358,178 @@ func FetchTransactionsForItemToken(ItemID string) {
 	json.Unmarshal([]byte(res), &data)
 	// fmt.Printf("Results: %v\n", data)
 
-	txn := db.DBCon.MustBegin()
+	// Using txn from main function now
+	// txn := db.DBCon.MustBegin()
 
 	var wg sync.WaitGroup
 	for _, transaction := range data.Data {
 		wg.Add(1)
 		go func(tx types.SETransaction) {
+			var err error
 			defer wg.Done()
 			trans := types.Transaction{}
-			item.Institution = conn.ProviderName
-			item.Provider = "SaltEdge"
-			if conn.LastAttempt.Interactive {
-				item.Interactive = true
+			if tx.Extra.PostingDate.IsZero() {
+				trans.Date = tx.MadeOn
 			} else {
-				item.Interactive = false
+				trans.Date = tx.Extra.PostingDate
 			}
-			item.LastRefresh = conn.LastSuccessAt
-			item.NextRefreshPossible = conn.NextRefreshPossibleAt
-			item.ItemID = conn.ID
+			trans.Description = tx.Description
+			trans.Amount = tx.Amount
+			trans.AccountID = tx.AccountID
 
-			query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
-							VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id) 
-							ON CONFLICT (item_id, provider) DO UPDATE SET
-							interactive = excluded.interactive,
-							last_refresh = excluded.last_refresh,
-							next_refresh_possible = excluded.next_refresh_possible`
-			_, err := txn.NamedExec(query, item)
+			var name string
+			err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE 'id'="+tx.AccountID+" AND provider='SaltEdge' LIMIT 1")
+			if err != nil {
+				panic(err)
+			}
+			trans.AccountName = name
+
+			trans.TransactionID = tx.ID
+
+			trans.CurrencyCode = tx.CurrencyCode
+			trans.NormalizedAmount = db.GetNormalizedAmount(trans.CurrencyCode, baseCurrency, trans.Date, trans.Amount)
+			// CC := strings.ToUpper(trans.CurrencyCode)
+
+			// var id int
+			// err = db.CurrencyDBCon.Get(&id, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name="+CC)
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// // want to continue if currency is EUR since there is no table in DB for it
+			// if CC == "EUR" {
+			// 	id = 1
+			// }
+			// // Setting to zero and skipping if table not found for currency (i.e. BTC)
+			// if id == 0 {
+			// 	log.Println("Currency rate table not found for " + CC)
+			// 	trans.NormalizedAmount = decimal.Zero
+			// } else {
+			// 	firstDate := trans.Date.AddDate(0, 0, -10).Format("2006-01-02")
+			// 	lastDate := trans.Date.AddDate(0, 0, 10).Format("2006-01-02")
+			// 	date := trans.Date.Format("2006-01-02")
+			// 	fx := types.Fx{}
+			// 	if CC == "EUR" {
+			// 		// finding the nearest 'EUR' rate by doing a search with USD and swapping in 1.0 for rate
+			// 		CC = "USD"
+			// 		query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN
+			// 		%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, date)
+			// 		err := db.CurrencyDBCon.Get(&fx, query)
+			// 		CC = "EUR"
+			// 		if err != nil {
+			// 			panic(err)
+			// 		}
+			// 		fx.Rate = decimal.NewFromInt(1)
+			// 	} else {
+			// 		// otherwise finding the nearest rate in +/- 10 days
+			// 		query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN
+			// 		%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, date)
+			// 		err := db.CurrencyDBCon.Get(&fx, query)
+			// 		if err != nil {
+			// 			panic(err)
+			// 		}
+			// 	}
+			// 	// Setting to zero and skipping if rate not found within +/- 10 days
+			// 	if (types.Fx{}) == fx {
+			// 		log.Println("Currency rate not found for " + CC + " within +/- 10 days of " + date)
+			// 		trans.NormalizedAmount = decimal.Zero
+			// 	} else {
+			// 		if baseCurrency == "EUR" {
+			// 			// Using no extra rate if base currency is EUR
+			// 			trans.NormalizedAmount = trans.Amount.Div(fx.Rate)
+			// 		} else {
+			// 			// Finding second rate for base currency other than EUR
+			// 			bfx := types.Fx{}
+			// 			query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date = %q`, baseCurrency, fx.FxDate.Format("2006-01-02"))
+			// 			err := db.CurrencyDBCon.Get(&bfx, query)
+			// 			if err != nil {
+			// 				panic(err)
+			// 			}
+			// 			if (types.Fx{}) == bfx {
+			// 				// Setting to zero and skipping if base rate not found
+			// 				log.Println("Currency rate for base currency " + baseCurrency + " not found on date " + fx.FxDate.Format("2006-01-02"))
+			// 				trans.NormalizedAmount = decimal.Zero
+			// 			} else {
+			// 				// Decimal math to find normalized amount with rate and base rate
+			// 				trans.NormalizedAmount = trans.Amount.Div(fx.Rate).Mul(bfx.Rate)
+			// 			}
+			// 		}
+			// 	}
+			// }
+
+			//Searching for bottom category match first
+			sCat := types.CategorySE{}
+			query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE bottom_category = %q`, tx.Category)
+			err = db.DBCon.Get(&sCat, query)
+			if err != nil {
+				panic(err)
+			}
+			if (types.CategorySE{}) == sCat {
+				//If nil for bottom category then look for match in sub category
+				query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE sub_category = %q`, tx.Category)
+				err := db.DBCon.Get(&sCat, query)
+				if err != nil {
+					panic(err)
+				}
+				if (types.CategorySE{}) == sCat {
+					//If still nil then set category to Uncategorized
+					trans.Category = 106
+					trans.CategoryName = "Uncategorized"
+				} else {
+					trans.Category = sCat.LinkToAppCat
+					trans.CategoryName = sCat.AppCatName
+				}
+			} else {
+				trans.Category = sCat.LinkToAppCat
+				trans.CategoryName = sCat.AppCatName
+			}
+
+			queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
+							category_name, account_name, currency_code, account_id)
+							VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
+							:category_name, :account_name, :currency_code, :account_id) 
+							ON CONFLICT (transaction_id) DO UPDATE SET
+							'date' = excluded.'date',
+							description = excluded.description,
+							amount = excluded.amount
+							normalized_amount = excluded.normalized_amount
+							category = excluded.category
+							category_name = excluded.category_name`
+
+			_, err = txn.NamedExec(queryIns, trans)
 			if err != nil {
 				panic(err)
 			}
 		}(transaction)
 	}
+
+	wg.Wait()
+
+	if iTok.Interactive {
+		iTok.LastDownloadedTransactions = iTok.LastRefresh
+	} else {
+		iTok.LastDownloadedTransactions = time.Now()
+	}
+
+	query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
+				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id) 
+				ON CONFLICT (item_id, provider) DO UPDATE SET
+				interactive = excluded.interactive,
+				last_refresh = excluded.last_refresh,
+				next_refresh_possible = excluded.next_refresh_possible`
+
+	_, err := txn.NamedExec(query, iTok)
+	if err != nil {
+		panic(err)
+	}
+
+	// Committing now in main function
+	// err := txn.Commit()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// fmt.Println("finished fetching & upserting transactions")
+
 	// var jsonStr = []byte(`{"title":"Buy cheese and bread for breakfast."}`)
 	// req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	// req.Header.Set("X-Custom-Header", "myvalue")

@@ -62,6 +62,12 @@ func (app *App) SetupRouter() {
 		Path("/transactions").
 		HandlerFunc(transactions.GetFunction())
 
+		//This one will go away when we do all filtering and trees server side
+	// app.Router.
+	// 	Methods("GET").
+	// 	Path("/transactionsRange/{range}").
+	// 	HandlerFunc(transactions.GetRangeFunction())
+
 	app.Router.
 		Methods("PUT").
 		Path("/transactions").
@@ -77,10 +83,12 @@ func (app *App) SetupRouter() {
 		Path("/analysisTrees").
 		HandlerFunc(analysisTrees.GetFunction())
 
-	app.Router.
-		Methods("GET").
-		Path("/saltEdgeConnections").
-		HandlerFunc(saltedge.RefreshConnectionsFunction())
+		//This will become a generic itemToken refresh connections function for both SE and Plaid
+		//Actually just going to include in fetch transactions
+	// app.Router.
+	// 	Methods("GET").
+	// 	Path("/saltEdgeConnections").
+	// 	HandlerFunc(saltedge.RefreshConnectionsFunction())
 
 	app.Router.
 		Methods("GET").

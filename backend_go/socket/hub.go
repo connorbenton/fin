@@ -9,6 +9,9 @@ type Hub struct {
 	// Inbound messages from the Clients.
 	Broadcast chan []byte
 
+	// Reponse reads answers back from frontend
+	Response chan []byte
+
 	// Register requests from the Clients.
 	Register chan *Client
 
@@ -28,6 +31,7 @@ func StartHub() {
 func newHub() *Hub {
 	return &Hub{
 		Broadcast:  make(chan []byte),
+		Response:   make(chan []byte),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
