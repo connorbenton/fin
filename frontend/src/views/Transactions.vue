@@ -46,7 +46,7 @@
                           <v-list-item-title
                             class="body-2"
                           >{{formatBalance(acct.balance, acct.currency)}}</v-list-item-title>
-                          <v-list-item-subtitle class="caption">{{timeSince(acct.updatedAt)}}</v-list-item-subtitle>
+                          <v-list-item-subtitle class="caption">{{timeSince(acct.updated_at)}}</v-list-item-subtitle>
                         </v-list-item-content>
                       </v-col>
                     </v-row>

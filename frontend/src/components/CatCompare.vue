@@ -17,7 +17,7 @@
             <v-card-text
               class="pa-0"
               @click="openEditMenu($event, item)"
-            >{{catName(item.assignedCat, categories)}}</v-card-text>
+            >{{category_name(item.assignedCat, categories)}}</v-card-text>
           </template>
         </v-data-table>
         <v-menu v-model="editMenu" :position-x="x" :position-y="y" absolute offset-y>
@@ -25,31 +25,31 @@
             <v-menu
               offset-x
               open-on-hover
-              v-for="(cat, index) in filterTopCategory(categories)"
+              v-for="(cat, index) in filtertop_category(categories)"
               :key="index"
             >
               <template v-slot:activator="{ on }">
                 <v-hover v-slot:default="{ hover }">
                   <v-list-item
-                    @click="editCategory(cat.topCategory, categories)"
+                    @click="editCategory(cat.top_category, categories)"
                     v-on="on"
                     :class="`${hover? 'class1': 'class2'}`"
                   >
-                    <v-list-item-title>{{cat.topCategory}}</v-list-item-title>
+                    <v-list-item-title>{{cat.top_category}}</v-list-item-title>
                   </v-list-item>
                 </v-hover>
               </template>
               <v-list
-                v-for="(subcat, index) in filterSubCategory(cat.topCategory,categories)"
+                v-for="(subcat, index) in filtersub_category(cat.top_category,categories)"
                 :key="index"
                 class="pa-0"
               >
                 <v-hover v-slot:default="{ hover }">
                   <v-list-item
-                    @click="editCategory(subcat.subCategory, categories)"
+                    @click="editCategory(subcat.sub_category, categories)"
                     :class="`${hover? 'class1': 'class2'}`"
                   >
-                    <v-list-item-title>{{subcat.subCategory}}</v-list-item-title>
+                    <v-list-item-title>{{subcat.sub_category}}</v-list-item-title>
                   </v-list-item>
                 </v-hover>
               </v-list>
@@ -116,14 +116,14 @@ export default {
       this.categories = await api.getCategories();
       var topArr = [];
       this.categories.forEach(function(obj) {
-        topArr.push(obj.topCategory);
+        topArr.push(obj.top_category);
       });
       this.topCategories = [...new Set(topArr)];
       this.catload = false;
     },
-    catName(id, categories) {
+    category_name(id, categories) {
       if (!id || 0 === id.length) { return "Uncategorized"; }
-      var cat = categories.find(x => x.id === id).subCategory;
+      var cat = categories.find(x => x.id === id).sub_category;
       return cat;
     },
     openEditMenu: function(event, item) {
@@ -140,26 +140,26 @@ export default {
     editCategory(cat, categories) {
       var catToSave = cat;
       this.compareCats[this.editedIndex].assignedCat = categories.find(
-        x => x.subCategory === catToSave
+        x => x.sub_category === catToSave
       ).id;
-      this.compareCats[this.editedIndex].assignedCatName = categories.find(
-        x => x.subCategory === catToSave
-      ).subCategory;
+      this.compareCats[this.editedIndex].assignedcategory_name = categories.find(
+        x => x.sub_category === catToSave
+      ).sub_category;
       //  api.updateTransaction(this.transactions[this.editedIndex].id, this.transactions[this.editedIndex])
       this.editMenu = false;
       this.redrawTable = catToSave;
       // this.vm.$forceUpdate();
     },
-    filterSubCategory(topCat, categories) {
+    filtersub_category(topCat, categories) {
       var filterTop = topCat;
       var filtered = categories.filter(function(item) {
-        return item.topCategory == filterTop;
+        return item.top_category == filterTop;
       });
       return filtered;
     },
-    filterTopCategory(categories) {
+    filtertop_category(categories) {
       var filtered = categories.filter(function(item) {
-        return item.topCategory == item.subCategory;
+        return item.top_category == item.sub_category;
       });
       return filtered;
     },

@@ -3,6 +3,7 @@ package types
 import (
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 )
 
@@ -26,11 +27,15 @@ type Account struct {
 }
 
 type ItemToken struct {
-	ID                         int       `json:"id"`
-	Institution                string    `json:"institution" db:"institution"`
-	AccessToken                string    `json:"-" db:"access_token"`
-	ItemID                     string    `json:"item_id" db:"item_id"`
-	Provider                   string    `json:"provider" db:"provider"`
+	ID          int    `json:"id"`
+	Institution string `json:"institution" db:"institution"`
+	AccessToken string `json:"-" db:"access_token"`
+	ItemID      string `json:"item_id" db:"item_id"`
+	Provider    string `json:"provider" db:"provider"`
+	// Institution                string    `json:"institution" db:"institution"`
+	// AccessToken                string    `json:"-" db:"access_token"`
+	// ItemID                     string    `json:"item_id" db:"item_id"`
+	// Provider                   string    `json:"provider" db:"provider"`
 	Interactive                bool      `json:"interactive" db:"interactive"`
 	NeedsReLogin               bool      `json:"needs_re_login" db:"needs_re_login"`
 	LastRefresh                time.Time `json:"last_refresh" db:"last_refresh"`
@@ -72,7 +77,7 @@ type CategoryPlaid struct {
 
 type Transaction struct {
 	ID                  int             `json:"id"`
-	Date                time.Time       `json:"date" db:"date"`
+	Date                string          `json:"date" db:"date"`
 	TransactionID       string          `json:"transaction_id" db:"transaction_id"`
 	Description         string          `json:"description" db:"description"`
 	OriginalDescription string          `json:"original_description" db:"original_description"`
@@ -113,12 +118,13 @@ var MintCatMap = map[string]int{
 }
 
 type MatchingAccount struct {
-	ImportKey  string
-	RefAccount string
+	ImportKey      string
+	RefAccountID   string
+	RefAccountName string
 }
 
 type CompareTrans struct {
-	Date         time.Time       `json:"date"`
+	Date         string          `json:"date"`
 	Description  string          `json:"description"`
 	Amount       decimal.Decimal `json:"amount"`
 	CurrencyCode string          `json:"currency_code"`
@@ -321,16 +327,16 @@ type SETransaction struct {
 	Duplicated   bool            `json:"duplicated"`
 	Mode         string          `json:"mode"`
 	Status       string          `json:"status"`
-	MadeOn       time.Time       `json:"made_on"`
+	MadeOn       string          `json:"made_on"`
 	Amount       decimal.Decimal `json:"amount"`
 	CurrencyCode string          `json:"currency_code"`
 	Description  string          `json:"description"`
 	Category     string          `json:"category"`
 	Extra        struct {
-		PostingDate              time.Time       `json:"posting_date"`
+		PostingDate              string          `json:"posting_date"`
 		ClosingBalance           decimal.Decimal `json:"closing_balance"`
 		AccountBalanceSnapshot   decimal.Decimal `json:"account_balance_snapshot"`
-		CategorizationConfidence int             `json:"categorization_confidence"`
+		CategorizationConfidence float64         `json:"categorization_confidence"`
 	} `json:"extra,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -365,4 +371,57 @@ type CreateRefreshResponse struct {
 		ExpiresAt  time.Time `json:"expires_at"`
 		ConnectURL string    `json:"connect_url"`
 	} `json:"data"`
+}
+
+func PrepTransSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+	tquery := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
+				category_name, account_name, currency_code, account_id)
+				VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
+				:category_name, :account_name, :currency_code, :account_id) 
+				ON CONFLICT (transaction_id) DO UPDATE SET
+				'date' = excluded.'date',
+				description = excluded.description,
+				amount = excluded.amount,
+				normalized_amount = excluded.normalized_amount,
+				category = excluded.category,
+				category_name = excluded.category_name`
+	tstmt, err := txn.PrepareNamed(tquery)
+	if err != nil {
+		panic(err)
+	}
+	return tstmt
+}
+
+func PrepAccountSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
+	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype)
+				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype) 
+				ON CONFLICT (account_id, provider) DO UPDATE SET
+				'limit' = excluded.'limit',
+				available = excluded.available,
+				balance = excluded.balance`
+	astmt, err := txn.PrepareNamed(aquery)
+	// astmt, err := dbCon.PrepareNamed(aquery)
+	if err != nil {
+		panic(err)
+	}
+	return astmt
+}
+
+func PrepItemSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+	// func PrepItemSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
+	iquery := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id, needs_re_login, access_token, last_downloaded_transactions)
+				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id, :needs_re_login, :access_token, :last_downloaded_transactions) 
+				ON CONFLICT (item_id, provider) DO UPDATE SET
+				interactive = excluded.interactive,
+				last_refresh = excluded.last_refresh,
+				next_refresh_possible = excluded.next_refresh_possible,
+				needs_re_login = excluded.needs_re_login,
+				last_downloaded_transactions = excluded.last_downloaded_transactions`
+	istmt, err := txn.PrepareNamed(iquery)
+	// istmt, err := dbCon.PrepareNamed(iquery)
+	if err != nil {
+		panic(err)
+	}
+	return istmt
 }

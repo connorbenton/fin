@@ -29,7 +29,7 @@
         multi-sort
         class="elevation-1"
       >
-        <template v-slot:header.catName="">Category 
+        <template v-slot:header.category_name="">Category 
           <v-btn 
             class="ml-4"
             v-if="selected.length > 0" 
@@ -45,24 +45,25 @@
             v-on:click.ctrl.left.exact="ctrlToggle(isSelected, select, $event)"
             v-on:mousedown.shift.exact.prevent
           >
-            <td>{{item.date}}</td>
+            <!-- <td>{{item.date}}</td> -->
+            <td>{{item.date.split("T")[0]}}</td>
             <td>{{item.description}}</td>
               <!-- @click="openEditMenu($event, item)" -->
             <td
-              :class="{ 'font-weight-bold': item.catName == 'Uncategorized' }"
-            >{{item.catName}}</td>
+              :class="{ 'font-weight-bold': item.category_name == 'Uncategorized' }"
+            >{{item.category_name}}</td>
             <td>{{formatBalance(item.amount, item.currency_code)}}</td>
-            <td>{{item.accName}}</td>
+            <td>{{item.account_name}}</td>
           </tr>
         </template>
-        <!-- <template v-slot:item.account="{ item }">{{item.accName}}</template>
+        <!-- <template v-slot:item.account="{ item }">{{item.account_name}}</template>
         <template v-slot:item.amount="{ item }">{{formatBalance(item.amount, item.currency_code)}}</template>
-        <template v-slot:item.catName="{ item }">
+        <template v-slot:item.category_name="{ item }">
           <v-card-text
             class="pa-0"
             @click="openEditMenu($event, item)"
-            :class="{ 'font-weight-bold': item.catName == 'Uncategorized' }"
-          >{{item.catName}}</v-card-text>
+            :class="{ 'font-weight-bold': item.category_name == 'Uncategorized' }"
+          >{{item.category_name}}</v-card-text>
         </template>-->
       </v-data-table>
     </v-col>
@@ -72,31 +73,31 @@
         <v-menu
           offset-x
           open-on-hover
-          v-for="(cat, index) in filterTopCategory(categories)"
+          v-for="(cat, index) in filtertop_category(categories)"
           :key="index"
         >
           <template v-slot:activator="{ on }">
             <v-hover v-slot:default="{ hover }">
               <v-list-item
-                @click="editCategory(cat.topCategory, categories)"
+                @click="editCategory(cat.top_category, categories)"
                 v-on="on"
                 :class="`${hover? 'class1': 'class2'}`"
               >
-                <v-list-item-title>{{cat.topCategory}}</v-list-item-title>
+                <v-list-item-title>{{cat.top_category}}</v-list-item-title>
               </v-list-item>
             </v-hover>
           </template>
           <v-list
-            v-for="(subcat, index) in filterSubCategory(cat.topCategory,categories)"
+            v-for="(subcat, index) in filtersub_category(cat.top_category,categories)"
             :key="index"
             class="pa-0"
           >
             <v-hover v-slot:default="{ hover }">
               <v-list-item
-                @click="editCategory(subcat.subCategory, categories)"
+                @click="editCategory(subcat.sub_category, categories)"
                 :class="`${hover? 'class1': 'class2'}`"
               >
-                <v-list-item-title>{{subcat.subCategory}}</v-list-item-title>
+                <v-list-item-title>{{subcat.sub_category}}</v-list-item-title>
               </v-list-item>
             </v-hover>
           </v-list>
@@ -132,12 +133,12 @@ export default {
       headers: [
         { text: "Date", value: "date", dataType: "Date", width: "110" },
         { text: "Description", value: "description", width: "40%" },
-        { text: "Category", value: "catName" },
+        { text: "Category", value: "category_name" },
         // //Eliminated currency since now balance is formatted instead
         // {text: 'Currency', value: 'currency_code', align: 'end' },
         // {text: "Currency", value: "currency_code" },
         { text: "Amount", value: "amount" },
-        { text: "Account", value: "accName" },
+        { text: "Account", value: "account_name" },
         { text: "accID", value: "account_id", align: " d-none" }
       ],
       sortDesc: true,
@@ -248,7 +249,7 @@ export default {
     //Now using selected
     async editCategory(cat, categories) {
       let catToSave = cat;
-      let foundCat = categories.find(x => x.subCategory === catToSave);
+      let foundCat = categories.find(x => x.sub_category === catToSave);
       const editArray = this.selected.map(item => {
 
       // for (let i in this.selected) {
@@ -259,9 +260,9 @@ export default {
       // return;
       // this.showConfirm = true;
       // this.transactions[this.editedIndex].category = foundCat.id;
-      // this.transactions[this.editedIndex].catName = foundCat.subCategory;
+      // this.transactions[this.editedIndex].category_name = foundCat.sub_category;
       a.category = foundCat.id;
-      a.catName = foundCat.subCategory;
+      a.category_name = foundCat.sub_category;
 
       api.updateTransaction(a.id, a);
 
@@ -287,17 +288,17 @@ export default {
       // this.$store.dispatch("reanalyze");
     // },
     //Populate array of sub categories for category dropdown
-    filterSubCategory(topCat, categories) {
+    filtersub_category(topCat, categories) {
       let filterTop = topCat;
       let filtered = categories.filter(function(item) {
-        return item.topCategory == filterTop;
+        return item.top_category == filterTop;
       });
       return filtered;
     },
     //Populate array of top categories for category dropdown
-    filterTopCategory(categories) {
+    filtertop_category(categories) {
       let filtered = categories.filter(function(item) {
-        return item.topCategory == item.subCategory;
+        return item.top_category == item.sub_category;
       });
       return filtered;
     }

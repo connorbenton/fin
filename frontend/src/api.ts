@@ -2,6 +2,48 @@ import axios from 'axios';
 import store from './store';
 import io from 'socket.io-client';
 // import rateLimit from 'axios-rate-limit'
+import {EventEmitter} from 'events';
+
+class Socket {
+  public ee: EventEmitter;
+  public ws: WebSocket;
+  constructor(wsurl: any, ee = new EventEmitter()) {
+      const ws = new WebSocket(wsurl);
+      this.ee = ee;
+      this.ws = ws;
+      ws.onmessage = this.message.bind(this);
+      ws.onopen = this.open.bind(this);
+      ws.onclose = this.close.bind(this);
+  }
+  public on(this: Socket, name: any, fn: any) {
+      this.ee.on(name, fn);
+  }
+  public off(name: any, fn: any) {
+      this.ee.removeListener(name, fn);
+  }
+  public emit(name: any, data: any) {
+      const message = JSON.stringify({name, data});
+      this.ws.send(message);
+  }
+  public message(e: any) {
+      try {
+          const msgData = JSON.parse(e.data);
+          this.ee.emit(msgData.name, msgData.data);
+      } catch (err) {
+          const error = {
+              message: err,
+          };
+          console.log(err);
+          this.ee.emit(error.message);
+      }
+  }
+  public open() {
+      this.ee.emit('connected');
+  }
+  public close() {
+      this.ee.emit('disconnected');
+  }
+}
 
 const client = axios.create({
 //  maxRequests: 50,
@@ -35,9 +77,13 @@ export default {
     return this.execute('post', '/api/transactions', data);
   },
   async importTransactions(data: any) {
-    const ioClient = io();
+    const socket = new Socket('ws://localhost/ws');
+    // const ioClient = io();
+    socket.on('connected', () => { console.log('Connected'); });
+    // const socket = new Socket('ws://fintrack-go:6060/ws');
     try {
-    ioClient.on('compare', (compareSet: any, fn: any) => {
+    // ioClient.on('compare', (compareSet: any, fn: any) => {
+    socket.on('compare', (compareSet: any, fn: any) => {
         if (compareSet.type === 'trans') {
           store.state.compareMatch = true;
           store.state.trans1 = compareSet.trans1;
@@ -66,7 +112,8 @@ export default {
       // console.log(data);
     //  })
     // ).then(function (response: any) {
-    ioClient.off('compare');
+    // ioClient.off('compare');
+    socket.off('compare');
       // console.log(response);
     return res;
     } catch (error) {
@@ -104,7 +151,7 @@ export default {
   },
   async fetchTransactions() {
     // let ioClient = io("https://192.168.2.2:3000");
-    const ioClient = io();
+    // const ioClient = io();
     //   reconnectionDelay: 1000,
     //   reconnection: true,
     //   reconnectionAttemps: 10,
@@ -134,21 +181,21 @@ export default {
       //  }
     //  }
     try {
-     ioClient.on('check', (data: any, fn: any) => {
-      store.subscribe((mutation, state) => {
-        if (mutation.type === 'newName') {
-          fn();
-        }
-      });
+    //  ioClient.on('check', (data: any, fn: any) => {
+    //   store.subscribe((mutation, state) => {
+    //     if (mutation.type === 'newName') {
+    //       fn();
+    //     }
+    //   });
       // store.state.fetchTransactionsItemDone = data.curr;
       // store.state.fetchTransactionsItemTotal = data.len;
-      store.commit('newName', data.name);
+      // store.commit('newName', data.name);
       // store.state.currName = data.name;
       // console.log(data.curr);
-     });
+    //  });
      const res: any = await client.get(`/api/itemTokensFetchTransactions`);
     // ).then(function (response) {
-     ioClient.off('check');
+    //  ioClient.off('check');
      store.commit('isFetch', false);
       // store.state.isFetchTransactions = false;
      store.dispatch('getAll');
@@ -196,10 +243,10 @@ export default {
   getPlaidCategories() {
     return this.execute('get', '/api/plaid_Categories');
   },
-  getSaltEdgeConnections() {
-    // setTimeout(() => {store.state.isFetchTransactions = false}, 2000);
-    return this.execute('get', '/api/saltEdgeConnections');
-  },
+  // getSaltEdgeConnections() {
+  //   // setTimeout(() => {store.state.isFetchTransactions = false}, 2000);
+  //   return this.execute('get', '/api/saltEdgeConnections');
+  // },
   refreshInteractive(id: any) {
     return this.execute('get', `/api/saltEdgeRefreshInteractive/${id}`);
   },
@@ -208,5 +255,8 @@ export default {
   },
   resetDB() {
     return this.execute('get', `/api/resetDB/`);
+  },
+  resetDBFull() {
+    return this.execute('get', `/api/resetDBFull/`);
   },
 };

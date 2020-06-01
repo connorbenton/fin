@@ -29,37 +29,37 @@ type App struct {
 func (app *App) SetupRouter() {
 	app.Router.
 		Methods("GET").
-		Path("/accounts").
+		Path("/api/accounts").
 		HandlerFunc(accounts.GetFunction())
 
 	app.Router.
 		Methods("GET").
-		Path("/categories").
+		Path("/api/categories").
 		HandlerFunc(categories.GetFunction())
 
 	app.Router.
 		Methods("GET").
-		Path("/itemTokens").
+		Path("/api/itemTokens").
 		HandlerFunc(itemTokens.GetFunction())
 
 	app.Router.
 		Methods("GET").
-		Path("/itemTokensFetchTransactions").
+		Path("/api/itemTokensFetchTransactions").
 		HandlerFunc(itemTokens.FetchTransactionsFunction())
 
 	app.Router.
 		Methods("POST").
-		Path("/plaidItemTokens").
+		Path("/api/plaidItemTokens").
 		HandlerFunc(plaid.CreateFromPublicTokenFunction())
 
 	app.Router.
 		Methods("POST").
-		Path("/plaidGeneratePublicToken").
+		Path("/api/plaidGeneratePublicToken").
 		HandlerFunc(plaid.GeneratePublicTokenFunction())
 
 	app.Router.
 		Methods("GET").
-		Path("/transactions").
+		Path("/api/transactions").
 		HandlerFunc(transactions.GetFunction())
 
 		//This one will go away when we do all filtering and trees server side
@@ -70,17 +70,17 @@ func (app *App) SetupRouter() {
 
 	app.Router.
 		Methods("PUT").
-		Path("/transactions").
+		Path("/api/transactions").
 		HandlerFunc(transactions.PutFunction())
 
 	app.Router.
 		Methods("POST").
-		Path("/importTransactions").
+		Path("/api/importTransactions").
 		HandlerFunc(transactions.ImportFunction())
 
 	app.Router.
 		Methods("GET").
-		Path("/analysisTrees").
+		Path("/api/analysisTrees").
 		HandlerFunc(analysisTrees.GetFunction())
 
 		//This will become a generic itemToken refresh connections function for both SE and Plaid
@@ -92,18 +92,23 @@ func (app *App) SetupRouter() {
 
 	app.Router.
 		Methods("GET").
-		Path("/saltEdgeRefreshInteractive/{id}").
+		Path("/api/saltEdgeRefreshInteractive/{id}").
 		HandlerFunc(saltedge.RefreshConnectionInteractiveFunction())
 
 	app.Router.
 		Methods("GET").
-		Path("/saltEdgeCreateInteractive").
+		Path("/api/saltEdgeCreateInteractive").
 		HandlerFunc(saltedge.CreateConnectionInteractiveFunction())
 
 	app.Router.
 		Methods("GET").
-		Path("/resetDB").
+		Path("/api/resetDB").
 		HandlerFunc(resetDB.ForceResetDBFunction())
+
+	app.Router.
+		Methods("GET").
+		Path("/api/resetDBFull").
+		HandlerFunc(resetDB.ForceResetDBFullFunction())
 
 	app.Router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		socket.ServeWs(socket.ExportHub, w, r)

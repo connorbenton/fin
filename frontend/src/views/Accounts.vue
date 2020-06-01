@@ -30,8 +30,8 @@
           <tbody>
             <tr v-for="(item, index1) in plaid(itemTokens)" :key="index1">
               <td>{{item.institution}}</td>
-              <td>{{ localeDate(item.lastDownloadedTransactions) }}</td>
-              <td v-if="item.needsReLogin == 1">
+              <td>{{ localeDate(item.last_downloaded_transactions) }}</td>
+              <td v-if="item.needs_re_login == 1">
                 <v-btn
                   color="warning"
                   :loading="plaidRefresh"
@@ -91,13 +91,16 @@
           <tbody>
             <tr v-for="(item, index2) in saltEdge(itemTokens)" :key="index2">
               <td>{{item.institution}}</td>
+              <!-- <td
+                v-show="item.last_downloaded_transactions !== null"
+              >{{localeDate(item.last_downloaded_transactions)}}</td> -->
               <td
-                v-show="item.lastDownloadedTransactions !== null"
-              >{{new Date(item.lastDownloadedTransactions).toLocaleString()}}</td>
+                v-show="item.last_downloaded_transactions !== null"
+              >{{new Date(item.last_downloaded_transactions).toLocaleString()}}</td>
               <td
-                v-show="item.lastDownloadedTransactions == null"
+                v-show="item.last_downloaded_transactions == null"
               >{{"last transaction fetch: " + "Never"}}</td>
-              <td v-if="item.interactive == 1">{{new Date(item.lastRefresh).toLocaleString()}}</td>
+              <td v-if="item.interactive == 1">{{new Date(item.last_refresh).toLocaleString()}}</td>
               <td v-else>
                 <v-icon>mdi-minus</v-icon>
               </td>
@@ -113,15 +116,15 @@
                   <br />(needs Credentials)
                 </v-btn>
               </td>
-              <td v-else-if="item.interactive == 1">{{ timeToRefresh(item.nextRefreshPossible) }}</td>
+              <td v-else-if="item.interactive == 1">{{ timeToRefresh(item.next_refresh_possible) }}</td>
               <td v-else>
                 <v-icon>mdi-minus</v-icon>
               </td>
               <!-- <td
                 v-if="item.interactive == 1"
               >
-              {{new Date(item.nextRefreshPossible).toLocaleString()}}</td>
-              {{ timeToRefresh(item.nextRefreshPossible) }}</td>
+              {{new Date(item.next_refresh_possible).toLocaleString()}}</td>
+              {{ timeToRefresh(item.next_refresh_possible) }}</td>
               <td v-else><v-icon>mdi-minus</v-icon></td>-->
             </tr>
           </tbody>
@@ -153,7 +156,14 @@
         </v-card>
       </v-dialog>-->
     </v-layout>
+    <!-- <v-row class = "ma-2 pa-0"> -->
+      <v-row>
     <v-btn color="warning" dark class="my-8" @click.native="resetDB()">Reset Database</v-btn>
+    </v-row>
+    <!-- <v-row class = "ma-2 pa-0"> -->
+      <v-row>
+    <v-btn color="warning" dark class="my-8" @click.native="resetDBFull()">Reset Database (Including Item Tokens)</v-btn>
+    </v-row>
   </v-container>
 </template>
 
@@ -210,7 +220,7 @@ export default {
   //   }
   // },
   created() {
-    console.log(this.PLAID_PUBLIC_KEY);
+    // console.log(this.PLAID_PUBLIC_KEY);
     this.apiStateLoaded = this.$store.state.apiStateLoaded;
     if (this.apiStateLoaded) {
       this.initialData();
@@ -238,6 +248,7 @@ export default {
   components: { PlaidLink },
   methods: {
     localeDate(date) {
+      console.log(date)
       if (date == null) {
         return "Never";
       } else return new Date(date).toLocaleString();
@@ -289,6 +300,16 @@ export default {
       this.fetch = false;
       this.dialogName = "Fetching Transactions";
       this.refreshData();
+    },
+    async resetDBFull() {
+    	if(confirm('are you sure?')) {
+      this.dialogName = "Resetting Database";
+      this.fetch = true;
+      await api.resetDBFull();
+      this.fetch = false;
+      this.dialogName = "Fetching Transactions";
+      this.refreshData();
+      }
     },
     async startRefreshInteractive(id) {
       var vm = this;
@@ -369,12 +390,15 @@ export default {
       this.redraw2 += 1;
     },
     async fetchRefreshData() {
-      this.dialogName = "Checking for new SaltEdge connections to add";
+      this.dialogName = "Checking for new SaltEdge connections to add and fetching transactions";
       this.fetch = true;
       // await waitFor(2000);
-      let res = await api.getSaltEdgeConnections();
-      this.itemTokens = res.resTokens;
-      this.accounts = res.resAccounts;
+      // let res = await api.getSaltEdgeConnections();
+      // this.itemTokens = res.resTokens;
+      // this.accounts = res.resAccounts;
+      let res = await api.fetchTransactions();
+      this.itemTokens = await api.getItemTokens();
+      this.accounts = await api.getAccounts();
       this.fetch = false;
       this.dialogName = "Fetching Transactions";
       this.redraw -= 1;

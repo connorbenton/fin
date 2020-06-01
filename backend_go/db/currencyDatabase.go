@@ -3,6 +3,7 @@ package db
 import (
 	// "database/sql"
 
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/rickb777/date"
 	"github.com/shopspring/decimal"
 )
 
@@ -206,13 +208,18 @@ func GetNewXML() {
 }
 
 //GetNormalizedAmount finds and sets the correct normalized amount for transactions
-func GetNormalizedAmount(code string, baseCurrency string, date time.Time, amt decimal.Decimal) decimal.Decimal {
+func GetNormalizedAmount(code string, baseCurrency string, dt string, amt decimal.Decimal) decimal.Decimal {
+
 	CC := strings.ToUpper(code)
 	var err error
 	var NormalizedAmount decimal.Decimal
+	tdate, err := date.ParseISO(dt)
+	if err != nil {
+		panic(err)
+	}
 
 	var id int
-	err = CurrencyDBCon.Get(&id, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name="+CC)
+	err = CurrencyDBCon.Get(&id, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='"+CC+"'")
 	if err != nil {
 		panic(err)
 	}
@@ -225,33 +232,35 @@ func GetNormalizedAmount(code string, baseCurrency string, date time.Time, amt d
 		log.Println("Currency rate table not found for " + CC)
 		NormalizedAmount = decimal.Zero
 	} else {
-		firstDate := date.AddDate(0, 0, -10).Format("2006-01-02")
-		lastDate := date.AddDate(0, 0, 10).Format("2006-01-02")
-		date := date.Format("2006-01-02")
+		// firstDate := tdate.AddDate(0, 0, -10).Format("2006-01-02")
+		// lastDate := tdate.AddDate(0, 0, 10).Format("2006-01-02")
+		firstDate := tdate.AddDate(0, 0, -10)
+		lastDate := tdate.AddDate(0, 0, 10)
+		// date := date.Format("2006-01-02")
 		fx := types.Fx{}
 		if CC == "EUR" {
 			// finding the nearest 'EUR' rate by doing a search with USD and swapping in 1.0 for rate
 			CC = "USD"
 			query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN 
-					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, date)
+					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, tdate.Format("2006-01-02"))
 			err := CurrencyDBCon.Get(&fx, query)
 			CC = "EUR"
-			if err != nil {
+			if err != nil && err != sql.ErrNoRows {
 				panic(err)
 			}
 			fx.Rate = decimal.NewFromInt(1)
 		} else {
 			// otherwise finding the nearest rate in +/- 10 days
 			query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN 
-					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, date)
+					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, tdate.Format("2006-01-02"))
 			err := CurrencyDBCon.Get(&fx, query)
-			if err != nil {
+			if err != nil && err != sql.ErrNoRows {
 				panic(err)
 			}
 		}
 		// Setting to zero and skipping if rate not found within +/- 10 days
 		if (types.Fx{}) == fx {
-			log.Println("Currency rate not found for " + CC + " within +/- 10 days of " + date)
+			log.Println("Currency rate not found for " + CC + " within +/- 10 days of " + tdate.Format("2006-01-02"))
 			NormalizedAmount = decimal.Zero
 		} else {
 			if baseCurrency == "EUR" {
@@ -262,7 +271,7 @@ func GetNormalizedAmount(code string, baseCurrency string, date time.Time, amt d
 				bfx := types.Fx{}
 				query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date = %q`, baseCurrency, fx.FxDate.Format("2006-01-02"))
 				err := CurrencyDBCon.Get(&bfx, query)
-				if err != nil {
+				if err != nil && err != sql.ErrNoRows {
 					panic(err)
 				}
 				if (types.Fx{}) == bfx {

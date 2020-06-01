@@ -31,12 +31,17 @@ module.exports = {
     },
     proxy: {
       '^/api': {
-        target: 'http://localhost:3000',
+        // target: 'http://localhost:3000',
+        // target: 'http://localhost:6060',
+        target: 'http://fintrack-go:6060',
         secure: false,
         ws: false,
       },
-      '^/socket.io': {
-        target: 'http://localhost:3000',
+      // '^/socket.io': {
+      '^/ws': {
+        // target: 'http://localhost:3000',
+        // target: 'http://localhost:6060',
+        target: 'http://fintrack-go:6060',
         secure: false,
         ws: true,
       },

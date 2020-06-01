@@ -2,6 +2,7 @@ package saltedge
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -65,7 +66,13 @@ func saltEdgeReq(verb string, url string, params string) string {
 // This is going to go away as HTTP req (will need to pass txn), going to force transaction sync on refresh function
 // func RefreshConnectionsFunction() func(http.ResponseWriter, *http.Request) {
 // 	return func(res http.ResponseWriter, req *http.Request) {
-func RefreshConnectionsFunction(txn *sqlx.Tx) {
+// func RefreshConnectionsFunction(txn *sqlx.Tx) {
+func RefreshConnectionsFunction(istmt, astmt *sqlx.NamedStmt) {
+	// func RefreshConnectionsFunction() {
+
+	// txn := db.DBCon.MustBegin()
+	// istmt := types.PrepItemSt(txn)
+	// astmt := types.PrepAccountSt(txn)
 
 	var wgConnections sync.WaitGroup
 	url := "https://www.saltedge.com/api/v5/connections?customer_id=" + os.Getenv("SALTEDGE_CUSTOMER_ID")
@@ -118,16 +125,17 @@ func RefreshConnectionsFunction(txn *sqlx.Tx) {
 			item.NextRefreshPossible = conn.NextRefreshPossibleAt
 			item.ItemID = conn.ID
 
-			query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
-							VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id) 
-							ON CONFLICT (item_id, provider) DO UPDATE SET
-							interactive = excluded.interactive,
-							last_refresh = excluded.last_refresh,
-							next_refresh_possible = excluded.next_refresh_possible`
-			_, err := txn.NamedExec(query, item)
-			if err != nil {
-				panic(err)
-			}
+			// query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
+			// 				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id)
+			// 				ON CONFLICT (item_id, provider) DO UPDATE SET
+			// 				interactive = excluded.interactive,
+			// 				last_refresh = excluded.last_refresh,
+			// 				next_refresh_possible = excluded.next_refresh_possible`
+			// _, err := txn.NamedExec(query, item)
+			// if err != nil {
+			// 	panic(err)
+			// }
+			istmt.MustExec(item)
 			// wgAccounts.Add(1)
 			url2 := "https://www.saltedge.com/api/v5/accounts?connection_id=" + conn.ID
 			// go saltEdgeReq("GET", url, "", chAccounts, &wgAccounts)
@@ -164,16 +172,17 @@ func RefreshConnectionsFunction(txn *sqlx.Tx) {
 					acc.Available = SEAcc.Extra.AvailableAmount
 					acc.Balance = SEAcc.Balance
 					acc.Currency = SEAcc.CurrencyCode
-					query := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency)
-							VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency) 
-							ON CONFLICT (account_id, provider) DO UPDATE SET
-							'limit' = excluded.'limit',
-							available = excluded.available,
-							balance = excluded.balance`
-					_, err := txn.NamedExec(query, acc)
-					if err != nil {
-						panic(err)
-					}
+					// query := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency)
+					// 		VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency)
+					// 		ON CONFLICT (account_id, provider) DO UPDATE SET
+					// 		'limit' = excluded.'limit',
+					// 		available = excluded.available,
+					// 		balance = excluded.balance`
+					// _, err := txn.NamedExec(query, acc)
+					// if err != nil {
+					// 	panic(err)
+					// }
+					astmt.MustExec(acc)
 					// fmt.Printf("%v\n", acc.AccountID)
 					// fmt.Printf("%v\n", account.Extra.AccountName)
 					// fmt.Printf("%v\n", acc.Name)
@@ -186,6 +195,11 @@ func RefreshConnectionsFunction(txn *sqlx.Tx) {
 
 	// wgAccounts.Wait()
 	wgConnections.Wait()
+
+	// err := txn.Commit()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// Needs to be handled by passed txn
 	// err := txn.Commit()
@@ -269,7 +283,7 @@ func RefreshConnectionInteractiveFunction() func(http.ResponseWriter, *http.Requ
 			fmt.Printf("Error with Create Connection Interactive: %v \n", err)
 		}
 
-		log.Println("You fetched a thing!")
+		// log.Println("You fetched a thing!")
 		res.WriteHeader(http.StatusOK)
 		_, err = res.Write([]byte(data.Data.ConnectURL))
 		if err != nil {
@@ -346,16 +360,20 @@ func CreateConnectionInteractiveFunction() func(http.ResponseWriter, *http.Reque
 	}
 }
 
-func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurrency string) {
+// func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurrency string) {
+func FetchTransactionsForItemToken(iTok types.ItemToken, istmt *sqlx.NamedStmt, astmt *sqlx.NamedStmt, tstmt *sqlx.NamedStmt, baseCurrency string) {
 
-	url := "https://www.saltedge.com/api/v5/transactions?connection_id" + iTok.ItemID
+	url := "https://www.saltedge.com/api/v5/transactions?connection_id=" + iTok.ItemID
 	// fmt.Println("URL:>", url)
 
 	res := saltEdgeReq("GET", url, "")
 
 	var data types.TransactionsResponse
 	// json.Unmarshal([]byte(responses[0]), &data)
-	json.Unmarshal([]byte(res), &data)
+	err := json.Unmarshal([]byte(res), &data)
+	if err != nil {
+		panic(err)
+	}
 	// fmt.Printf("Results: %v\n", data)
 
 	// Using txn from main function now
@@ -368,7 +386,8 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurre
 			var err error
 			defer wg.Done()
 			trans := types.Transaction{}
-			if tx.Extra.PostingDate.IsZero() {
+			// if tx.Extra.PostingDate.IsZero() {
+			if tx.Extra.PostingDate == "" {
 				trans.Date = tx.MadeOn
 			} else {
 				trans.Date = tx.Extra.PostingDate
@@ -378,7 +397,10 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurre
 			trans.AccountID = tx.AccountID
 
 			var name string
-			err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE 'id'="+tx.AccountID+" AND provider='SaltEdge' LIMIT 1")
+			// err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE 'account_id'="+tx.AccountID+" AND provider='SaltEdge' LIMIT 1")
+			querytest := "SELECT name FROM accounts WHERE account_id='" + tx.AccountID + "' AND provider='SaltEdge'"
+			// log.Println(querytest)
+			err = db.DBCon.Get(&name, querytest)
 			if err != nil {
 				panic(err)
 			}
@@ -387,87 +409,22 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurre
 			trans.TransactionID = tx.ID
 
 			trans.CurrencyCode = tx.CurrencyCode
+			// query2 := fmt.Sprintf(`%+v`, tx)
+			// log.Println(query2)
 			trans.NormalizedAmount = db.GetNormalizedAmount(trans.CurrencyCode, baseCurrency, trans.Date, trans.Amount)
-			// CC := strings.ToUpper(trans.CurrencyCode)
-
-			// var id int
-			// err = db.CurrencyDBCon.Get(&id, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name="+CC)
-			// if err != nil {
-			// 	panic(err)
-			// }
-			// // want to continue if currency is EUR since there is no table in DB for it
-			// if CC == "EUR" {
-			// 	id = 1
-			// }
-			// // Setting to zero and skipping if table not found for currency (i.e. BTC)
-			// if id == 0 {
-			// 	log.Println("Currency rate table not found for " + CC)
-			// 	trans.NormalizedAmount = decimal.Zero
-			// } else {
-			// 	firstDate := trans.Date.AddDate(0, 0, -10).Format("2006-01-02")
-			// 	lastDate := trans.Date.AddDate(0, 0, 10).Format("2006-01-02")
-			// 	date := trans.Date.Format("2006-01-02")
-			// 	fx := types.Fx{}
-			// 	if CC == "EUR" {
-			// 		// finding the nearest 'EUR' rate by doing a search with USD and swapping in 1.0 for rate
-			// 		CC = "USD"
-			// 		query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN
-			// 		%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, date)
-			// 		err := db.CurrencyDBCon.Get(&fx, query)
-			// 		CC = "EUR"
-			// 		if err != nil {
-			// 			panic(err)
-			// 		}
-			// 		fx.Rate = decimal.NewFromInt(1)
-			// 	} else {
-			// 		// otherwise finding the nearest rate in +/- 10 days
-			// 		query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN
-			// 		%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, date)
-			// 		err := db.CurrencyDBCon.Get(&fx, query)
-			// 		if err != nil {
-			// 			panic(err)
-			// 		}
-			// 	}
-			// 	// Setting to zero and skipping if rate not found within +/- 10 days
-			// 	if (types.Fx{}) == fx {
-			// 		log.Println("Currency rate not found for " + CC + " within +/- 10 days of " + date)
-			// 		trans.NormalizedAmount = decimal.Zero
-			// 	} else {
-			// 		if baseCurrency == "EUR" {
-			// 			// Using no extra rate if base currency is EUR
-			// 			trans.NormalizedAmount = trans.Amount.Div(fx.Rate)
-			// 		} else {
-			// 			// Finding second rate for base currency other than EUR
-			// 			bfx := types.Fx{}
-			// 			query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date = %q`, baseCurrency, fx.FxDate.Format("2006-01-02"))
-			// 			err := db.CurrencyDBCon.Get(&bfx, query)
-			// 			if err != nil {
-			// 				panic(err)
-			// 			}
-			// 			if (types.Fx{}) == bfx {
-			// 				// Setting to zero and skipping if base rate not found
-			// 				log.Println("Currency rate for base currency " + baseCurrency + " not found on date " + fx.FxDate.Format("2006-01-02"))
-			// 				trans.NormalizedAmount = decimal.Zero
-			// 			} else {
-			// 				// Decimal math to find normalized amount with rate and base rate
-			// 				trans.NormalizedAmount = trans.Amount.Div(fx.Rate).Mul(bfx.Rate)
-			// 			}
-			// 		}
-			// 	}
-			// }
 
 			//Searching for bottom category match first
 			sCat := types.CategorySE{}
-			query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE bottom_category = %q`, tx.Category)
+			query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE bottom_category = %q AND top_category = 'personal'`, tx.Category)
 			err = db.DBCon.Get(&sCat, query)
-			if err != nil {
+			if err != nil && err != sql.ErrNoRows {
 				panic(err)
 			}
 			if (types.CategorySE{}) == sCat {
 				//If nil for bottom category then look for match in sub category
-				query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE sub_category = %q`, tx.Category)
+				query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE sub_category = %q AND top_category = 'personal'`, tx.Category)
 				err := db.DBCon.Get(&sCat, query)
-				if err != nil {
+				if err != nil && err != sql.ErrNoRows {
 					panic(err)
 				}
 				if (types.CategorySE{}) == sCat {
@@ -483,22 +440,23 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurre
 				trans.CategoryName = sCat.AppCatName
 			}
 
-			queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
-							category_name, account_name, currency_code, account_id)
-							VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
-							:category_name, :account_name, :currency_code, :account_id) 
-							ON CONFLICT (transaction_id) DO UPDATE SET
-							'date' = excluded.'date',
-							description = excluded.description,
-							amount = excluded.amount
-							normalized_amount = excluded.normalized_amount
-							category = excluded.category
-							category_name = excluded.category_name`
+			// queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
+			// 				category_name, account_name, currency_code, account_id)
+			// 				VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
+			// 				:category_name, :account_name, :currency_code, :account_id)
+			// 				ON CONFLICT (transaction_id) DO UPDATE SET
+			// 				'date' = excluded.'date',
+			// 				description = excluded.description,
+			// 				amount = excluded.amount
+			// 				normalized_amount = excluded.normalized_amount
+			// 				category = excluded.category
+			// 				category_name = excluded.category_name`
 
-			_, err = txn.NamedExec(queryIns, trans)
-			if err != nil {
-				panic(err)
-			}
+			// _, err = txn.NamedExec(queryIns, trans)
+			// if err != nil {
+			// 	panic(err)
+			// }
+			tstmt.MustExec(trans)
 		}(transaction)
 	}
 
@@ -510,17 +468,18 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurre
 		iTok.LastDownloadedTransactions = time.Now()
 	}
 
-	query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
-				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id) 
-				ON CONFLICT (item_id, provider) DO UPDATE SET
-				interactive = excluded.interactive,
-				last_refresh = excluded.last_refresh,
-				next_refresh_possible = excluded.next_refresh_possible`
+	// query := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id)
+	// 			VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id)
+	// 			ON CONFLICT (item_id, provider) DO UPDATE SET
+	// 			interactive = excluded.interactive,
+	// 			last_refresh = excluded.last_refresh,
+	// 			next_refresh_possible = excluded.next_refresh_possible`
 
-	_, err := txn.NamedExec(query, iTok)
-	if err != nil {
-		panic(err)
-	}
+	// _, err := txn.NamedExec(query, iTok)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	istmt.MustExec(iTok)
 
 	// Committing now in main function
 	// err := txn.Commit()

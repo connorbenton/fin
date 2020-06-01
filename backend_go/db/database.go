@@ -18,6 +18,7 @@ func CreateDatabase() (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	DBCon.Exec("PRAGMA journal_mode=WAL;")
 
 	raw, err := ioutil.ReadFile("/usr/src/app/backend_go/db/create.sql")
 	query := string(raw)

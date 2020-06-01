@@ -18,7 +18,7 @@
             <tr v-for="post in posts" :key="post.id">
               <td>{{ post.id }}</td>
               <td>{{ post.title }}</td>
-              <td>{{ post.updatedAt }}</td>
+              <td>{{ post.updated_at }}</td>
               <td class="text-right">
                 <a href="#" @click.prevent="populatePostToEdit(post)">Edit</a> -
                 <a href="#" @click.prevent="deletePost(post.id)">Delete</a>
@@ -62,7 +62,7 @@
             <tr v-for="account in accounts" :key="account.id">
               <td>{{ account.id }}</td>
               <td>{{ account.title }}</td>
-              <td>{{ account.updatedAt }}</td>
+              <td>{{ account.updated_at }}</td>
               <td class="text-right">
                 <a href="#" @click.prevent="populateAccountToEdit(account)">Edit</a> -
                 <a href="#" @click.prevent="deleteAccount(account.id)">Delete</a>

@@ -610,11 +610,11 @@ export default {
       // this.transactions = await api.getTransactions();
       this.transactions = [...this.$store.getters.getAllTransactions];
       for (let i in this.transactions) {
-        this.transactions[i].accName = accs.find(
+        this.transactions[i].account_name = accs.find(
           x => x.account_id === this.transactions[i].account_id
         ).name;
         let matchCat = cats.find(x => x.id === this.transactions[i].category);
-        this.transactions[i].catName = matchCat.subCategory;
+        this.transactions[i].category_name = matchCat.sub_category;
         if (matchCat.count === undefined) matchCat.count = 0;
         matchCat.count = matchCat.count + 1;
         if (matchCat.total === undefined) matchCat.total = 0;
@@ -631,26 +631,26 @@ export default {
       this.transactionsTree.children = [];
       this.transactionsTree.value = 0;
       for (let j in cats) {
-        if (cats[j].excludeFromAnalysis || cats[j].topCategory === "Income")
+        if (cats[j].exclude_from_analysis || cats[j].top_category === "Income")
           continue;
-        if (cats[j].subCategory === cats[j].topCategory) {
+        if (cats[j].sub_category === cats[j].top_category) {
           let newChild = {};
-          newChild.name = cats[j].topCategory;
+          newChild.name = cats[j].top_category;
           newChild.children = [];
           newChild.value = 0;
           newChild.count = 0;
           // newChild.dbID = '';
 
           let children = cats.filter(
-            x => x.topCategory === cats[j].topCategory
+            x => x.top_category === cats[j].top_category
           );
           for (let k in children) {
             let subCatChildToPush = {};
-            if (children[k].subCategory === children[k].topCategory) {
-              subCatChildToPush.name = children[k].subCategory + ` (General)`;
+            if (children[k].sub_category === children[k].top_category) {
+              subCatChildToPush.name = children[k].sub_category + ` (General)`;
               newChild.dbID = children[k].id;
             } else {
-              subCatChildToPush.name = children[k].subCategory;
+              subCatChildToPush.name = children[k].sub_category;
             }
 
             subCatChildToPush.dbID = children[k].id;

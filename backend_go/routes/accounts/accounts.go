@@ -2,7 +2,6 @@ package accounts
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	// "fmt"
@@ -12,14 +11,24 @@ import (
 	_ "github.com/jmoiron/sqlx"
 )
 
+func SelectAll() []types.Account {
+	dbdata := []types.Account{}
+	err := db.DBCon.Select(&dbdata, "SELECT * FROM `accounts`")
+	if err != nil {
+		panic(err)
+	}
+	return dbdata
+}
+
 func GetFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
-		dbdata := []types.Account{}
-		err := db.DBCon.Select(&dbdata, "SELECT * FROM `accounts`")
-		if err != nil {
-			log.Fatal(err)
-		}
+		dbdata := SelectAll()
+		// dbdata := []types.Account{}
+		// err := db.DBCon.Select(&dbdata, "SELECT * FROM `accounts`")
+		// if err != nil {
+		// log.Fatal(err)
+		// }
 
 		res.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(res).Encode(dbdata); err != nil {

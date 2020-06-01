@@ -151,11 +151,11 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
       // this.transactions = [...this.$store.getters.getAllTransactions];
       const txSet = stateObj.txData.txSets[setKey];
       for (const set of txSet) {
-        set.accName = accs.find(
+        set.account_name = accs.find(
           (x: any) => x.account_id === set.account_id,
         ).name;
         const matchCat = cats.find((x: any) => x.id === set.category);
-        set.catName = matchCat.subCategory;
+        set.category_name = matchCat.sub_category;
         if (matchCat.count === undefined) { matchCat.count = 0; }
         matchCat.count = matchCat.count + 1;
         if (matchCat.total === undefined) { matchCat.total = 0; }
@@ -182,12 +182,12 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
       // txTree.trueValue = 0;
       // txTree.trueCount = 0;
       for (const j in cats) {
-        // if (cats[j].excludeFromAnalysis || cats[j].topCategory === "Income")
-        // if (cats[j].excludeFromAnalysis)
+        // if (cats[j].exclude_from_analysis || cats[j].top_category === "Income")
+        // if (cats[j].exclude_from_analysis)
         // continue;
-        if (cats[j].subCategory === cats[j].topCategory) {
+        if (cats[j].sub_category === cats[j].top_category) {
           const newChild = {
-            name: cats[j].topCategory,
+            name: cats[j].top_category,
             children: [{}],
             value: 0,
             count: 0,
@@ -195,7 +195,7 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
             trueValue: 0,
             dbID: 0,
           };
-          // newChild.name = cats[j].topCategory;
+          // newChild.name = cats[j].top_category;
           // newChild.children = [];
           // newChild.value = 0;
           // newChild.count = 0;
@@ -204,7 +204,7 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
           // newChild.dbID = '';
 
           const children = cats.filter(
-            (x: any) => x.topCategory === cats[j].topCategory,
+            (x: any) => x.top_category === cats[j].top_category,
           );
           for (const child of children) {
             const subCatChildToPush = {
@@ -215,11 +215,11 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
               trueValue: 0,
               trueCount: 0,
             };
-            if (child.subCategory === child.topCategory) {
-              subCatChildToPush.name = child.subCategory + ` (General)`;
+            if (child.sub_category === child.top_category) {
+              subCatChildToPush.name = child.sub_category + ` (General)`;
               newChild.dbID = child.id;
             } else {
-              subCatChildToPush.name = child.subCategory;
+              subCatChildToPush.name = child.sub_category;
             }
 
             subCatChildToPush.dbID = child.id;
@@ -232,7 +232,7 @@ function buildTxData(stateObj: any, key: string, start: string = '', end: string
             subCatChildToPush.trueCount = subCatChildToPush.count;
             // subCatChildToPush.percent = "";
             // if (newChild.name === 'Income' || child.value < 0) {
-            if (child.excludeFromAnalysis || child.topCategory === 'Income' || subCatChildToPush.value < 0) {
+            if (child.exclude_from_analysis || child.top_category === 'Income' || subCatChildToPush.value < 0) {
               // subCatChildToPush.trueCount = subCatChildToPush.count;
               subCatChildToPush.count = 0;
               // subCatChildToPush.trueValue = subCatChildToPush.value;

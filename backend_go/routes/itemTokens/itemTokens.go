@@ -70,29 +70,55 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 		// if err != nil {
 		// 	log.Fatal(err)
 		// }
+		txnPre := db.DBCon.MustBegin()
+
+		istmtPre := types.PrepItemSt(txnPre)
+		astmtPre := types.PrepAccountSt(txnPre)
+		// // istmt := types.PrepItemSt(db.DBCon)
+		// // astmt := types.PrepAccountSt(db.DBCon)
+		// tstmt := types.PrepTransSt(txn)
 
 		itemTokens := SelectAll()
-
-		txn := db.DBCon.MustBegin()
 
 		var wgPre sync.WaitGroup
 		wgPre.Add(1)
 		go func() {
 			defer wgPre.Done()
-			saltedge.RefreshConnectionsFunction(txn)
+			// saltedge.RefreshConnectionsFunction(txn)
+			// saltedge.RefreshConnectionsFunction(istmt, astmt)
+			saltedge.RefreshConnectionsFunction(istmtPre, astmtPre)
 		}()
 		wgPre.Add(1)
 		go func() {
 			defer wgPre.Done()
 			db.GetNewXML()
 		}()
+		for _, itemTok := range itemTokens {
+			wgPre.Add(1)
+			go func(itemToken types.ItemToken) {
+				defer wgPre.Done()
+				if itemToken.Provider == "Plaid" {
+					plaid.RefreshConnection(itemToken, istmtPre, astmtPre)
+				}
+			}(itemTok)
+		}
 		wgPre.Wait()
+
+		err := txnPre.Commit()
+		if err != nil {
+			panic(err)
+		}
 
 		// Make sure currencies are up to date
 
 		// Refresh Plaid and SaltEdge connections
 
 		// Then we iterate through item tokens and process in either saltedge or plaid
+
+		txn := db.DBCon.MustBegin()
+		istmt := types.PrepItemSt(txn)
+		astmt := types.PrepAccountSt(txn)
+		tstmt := types.PrepTransSt(txn)
 
 		var wg sync.WaitGroup
 		for _, itemTok := range itemTokens {
@@ -105,7 +131,9 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 				// socket.ExportHub.Broadcast <- message
 
 				if itemToken.Provider == "SaltEdge" {
-					saltedge.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
+					// saltedge.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
+					// saltedge.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
+					saltedge.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
 					// if itemToken.Interactive {
 					// 	// Needs to be direct DB call
 					// 	itemToken.LastDownloadedTransactions = itemToken.LastRefresh
@@ -114,7 +142,9 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 					// 	itemToken.LastDownloadedTransactions = time.Now()
 					// }
 				} else {
-					plaid.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
+					// plaid.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
+					// plaid.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
+					plaid.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
 					// Needs direct DB call here to set LastDownloadedTransactions
 				}
 			}(itemTok)
@@ -122,6 +152,12 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 		}
 		wg.Wait()
 
+		err2 := txn.Commit()
+		if err2 != nil {
+			panic(err2)
+		}
+
+		res.WriteHeader(http.StatusOK)
 		// currencyRates := []CurrencyRate{}
 		// err2 := db.DBCon.Select(&currencyRates, "SELECT * FROM `currency_rates`")
 		// if err2 != nil {

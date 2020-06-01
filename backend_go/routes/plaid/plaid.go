@@ -1,6 +1,7 @@
 package plaid
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -94,7 +95,12 @@ func CreateFromPublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 		iTok.Institution = item.Name
 		iTok.Provider = "Plaid"
 		iTok.NeedsReLogin = false
-		upsertItemToken(iTok, txn)
+		// upsertItemToken(iTok, txn)
+		istmt := types.PrepItemSt(txn)
+		// istmt := types.PrepItemSt(db.DBCon)
+		upsertItemToken(iTok, istmt)
+		astmt := types.PrepAccountSt(txn)
+		// astmt := types.PrepAccountSt(db.DBCon)
 
 		pAccountRes, err := pClient.GetAccounts(pRes.AccessToken)
 		if err != nil {
@@ -111,7 +117,8 @@ func CreateFromPublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 			go func(pAcc plaid.Account) {
 				defer wg.Done()
 				acc := types.Account{}
-				upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, txn)
+				// upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, txn)
+				upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, astmt)
 			}(account)
 		}
 		wg.Wait()
@@ -134,21 +141,49 @@ func CreateFromPublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func upsertItemToken(tok types.ItemToken, txn *sqlx.Tx) {
+// func upsertItemTokenPrep(txn *sqlx.Tx) *sqlx.NamedStmt {
 
-	query := `INSERT INTO item_tokens(institution, provider, needs_re_login, access_token, item_id, last_downloaded_transactions)
-				VALUES(:institution, :provider, :needs_re_login, :access_token, :item_id, :last_downloaded_transactions) 
-				ON CONFLICT (item_id, provider) DO UPDATE SET
-				needs_re_login = excluded.needs_re_login
-				last_downloaded_transactions = excluded.last_downloaded_transactions`
-	_, err := db.DBCon.NamedExec(query, tok)
-	if err != nil {
-		panic(err)
-	}
+// 	query := `INSERT INTO item_tokens(institution, provider, needs_re_login, access_token, item_id, last_downloaded_transactions)
+// 				VALUES(:institution, :provider, :needs_re_login, :access_token, :item_id, :last_downloaded_transactions)
+// 				ON CONFLICT (item_id, provider) DO UPDATE SET
+// 				needs_re_login = excluded.needs_re_login
+// 				last_downloaded_transactions = excluded.last_downloaded_transactions`
+// 	nstmt, err := txn.PrepareNamed(query)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	// nstmtx := txn.PrepareNamed(nstmt)
+// 	return nstmt
+// 	// _, err := txn.NamedExec(query, tok)
+
+// }
+
+func upsertItemToken(tok types.ItemToken, stmt *sqlx.NamedStmt) {
+
+	stmt.MustExec(tok)
+	// _, err := txn.NamedExec(query, tok)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 }
 
-func upsertAccountWithPlaidAccount(acc types.Account, pAcc plaid.Account, inst string, itemID string, txn *sqlx.Tx) {
+// func upsertAccountPrep(txn *sqlx.Tx) *sqlx.NamedStmt {
+// 	query := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype)
+// 							VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype)
+// 							ON CONFLICT (account_id, provider) DO UPDATE SET
+// 							'limit' = excluded.'limit',
+// 							available = excluded.available,
+// 							balance = excluded.balance`
+// 	nstmt, err := txn.PrepareNamed(query)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	// nstmtx := txn.Stmtx(nstmt)
+// 	return nstmt
+// }
+
+func upsertAccountWithPlaidAccount(acc types.Account, pAcc plaid.Account, inst string, itemID string, stmt *sqlx.NamedStmt) {
 	acc.Name = pAcc.Name
 	acc.Institution = inst
 	acc.AccountID = pAcc.AccountID
@@ -165,16 +200,11 @@ func upsertAccountWithPlaidAccount(acc types.Account, pAcc plaid.Account, inst s
 	acc.Subtype = pAcc.Subtype
 	acc.ItemID = itemID
 
-	query := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype)
-							VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype) 
-							ON CONFLICT (account_id, provider) DO UPDATE SET
-							'limit' = excluded.'limit',
-							available = excluded.available,
-							balance = excluded.balance`
-	_, err := db.DBCon.NamedExec(query, acc)
-	if err != nil {
-		panic(err)
-	}
+	stmt.MustExec(acc)
+	// _, err := db.DBCon.NamedExec(query, acc)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 }
 
@@ -267,7 +297,69 @@ func GeneratePublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 // 	}
 // }
 
-func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurrency string) {
+func RefreshConnection(iTok types.ItemToken, istmt, astmt *sqlx.NamedStmt) {
+
+	pClient, err := newClient()
+	if err != nil {
+		panic(err)
+	}
+
+	// istmt := upsertItemTokenPrep(txn)
+	// astmt := upsertAccountPrep(txn)
+
+	// queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
+	// 			category_name, account_name, currency_code, account_id)
+	// 			VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
+	// 			:category_name, :account_name, :currency_code, :account_id)
+	// 			ON CONFLICT (transaction_id) DO UPDATE SET
+	// 			'date' = excluded.'date',
+	// 			description = excluded.description,
+	// 			amount = excluded.amount
+	// 			normalized_amount = excluded.normalized_amount
+	// 			category = excluded.category
+	// 			category_name = excluded.category_name`
+
+	// tstmt, err := txn.PrepareNamed(queryIns)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// txnPre := db.DBCon.MustBegin()
+
+	// astmtPre := types.PrepAccountSt(txnPre)
+
+	// var wgWrap sync.WaitGroup
+	// wgWrap.Add(2)
+	// go func() {
+	// 	defer wgWrap.Done()
+	pAccountRes, err := pClient.GetAccounts(iTok.AccessToken)
+	if err != nil {
+		//also need login required error handling here
+		errString := fmt.Sprintf("Error with Create Token Client Get Accounts request: %v \n", err)
+		log.Println(errString)
+		panic(err)
+	}
+
+	var wgAcc sync.WaitGroup
+	for _, account := range pAccountRes.Accounts {
+		wgAcc.Add(1)
+		go func(pAcc plaid.Account) {
+			defer wgAcc.Done()
+			acc := types.Account{}
+			// upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, txn)
+			upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, astmt)
+		}(account)
+	}
+	wgAcc.Wait()
+
+	// err2 := txnPre.Commit()
+	// if err2 != nil {
+	// 	panic(err2)
+	// }
+}
+
+func FetchTransactionsForItemToken(iTok types.ItemToken, istmt *sqlx.NamedStmt, astmt *sqlx.NamedStmt, tstmt *sqlx.NamedStmt, baseCurrency string) {
+	// func FetchTransactionsForItemToken(iTok types.ItemToken, baseCurrency string) {
 	today := time.Now().Format("2006-01-02")
 
 	pClient, err := newClient()
@@ -275,113 +367,136 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, txn *sqlx.Tx, baseCurre
 		panic(err)
 	}
 
-	var wgWrap sync.WaitGroup
-	wgWrap.Add(2)
-	go func() {
-		defer wgWrap.Done()
-		pAccountRes, err := pClient.GetAccounts(iTok.AccessToken)
-		if err != nil {
-			//also need login required error handling here
-			errString := fmt.Sprintf("Error with Create Token Client Get Accounts request: %v \n", err)
-			log.Println(errString)
-			panic(err)
-		}
+	// istmt := upsertItemTokenPrep(txn)
+	// astmt := upsertAccountPrep(txn)
 
-		var wgAcc sync.WaitGroup
-		for _, account := range pAccountRes.Accounts {
-			wgAcc.Add(1)
-			go func(pAcc plaid.Account) {
-				defer wgAcc.Done()
-				acc := types.Account{}
-				upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, txn)
-			}(account)
-		}
-		wgAcc.Wait()
-	}()
-	go func() {
-		defer wgWrap.Done()
-		var pTransRes plaid.GetTransactionsResponse
-		var err error
-		if iTok.LastDownloadedTransactions.IsZero() {
-			pTransRes, err = pClient.GetTransactions(iTok.AccessToken, "2000-01-01", today)
-		} else {
-			pTransRes, err = pClient.GetTransactions(iTok.AccessToken, iTok.LastDownloadedTransactions.AddDate(0, 0, -40).Format("2006-01-02"), today)
-		}
-		if err != nil {
-			// Figure out how to handle login required error
-			// if err.Error.ErrorCode == "ITEM_LOGIN_REQUIRED" {
-			// iTok.NeedsReLogin = true
-			// upsertItemToken(iTok, txn)
-			// } else {
-			panic(err)
+	// queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
+	// 			category_name, account_name, currency_code, account_id)
+	// 			VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
+	// 			:category_name, :account_name, :currency_code, :account_id)
+	// 			ON CONFLICT (transaction_id) DO UPDATE SET
+	// 			'date' = excluded.'date',
+	// 			description = excluded.description,
+	// 			amount = excluded.amount
+	// 			normalized_amount = excluded.normalized_amount
+	// 			category = excluded.category
+	// 			category_name = excluded.category_name`
+
+	// tstmt, err := txn.PrepareNamed(queryIns)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// txnPre := db.DBCon.MustBegin()
+
+	// astmtPre := types.PrepAccountSt(txnPre)
+
+	// // var wgWrap sync.WaitGroup
+	// // wgWrap.Add(2)
+	// // go func() {
+	// // 	defer wgWrap.Done()
+	// pAccountRes, err := pClient.GetAccounts(iTok.AccessToken)
+	// if err != nil {
+	// 	//also need login required error handling here
+	// 	errString := fmt.Sprintf("Error with Create Token Client Get Accounts request: %v \n", err)
+	// 	log.Println(errString)
+	// 	panic(err)
+	// }
+
+	// var wgAcc sync.WaitGroup
+	// for _, account := range pAccountRes.Accounts {
+	// 	wgAcc.Add(1)
+	// 	go func(pAcc plaid.Account) {
+	// 		defer wgAcc.Done()
+	// 		acc := types.Account{}
+	// 		// upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, txn)
+	// 		upsertAccountWithPlaidAccount(acc, pAcc, iTok.Institution, iTok.ItemID, astmtPre)
+	// 	}(account)
+	// }
+	// wgAcc.Wait()
+
+	// err2 := txnPre.Commit()
+	// if err2 != nil {
+	// 	panic(err2)
+	// }
+
+	// }()
+	// go func() {
+	// defer wgWrap.Done()
+	var pTransRes plaid.GetTransactionsResponse
+	// var err error
+	if iTok.LastDownloadedTransactions.IsZero() {
+		pTransRes, err = pClient.GetTransactions(iTok.AccessToken, "2000-01-01", today)
+	} else {
+		pTransRes, err = pClient.GetTransactions(iTok.AccessToken, iTok.LastDownloadedTransactions.AddDate(0, 0, -40).Format("2006-01-02"), today)
+	}
+	if err != nil {
+		// Figure out how to handle login required error
+		// if err.Error.ErrorCode == "ITEM_LOGIN_REQUIRED" {
+		// iTok.NeedsReLogin = true
+		// upsertItemToken(iTok, txn)
+		// } else {
+		panic(err)
+		// }
+	}
+
+	var wgTrans sync.WaitGroup
+	for _, transaction := range pTransRes.Transactions {
+		wgTrans.Add(1)
+		go func(ptx plaid.Transaction) {
+			defer wgTrans.Done()
+			tx := types.Transaction{}
+
+			// tx.Date, err = date.Parse("2006-01-02", ptx.Date)
+			tx.Date = ptx.Date
+			tx.TransactionID = ptx.ID
+			tx.Description = ptx.Name
+			tx.Amount = decimal.NewFromFloat(ptx.Amount * -1)
+			tx.CurrencyCode = ptx.ISOCurrencyCode
+			tx.NormalizedAmount = db.GetNormalizedAmount(tx.CurrencyCode, baseCurrency, tx.Date, tx.Amount)
+
+			//Searching for category ID match first
+			pCat := types.CategoryPlaid{}
+			query := fmt.Sprintf(`SELECT * FROM plaid__categories WHERE cat_i_d = %q`, ptx.CategoryID)
+			err = db.DBCon.Get(&pCat, query)
+			if err != nil && err != sql.ErrNoRows {
+				panic(err)
+			}
+			// if (types.CategoryPlaid{}) == pCat {
+			if err == sql.ErrNoRows {
+				//If still nil then set category to Uncategorized
+				tx.Category = 106
+				tx.CategoryName = "Uncategorized"
+			} else {
+				tx.Category = pCat.LinkToAppCat
+				tx.CategoryName = pCat.AppCatName
+			}
+
+			var name string
+			err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE account_id='"+ptx.AccountID+"' AND provider='Plaid' LIMIT 1")
+			if err != nil {
+				panic(err)
+			}
+			tx.AccountName = name
+			tx.AccountID = ptx.AccountID
+
+			tstmt.MustExec(tx)
+			// _, err = txn.NamedExec(queryIns, tx)
+			// if err != nil {
+			// 	panic(err)
 			// }
-		}
 
-		var wgTrans sync.WaitGroup
-		for _, transaction := range pTransRes.Transactions {
-			wgTrans.Add(1)
-			go func(ptx plaid.Transaction) {
-				defer wgTrans.Done()
-				tx := types.Transaction{}
+		}(transaction)
+	}
+	wgTrans.Wait()
 
-				tx.Date, err = time.Parse("2006-01-02", ptx.Date)
-				tx.TransactionID = ptx.ID
-				tx.Description = ptx.Name
-				tx.Amount = decimal.NewFromFloat(ptx.Amount * -1)
-				tx.CurrencyCode = ptx.ISOCurrencyCode
-				tx.NormalizedAmount = db.GetNormalizedAmount(tx.CurrencyCode, baseCurrency, tx.Date, tx.Amount)
-
-				//Searching for category ID match first
-				pCat := types.CategoryPlaid{}
-				query := fmt.Sprintf(`SELECT * FROM plaid__categories WHERE cat_i_d = %q`, ptx.CategoryID)
-				err = db.DBCon.Get(&pCat, query)
-				if err != nil {
-					panic(err)
-				}
-				if (types.CategoryPlaid{}) == pCat {
-					//If still nil then set category to Uncategorized
-					tx.Category = 106
-					tx.CategoryName = "Uncategorized"
-				} else {
-					tx.Category = pCat.LinkToAppCat
-					tx.CategoryName = pCat.AppCatName
-				}
-
-				var name string
-				err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE 'id'="+ptx.AccountID+" AND provider='SaltEdge' LIMIT 1")
-				if err != nil {
-					panic(err)
-				}
-				tx.AccountName = name
-				tx.AccountID = ptx.AccountID
-
-				queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
-							category_name, account_name, currency_code, account_id)
-							VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
-							:category_name, :account_name, :currency_code, :account_id) 
-							ON CONFLICT (transaction_id) DO UPDATE SET
-							'date' = excluded.'date',
-							description = excluded.description,
-							amount = excluded.amount
-							normalized_amount = excluded.normalized_amount
-							category = excluded.category
-							category_name = excluded.category_name`
-
-				_, err = txn.NamedExec(queryIns, tx)
-				if err != nil {
-					panic(err)
-				}
-
-			}(transaction)
-		}
-		wgTrans.Wait()
-
-	}()
+	// }()
 
 	iTok.LastDownloadedTransactions = time.Now()
-	upsertItemToken(iTok, txn)
+	// upsertItemToken(iTok, txn)
+	upsertItemToken(iTok, istmt)
 
-	wgWrap.Wait()
+	// wgWrap.Wait()
 
 	// url := "https://www.saltedge.com/api/v5/transactions?connection_id" + ItemID
 	// fmt.Println("URL:>", url)

@@ -87,11 +87,11 @@ const workerActions = new Worker('./actions.ts', { type: 'module' });
 //       // this.transactions = [...this.$store.getters.getAllTransactions];
 //       let txSet = state.txData.txSets[setKey];
 //       for (let i in txSet) {
-//         txSet[i].accName = accs.find(
+//         txSet[i].account_name = accs.find(
 //           x => x.account_id === txSet[i].account_id
 //         ).name;
 //         let matchCat = cats.find(x => x.id === txSet[i].category);
-//         txSet[i].catName = matchCat.subCategory;
+//         txSet[i].category_name = matchCat.sub_category;
 //         if (matchCat.count === undefined) matchCat.count = 0;
 //         matchCat.count = matchCat.count + 1;
 //         if (matchCat.total === undefined) matchCat.total = 0;
@@ -108,27 +108,27 @@ const workerActions = new Worker('./actions.ts', { type: 'module' });
 //       txTree.children = [];
 //       txTree.value = 0;
 //       for (let j in cats) {
-//         // if (cats[j].excludeFromAnalysis || cats[j].topCategory === "Income")
-//         if (cats[j].excludeFromAnalysis)
+//         // if (cats[j].exclude_from_analysis || cats[j].top_category === "Income")
+//         if (cats[j].exclude_from_analysis)
 //           continue;
-//         if (cats[j].subCategory === cats[j].topCategory) {
+//         if (cats[j].sub_category === cats[j].top_category) {
 //           let newChild = {};
-//           newChild.name = cats[j].topCategory;
+//           newChild.name = cats[j].top_category;
 //           newChild.children = [];
 //           newChild.value = 0;
 //           newChild.count = 0;
 //           // newChild.dbID = '';
 
 //           let children = cats.filter(
-//             x => x.topCategory === cats[j].topCategory
+//             x => x.top_category === cats[j].top_category
 //           );
 //           for (let k in children) {
 //             let subCatChildToPush = {};
-//             if (children[k].subCategory === children[k].topCategory) {
-//               subCatChildToPush.name = children[k].subCategory + ` (General)`;
+//             if (children[k].sub_category === children[k].top_category) {
+//               subCatChildToPush.name = children[k].sub_category + ` (General)`;
 //               newChild.dbID = children[k].id;
 //             } else {
-//               subCatChildToPush.name = children[k].subCategory;
+//               subCatChildToPush.name = children[k].sub_category;
 //             }
 
 //             subCatChildToPush.dbID = children[k].id;
@@ -139,7 +139,7 @@ const workerActions = new Worker('./actions.ts', { type: 'module' });
 //             subCatChildToPush.count = count === undefined ? 0 : count;
 //             // subCatChildToPush.percent = "";
 //             // if (newChild.name === 'Income' || child.value < 0) {
-//             if (children[k].topCategory === 'Income' || subCatChildToPush.value < 0) {
+//             if (children[k].top_category === 'Income' || subCatChildToPush.value < 0) {
 //               subCatChildToPush.trueValue = subCatChildToPush.value;
 //               subCatChildToPush.value = 0;
 //             }
@@ -318,30 +318,30 @@ const store = new Vuex.Store({
       state.transactions = transactions;
       const cats: any[] = state.categories;
       const accs: any[] = state.accounts;
-      for (const trans of state.transactions) {
-        // const trans: any = state.transactions[i];
-        trans.catName = cats.find(
-          (x) => x.id === trans.category,
-        ).subCategory;
-        // state.transactions[i].catName = cats.find(
-        // x => x.id === state.transactions[i].category
-        // ).subCategory;
-        trans.accName = accs.find(
-          (x) => x.account_id === trans.account_id,
-        ).name;
-      }
+      // for (const trans of state.transactions) {
+      //   // const trans: any = state.transactions[i];
+      //   trans.category_name = cats.find(
+      //     (x) => x.id === trans.category,
+      //   ).sub_category;
+      //   // state.transactions[i].category_name = cats.find(
+      //   // x => x.id === state.transactions[i].category
+      //   // ).sub_category;
+      //   trans.account_name = accs.find(
+      //     (x) => x.account_id === trans.account_id,
+      //   ).name;
+      // }
     },
     updateTransaction(state, transaction) {
       const transSet: any[] = state.transactions;
       const transToUpdate = transSet.find((x) => x.id === transaction.id);
       transToUpdate.category = transaction.category;
-      transToUpdate.catName = transaction.catName;
+      transToUpdate.category_name = transaction.category_name;
     },
     updateCategories(state, categories) {
       state.categories = categories;
       //   var topArr = [];
       //   state.categories.forEach((obj) => {
-      //     topArr.push(obj.topCategory);
+      //     topArr.push(obj.top_category);
       //   });
       //   state.topCategories = [...new Set(topArr)];
     },

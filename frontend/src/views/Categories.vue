@@ -15,19 +15,19 @@
  <v-card class="mx-auto" width="300">
           <v-list class="pa-0 overflow-y-auto" style = "max-height:90vh">
         <v-menu offset-x open-on-hover
-              v-for="(cat, index) in filterTopCategory(categories)"
+              v-for="(cat, index) in filtertop_category(categories)"
               :key="index"
         >
           <template v-slot:activator="{ on }">
             <v-hover v-slot:default="{ hover }">
             <v-list-item
-              @click="editCategory(cat.topCategory)"
+              @click="editCategory(cat.top_category)"
               v-on="on"
             :class="`${hover? 'class1': 'class2'}`"
             >
             <v-list-item-title 
             >
-              {{cat.topCategory}}
+              {{cat.top_category}}
             </v-list-item-title>
             <v-list-item-action>
               <v-btn icon>
@@ -38,23 +38,23 @@
             </v-hover>
           </template>
           <v-list
-              v-for="(subcat, index) in filterSubCategory(cat.topCategory,categories)"
+              v-for="(subcat, index) in filtersub_category(cat.top_category,categories)"
               :key="index"
               class="pa-0"
           >
             <v-hover v-slot:default="{ hover }">
             <v-list-item
-              @click="editCategory(subcat.subCategory)"
+              @click="editCategory(subcat.sub_category)"
               :class="`${hover? 'class1': 'class2'}`"
             >
             <v-list-item-title
             >
-            {{subcat.subCategory}}
+            {{subcat.sub_category}}
             </v-list-item-title>
             <v-list-item-action>
               <v-btn icon>
-              <v-icon v-if="cat.excludeFromAnalysis == 1" color="red lighten-1">visibility_off</v-icon>
-              <v-icon v-if="cat.excludeFromAnalysis == 0" color="green lighten-1">visibility</v-icon>
+              <v-icon v-if="cat.exclude_from_analysis == 1" color="red lighten-1">visibility_off</v-icon>
+              <v-icon v-if="cat.exclude_from_analysis == 0" color="green lighten-1">visibility</v-icon>
               </v-btn>
             </v-list-item-action>
             <v-list-item-action>
@@ -97,7 +97,7 @@ export default {
       x: 0,
       y: 0,
       currentItem: {},
-      currentTopCategory: null,
+      currenttop_category: null,
       offset: true,
       headers: [
         {text: 'Date', value: 'date' , dataType: 'Date'},
@@ -132,13 +132,13 @@ export default {
       // var pdis = []
       // var sdis = []
       // this.plaid_categories.forEach(function (obj) {pdis.push(obj.hierarchy)})
-      // this.saltedge_categories.forEach(function (obj) {sdis.push(obj.subCategory)})
+      // this.saltedge_categories.forEach(function (obj) {sdis.push(obj.sub_category)})
       // this.plaid_display = [...new Set(pdis)]
       // this.saltedge_display = [...new Set(sdis)]
       // console.log(JSON.stringify(this.categories))
       // console.log(JSON.stringify(this.saltedge_categories))
       // var topArr = []
-      // this.categories.forEach(function (obj) {topArr.push(obj.topCategory)})
+      // this.categories.forEach(function (obj) {topArr.push(obj.top_category)})
       // this.topCategories = [...new Set(topArr)]
       //console.log(JSON.stringify(this.topCategories))
       this.loading = false
@@ -184,24 +184,24 @@ export default {
        //console.log("After - " + this.transactions[this.editedIndex].category)
        this.editMenu = false
     },
-    filterSubCategory(topCat, categories) {
+    filtersub_category(topCat, categories) {
       var filterTop = topCat 
-      //console.log(this.currentTopCategory)
+      //console.log(this.currenttop_category)
       var filtered=categories.filter(function(item){
-        return item.topCategory==filterTop
+        return item.top_category==filterTop
       })
       //console.log(JSON.stringify(filtered))
       return filtered
     },
     filterSaltSub(input){
       //console.log(JSON.stringify(filtered))
-      var filtered = [...new Set (input.reduce((r, a) => r.concat(a.topCategory), []))]
+      var filtered = [...new Set (input.reduce((r, a) => r.concat(a.top_category), []))]
       console.log(JSON.stringify(filtered))
       return filtered
     },
-    filterTopCategory(categories) {
+    filtertop_category(categories) {
       var filtered=categories.filter(function(item){
-        return item.topCategory==item.subCategory
+        return item.top_category==item.sub_category
       })
       // console.log(JSON.stringify(filtered))
       return filtered

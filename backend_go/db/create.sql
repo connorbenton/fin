@@ -1,6 +1,6 @@
 -- PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
-CREATE TABLE IF NOT EXISTS `accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` VARCHAR(255), `institution` VARCHAR(255), `ignore_transactions` TINYINT(1), `account_id` VARCHAR(255), `item_id` VARCHAR(255), `type` VARCHAR(255), `subtype` VARCHAR(255), `balance` TEXT, `limit` TEXT, `available` TEXT, `currency` VARCHAR(255), `provider` VARCHAR(255), `running_total` TEXT, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE (`account_id`, `provider`));
+CREATE TABLE IF NOT EXISTS `accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` VARCHAR(255), `institution` VARCHAR(255), `ignore_transactions` TINYINT(1) DEFAULT 0, `account_id` VARCHAR(255), `item_id` VARCHAR(255), `type` VARCHAR(255), `subtype` VARCHAR(255) DEFAULT '', `balance` NUMERIC DEFAULT 0, `limit` NUMERIC DEFAULT 0, `available` NUMERIC DEFAULT 0, `currency` VARCHAR(255), `provider` VARCHAR(255), `running_total` NUMERIC DEFAULT 0, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE (`account_id`, `provider`));
 CREATE TRIGGER IF NOT EXISTS UpdateLastTime1 UPDATE ON accounts
 BEGIN
     UPDATE accounts SET updated_at=CURRENT_TIMESTAMP WHERE id=id;
@@ -117,7 +117,7 @@ INSERT OR IGNORE INTO categories (id, top_category, sub_category, exclude_from_a
 INSERT OR IGNORE INTO categories (id, top_category, sub_category, exclude_from_analysis) VALUES(107,'Uncategorized','Cash & ATM',0);
 INSERT OR IGNORE INTO categories (id, top_category, sub_category, exclude_from_analysis) VALUES(108,'Uncategorized','Check',0);
 INSERT OR IGNORE INTO categories (id, top_category, sub_category, exclude_from_analysis) VALUES(109,'Hide from Analysis','Hide from Analysis',1);
-CREATE TABLE IF NOT EXISTS `item_tokens` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `institution` VARCHAR(255), `access_token` VARCHAR(255), `item_id` VARCHAR(255), `provider` VARCHAR(255), `interactive` TINYINT(1), `needs_re_login` TINYINT(1), `last_refresh` DATETIME, `next_refresh_possible` DATETIME, `last_downloaded_transactions` DATETIME, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE (`item_id`, `provider`));
+CREATE TABLE IF NOT EXISTS `item_tokens` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `institution` VARCHAR(255), `access_token` VARCHAR(255) DEFAULT '', `item_id` VARCHAR(255), `provider` VARCHAR(255), `interactive` TINYINT(1) DEFAULT 0, `needs_re_login` TINYINT(1) DEFAULT 0, `last_refresh` DATETIME, `next_refresh_possible` DATETIME, `last_downloaded_transactions` DATETIME, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE (`item_id`, `provider`));
 CREATE TRIGGER IF NOT EXISTS UpdateLastTime4 UPDATE ON item_tokens
 BEGIN
     UPDATE item_tokens SET updated_at=CURRENT_TIMESTAMP WHERE id=id;
@@ -845,7 +845,7 @@ INSERT OR IGNORE INTO salt_edge__categories (id, top_category, sub_category, bot
 INSERT OR IGNORE INTO salt_edge__categories (id, top_category, sub_category, bottom_category, link_to_app_cat, app_cat_name) VALUES(106,'business','utilities','internet',76,'Misc Expenses');
 INSERT OR IGNORE INTO salt_edge__categories (id, top_category, sub_category, bottom_category, link_to_app_cat, app_cat_name) VALUES(107,'business','utilities','phone',76,'Misc Expenses');
 INSERT OR IGNORE INTO salt_edge__categories (id, top_category, sub_category, bottom_category, link_to_app_cat, app_cat_name) VALUES(108,'business','utilities','water',76,'Misc Expenses');
-CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `date` DATE, `transaction_id` VARCHAR(255) UNIQUE, `description` TEXT, `original_description` TEXT, `amount` TEXT, `normalized_amount` TEXT, `transaction_type` TEXT, `category` INTEGER, `category_name` TEXT, `account_name` TEXT, `currency_code` VARCHAR(255), `account_id` VARCHAR(255), `labels` TEXT, `notes` TEXT, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `date` DATE, `transaction_id` VARCHAR(255) UNIQUE, `description` TEXT, `original_description` TEXT DEFAULT '', `amount` NUMERIC DEFAULT 0, `normalized_amount` NUMERIC DEFAULT 0, `transaction_type` TEXT DEFAULT '', `category` INTEGER, `category_name` TEXT, `account_name` TEXT, `currency_code` VARCHAR(255), `account_id` VARCHAR(255), `labels` TEXT DEFAULT '', `notes` TEXT DEFAULT '', `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP);
 CREATE TRIGGER IF NOT EXISTS UpdateLastTime7 UPDATE ON transactions
 BEGIN
     UPDATE transactions SET updated_at=CURRENT_TIMESTAMP WHERE id=id;
