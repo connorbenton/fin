@@ -337,6 +337,11 @@ const store = new Vuex.Store({
       transToUpdate.category = transaction.category;
       transToUpdate.category_name = transaction.category_name;
     },
+    updateAccount(state, account) {
+      const accSet: any[] = state.accounts;
+      const accToUpdate = accSet.find((x) => x.id === account.id);
+      accToUpdate.ignore_transactions = account.ignore_transactions;
+    },
     updateCategories(state, categories) {
       state.categories = categories;
       //   var topArr = [];

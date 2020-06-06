@@ -14,10 +14,10 @@ var realSock;
 
 const plaidClient = new plaid.Client(
   process.env.VUE_APP_PLAID_CLIENT_ID,
-  process.env['VUE_APP_PLAID_SECRET_' + process.env.VUE_APP_ENVIRONMENT.toUpperCase()],
+  process.env['VUE_APP_PLAID_SECRET_' + process.env.VUE_APP_PLAID_ENVIRONMENT.toUpperCase()],
   process.env.VUE_APP_PLAID_PUBLIC_KEY,
   // plaid.environments.sandbox,
-  plaid.environments[process.env.VUE_APP_ENVIRONMENT],
+  plaid.environments[process.env.VUE_APP_PLAID_ENVIRONMENT],
   { version: '2018-05-22' }
 );
 

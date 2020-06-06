@@ -13,6 +13,7 @@
     "@types/socket.io": "^2.1.4",
     "@types/socket.io-client": "^1.4.32",
     "axios": "^0.19.2",
+    "currency.js": "^1.2.2",
     "d3": "^4.13.0",
     "moment": "^2.25.3",
     "papaparse": "^5.2.0",

@@ -36,3 +36,26 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 		}
 	}
 }
+
+func UpsertFunction() func(http.ResponseWriter, *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+
+		p := types.Account{}
+
+		err := json.NewDecoder(req.Body).Decode(&p)
+		if err != nil {
+			panic(err)
+		}
+
+		txn := db.DBCon.MustBegin()
+		astmt := types.PrepAccountSt(txn)
+
+		astmt.MustExec(p)
+		errC := txn.Commit()
+		if errC != nil {
+			panic(errC)
+		}
+
+		res.WriteHeader(http.StatusOK)
+	}
+}

@@ -1,3 +1,5 @@
+# github.com/gorilla/handlers v1.4.2
+## explicit
 # github.com/gorilla/mux v1.7.4
 ## explicit
 github.com/gorilla/mux

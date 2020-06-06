@@ -34,6 +34,7 @@
                     class="pa-0"
                     @click="showTransactionsForAccount($event, acct)"
                   >
+                  <v-col class="ma-0 pa-0">
                     <v-row no-gutters align="center" class="px-4" style="flex-wrap: nowrap">
                       <v-col cols="8" class="flex-grow-1 flex-shrink-0 pa-0">
                         <v-list-item-content class="pa-0">
@@ -46,16 +47,39 @@
                           <v-list-item-title
                             class="body-2"
                           >{{formatBalance(acct.balance, acct.currency)}}</v-list-item-title>
-                          <v-list-item-subtitle class="caption">{{timeSince(acct.updated_at)}}</v-list-item-subtitle>
+                          <v-list-item-subtitle class="caption">{{timeSince(acct.updated_at, acct.item_id)}}</v-list-item-subtitle>
                         </v-list-item-content>
                       </v-col>
                     </v-row>
+                    <v-row v-if="showAcc" no-gutters align="center" class="px-4" style="flex-wrap: nowrap">
+                    <!-- <v-list> -->
+                      <!-- <v-list-item> -->
+                        <v-switch dense inset class="ma-0 pa-0" 
+                        v-model="acct.ignore_transactions" 
+                        :label="`Account is Hidden from Sum: ${acct.ignore_transactions.toString()}`"
+                        @click.stop="toggleAccountShow(acct)"
+                        ></v-switch>
+                      <!-- </v-list-item> -->
+                    <!-- </v-list> -->
+                  </v-row>
+                  </v-col>
                   </v-list-item>
                 </v-list-item-group>
               </v-list>
             </v-expansion-panel-content>
           </v-expansion-panel>
         </v-expansion-panels>
+        <v-row class="ma-4">
+                        <v-switch v-model="showAcc" label="Choose Accounts to Include in Sum"></v-switch>
+          <!-- <v-tooltip bottom>
+            <template v-slot:activator="{ on }">
+            <v-btn icon v-on="on">
+        <v-icon large>build</v-icon>
+            </v-btn>
+            </template>
+            <span>Choose Accounts to Sum</span>
+          </v-tooltip> -->
+        </v-row>
       </v-col>
       <TransactionsTable v-bind:transactionsToDisplay="filteredItems"></TransactionsTable>
       <!-- <TransactionsTable v-if="apiStateLoaded" v-bind:transactionsToDisplay="filteredItems"></TransactionsTable> -->
@@ -71,6 +95,8 @@
 
 <script>
 import TransactionsTable from "../components/TransactionsTable.vue";
+import Currency from 'currency.js';
+import api from "@/api";
 export default {
   data() {
     return {
@@ -80,6 +106,7 @@ export default {
       transactions: [],
       accounts: [],
       categories: [],
+      itemTokens: [],
       model: [],
       cashAccountTypes: [
         "account",
@@ -92,7 +119,11 @@ export default {
       ],
       creditAccountTypes: ["credit", "credit_card"],
       investmentAccountTypes: ["investment"],
-      printedAccounts: []
+      printedAccounts: [],
+      showAcc: false
+      // accIsShown: false,
+      // x: 0,
+      // y: 0
       // console
     };
   },
@@ -151,6 +182,17 @@ export default {
       this.categories = this.$store.getters.getAllCategories;
       this.accounts = this.$store.getters.getAllAccounts;
       this.transactions = this.$store.getters.getAllTransactions;
+      this.itemTokens = this.$store.getters.getAllItemTokens;
+    },
+    toggleAccountShow(acct) {
+      try {
+      acct.ignore_transactions = !acct.ignore_transactions;
+      api.upsertAccount(acct);
+      this.$store.commit( "updateAccount", acct);
+      } catch(err) {
+        acct.ignore_transactions = !acct.ignore_transactions;
+        console.error(err)
+        }
     },
     //Triggers display event when account is clicked in accounts pane
     showTransactionsForAccount: function(event, id) {
@@ -196,9 +238,10 @@ export default {
         for (let currency of currencies) {
           let accountsToSum = filtered.filter(x => x.currency === currency);
           let currencyToPush = {};
-          let initialAmount = 0;
-          let numAmount = accountsToSum.reduce(
-            (a, b) => a + b.balance,
+          let initialAmount = Currency(0);
+          let numAmount = accountsToSum.filter(({ignore_transactions}) =>
+          !ignore_transactions).reduce(
+            (a, b) => Currency(a).add(b.balance),
             initialAmount
           );
           currencyToPush.amount = new Intl.NumberFormat("en-US", {
@@ -215,8 +258,15 @@ export default {
       }
     },
     //Gets time in a nice date for the last refresh in accounts pane
-    timeSince(date) {
-      date = Date.parse(date);
+    timeSince(date, itemID) {
+      
+      let matchItem = this.itemTokens.filter(x => x.item_id == itemID);
+
+      if (matchItem[0].interactive) {
+        date = Date.parse(matchItem[0].last_refresh);
+      } else {
+        date = Date.parse(date);
+      }
       var seconds = Math.floor((new Date() - date) / 1000);
 
       var interval = Math.floor(seconds / 31536000);

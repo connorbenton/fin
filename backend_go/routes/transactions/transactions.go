@@ -16,8 +16,6 @@ import (
 	// "fmt"
 	"fintrack-go/db"
 	"fintrack-go/routes/accounts"
-	"fintrack-go/routes/categories"
-	"fintrack-go/socket"
 	"fintrack-go/types"
 
 	_ "github.com/jmoiron/sqlx"
@@ -54,7 +52,9 @@ func SelectAll() []types.Transaction {
 func GetFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
+		start := time.Now()
 		dbdata := SelectAll()
+		log.Println("SelectAll done:", time.Since(start))
 		// err := db.DBCon.Select(&dbdata, "SELECT * FROM `item_tokens`")
 		// if err != nil {
 		// log.Fatal(err)
@@ -64,6 +64,7 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 		if err := json.NewEncoder(res).Encode(dbdata); err != nil {
 			panic(err)
 		}
+		log.Println("Encode done:", time.Since(start))
 	}
 }
 
@@ -107,12 +108,8 @@ func PutFunction() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func ImportFunction() func(http.ResponseWriter, *http.Request) {
+func CheckFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
-
-		baseCurrency := strings.ToUpper(os.Getenv("BASE_CURRENCY"))
-
-		db.GetNewXML()
 
 		p := []types.ImportTransaction{}
 
@@ -121,19 +118,20 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 			panic(err)
 		}
 
-		var mAccs struct {
-			mu       sync.Mutex
-			accounts []types.MatchingAccount
-		}
+		// var mAccs struct {
+		// mu       sync.Mutex
+		// accounts []types.MatchingAccount `json:"accounts"`
+		// }
 
-		var uCats struct {
-			mu   sync.Mutex
-			cats []string
-		}
-
-		var tSets struct {
-			mu       sync.Mutex
-			tSingles []types.CompareTransSingle
+		var resJSON struct {
+			TSets struct {
+				mu       sync.Mutex                 `json:"-"`
+				TSingles []types.CompareTransSingle `json:"transSets"`
+			} `json:"trans"`
+			UCats struct {
+				mu   sync.Mutex                `json:"-"`
+				Cats []types.CompareCatsSingle `json:"catsToID"`
+			} `json:"cats"`
 		}
 
 		txArray := make([]types.Transaction, len(p))
@@ -146,7 +144,7 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 			// defer wgFirst.Done()
 			tx := types.Transaction{}
 			if itx.Amount.IsZero() {
-				return
+				continue
 			}
 			dt, err := date.Parse("01/02/2006", itx.Date)
 			if err != nil {
@@ -162,6 +160,21 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 			} else {
 				tx.Date = dt.Format("2006-01-02")
 			}
+
+			// dt, err := date.Parse("01/02/2006", itx.Date)
+			// if err != nil {
+			// 	dt, err := date.Parse("1/02/2006", itx.Date)
+			// 	if err != nil {
+			// 		errString := fmt.Sprintf("Error with Import Date Parse: %v \n", err)
+			// 		log.Println(errString)
+			// 		res.WriteHeader(http.StatusInternalServerError)
+			// 		res.Write([]byte(errString))
+			// 	} else {
+			// 		tx.Date = dt.Format("2006-01-02")
+			// 	}
+			// } else {
+			// 	tx.Date = dt.Format("2006-01-02")
+			// }
 			tx.Description = itx.Description
 			if itx.TransactionType == "debit" {
 				tx.Amount = itx.Amount.Mul(decimal.NewFromInt(-1))
@@ -173,15 +186,15 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 			} else {
 				tx.CurrencyCode = itx.CurrencyCode
 			}
-			tx.NormalizedAmount = db.GetNormalizedAmount(tx.CurrencyCode, baseCurrency, tx.Date, tx.Amount)
+			// tx.NormalizedAmount = db.GetNormalizedAmount(tx.CurrencyCode, baseCurrency, tx.Date, tx.Amount)
 
 			if itx.Category == "" {
-				tx.Category = 106
-				tx.CategoryName = "Uncategorized"
+				// tx.Category = 106
+				// tx.CategoryName = "Uncategorized"
 			} else {
-				if v, ok := types.MintCatMap[itx.Category]; ok {
-					tx.Category = v
-					tx.CategoryName = itx.Category
+				if _, ok := types.MintCatMap[itx.Category]; ok {
+					// tx.Category = v
+					// tx.CategoryName = itx.Category
 				} else {
 					sCat := types.Category{}
 					query := fmt.Sprintf(`SELECT * FROM categories WHERE sub_category = %q`, itx.Category)
@@ -192,29 +205,34 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 					// Setting to nil so we can check with user later to ID the category
 					if (types.Category{}) == sCat {
 						// if err == sql.ErrNoRows {
-						tx.Category = 0
-						tx.CategoryName = itx.Category
-						// uCats.mu.Lock()
+						// tx.Category = 0
+						// tx.CategoryName = itx.Category
+						// UCats.mu.Lock()
 						v := false
-						for _, cat := range uCats.cats {
-							if cat == itx.Category {
+						for _, cat := range resJSON.UCats.Cats {
+							if cat.Category == itx.Category {
 								v = true
 								break
 							}
 						}
 						if !v {
-							uCats.cats = append(uCats.cats, itx.Category)
+							// UCats.mu.Lock()
+							compareSet := types.CompareCatsSingle{}
+							compareSet.Category = itx.Category
+							compareSet.AssignedCat = 106
+							compareSet.AssignedCatName = "Uncategorized"
+							resJSON.UCats.Cats = append(resJSON.UCats.Cats, compareSet)
+							// UCats.mu.Unlock()
 						}
-						// uCats.mu.Unlock()
 					} else {
-						tx.Category = sCat.ID
-						tx.CategoryName = sCat.SubCategory
+						// tx.Category = sCat.ID
+						// tx.CategoryName = sCat.SubCategory
 					}
 				}
 			}
 
 			possibleMatches := []types.Transaction{}
-			query := fmt.Sprintf(`SELECT * FROM transactions WHERE amount = %q AND 'date' = %q`, tx.Amount, tx.Date)
+			query := fmt.Sprintf(`SELECT * FROM transactions WHERE amount = %q AND date = %q`, tx.Amount, tx.Date)
 			err = db.DBCon.Select(&possibleMatches, query)
 			if err != nil && err != sql.ErrNoRows {
 				panic(err)
@@ -222,12 +240,12 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 			if len(possibleMatches) > 0 {
 				for _, matchTx := range possibleMatches {
 					// if matchTx.Date == tx.Date {
-					// tSets.mu.Lock()
+					// TSets.mu.Lock()
 					// v := false
 					// for _, mAcc := range mAccs.accounts {
 					// 	if mAcc.RefAccountID == matchTx.AccountID {
 					// 		v = true
-					// 		// tSets.mu.Unlock()
+					// 		// TSets.mu.Unlock()
 					// 		break
 					// 	}
 					// }
@@ -237,13 +255,17 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 					compareSet.Trans1.Description = tx.Description
 					compareSet.Trans1.Amount = tx.Amount
 					compareSet.Trans1.CurrencyCode = tx.CurrencyCode
+					compareSet.Trans1.AccountName = itx.AccountName
 					compareSet.Trans2.Date = matchTx.Date
 					compareSet.Trans2.Description = matchTx.Description
 					compareSet.Trans2.Amount = matchTx.Amount
 					compareSet.Trans2.CurrencyCode = matchTx.CurrencyCode
+					compareSet.Trans2.AccountName = matchTx.AccountName
+					compareSet.Trans2.AccountID = matchTx.AccountID
 					compareSet.Type = "trans"
-					tSets.tSingles = append(tSets.tSingles, compareSet)
-					// tSets.mu.Unlock()
+					// TSets.mu.Lock()
+					resJSON.TSets.TSingles = append(resJSON.TSets.TSingles, compareSet)
+					// TSets.mu.Unlock()
 					// messageData, err := json.Marshal(compareSet)
 					// if err != nil {
 					// 	panic(err)
@@ -273,129 +295,288 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 					// 	mAccs.mu.Unlock()
 					// }
 
-					// tSets.mu.Unlock()
+					// TSets.mu.Unlock()
 
 					// }
-					// tSets.mu.Unlock()
+					// TSets.mu.Unlock()
 					// }
 				}
 			}
 
-			tx.AccountName = itx.AccountName
+			// tx.AccountName = itx.AccountName
 			txArray[i] = tx
 
 			// }(i, transaction)
 		}
 		// wgFirst.Wait()
-		for _, set := range tSets.tSingles {
-			// compareSet := types.CompareTransSingle{}
-			// compareSet.Trans1.Date = tx.Date
-			// compareSet.Trans1.Description = tx.Description
-			// compareSet.Trans1.Amount = tx.Amount
-			// compareSet.Trans1.CurrencyCode = tx.CurrencyCode
-			// compareSet.Trans2.Date = matchTx.Date
-			// compareSet.Trans2.Description = matchTx.Description
-			// compareSet.Trans2.Amount = matchTx.Amount
-			// compareSet.Trans2.CurrencyCode = matchTx.CurrencyCode
-			// compareSet.Type = "trans"
-			// tSets.tSingles = append(tSets.tSingles, compareSet)
-			// tSets.mu.Unlock()
-			messageData, err := json.Marshal(set)
-			if err != nil {
-				panic(err)
-			}
 
-			message := types.WsMsg{}
-			message.Name = "compare"
-			message.Data = messageData
-
-			messageJSON, err := json.Marshal(message)
-			if err != nil {
-				panic(err)
-			}
-
-			// message := []byte(`{ "username": "Booh", }`)
-			socket.ExportHub.Broadcast <- messageJSON
-			answerJSON := <-socket.ExportHub.Response
-			// answer := types.CompareTransAnswer{}
-			// answer, err := json.Unmarshal(answerJSON)
-			if string(answerJSON) == "yes" {
-				// mAcc := types.MatchingAccount{}
-				// mAcc.ImportKey = itx.AccountName
-				// mAcc.RefAccountID = matchTx.AccountID
-				// mAcc.RefAccountName = matchTx.AccountName
-				// mAccs.mu.Lock()
-				// mAccs.accounts = append(mAccs.accounts, mAcc)
-				// mAccs.mu.Unlock()
-			}
+		res.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(res).Encode(resJSON); err != nil {
+			panic(err)
 		}
-
-		// for _, mAcc := range mAccs.accounts {
-		// if mAcc.RefAccountID == matchTx.AccountID {
-		// 	v = true
-		// 	// tSets.mu.Unlock()
-		// 	break
+		// if err := json.NewEncoder(res).Encode(TSets.TSingles); err != nil {
+		// 	panic(err)
 		// }
-		// }
-
-		// messageData, err := json.Marshal(compareSet)
-		// if err != nil {
+		// if err := json.NewEncoder(res).Encode(UCats.Cats); err != nil {
 		// 	panic(err)
 		// }
 
-		// message := types.WsMsg{}
-		// message.Name = "compare"
-		// message.Data = messageData
+		// for _, set := range TSets.TSingles {
+		// 	// compareSet := types.CompareTransSingle{}
+		// 	// compareSet.Trans1.Date = tx.Date
+		// 	// compareSet.Trans1.Description = tx.Description
+		// 	// compareSet.Trans1.Amount = tx.Amount
+		// 	// compareSet.Trans1.CurrencyCode = tx.CurrencyCode
+		// 	// compareSet.Trans2.Date = matchTx.Date
+		// 	// compareSet.Trans2.Description = matchTx.Description
+		// 	// compareSet.Trans2.Amount = matchTx.Amount
+		// 	// compareSet.Trans2.CurrencyCode = matchTx.CurrencyCode
+		// 	// compareSet.Type = "trans"
+		// 	// TSets.TSingles = append(TSets.TSingles, compareSet)
+		// 	// TSets.mu.Unlock()
+		// 	messageData, err := json.Marshal(set)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
 
-		// messageJSON, err := json.Marshal(message)
-		// if err != nil {
-		// 	panic(err)
+		// 	message := types.WsMsg{}
+		// 	message.Name = "compare"
+		// 	message.Data = messageData
+
+		// 	messageJSON, err := json.Marshal(message)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+
+		// 	// message := []byte(`{ "username": "Booh", }`)
+		// 	socket.ExportHub.Broadcast <- messageJSON
+		// 	answerJSON := <-socket.ExportHub.Response
+		// 	// answer := types.CompareTransAnswer{}
+		// 	// answer, err := json.Unmarshal(answerJSON)
+		// 	if string(answerJSON) == "yes" {
+		// 		// mAcc := types.MatchingAccount{}
+		// 		// mAcc.ImportKey = itx.AccountName
+		// 		// mAcc.RefAccountID = matchTx.AccountID
+		// 		// mAcc.RefAccountName = matchTx.AccountName
+		// 		// mAccs.mu.Lock()
+		// 		// mAccs.accounts = append(mAccs.accounts, mAcc)
+		// 		// mAccs.mu.Unlock()
+		// 	}
 		// }
 
-		// // message := []byte(`{ "username": "Booh", }`)
-		// socket.ExportHub.Broadcast <- messageJSON
-		// answerJSON := <-socket.ExportHub.Response
-		// // answer := types.CompareTransAnswer{}
-		// // answer, err := json.Unmarshal(answerJSON)
-		// if string(answerJSON) == "yes" {
-		// 	mAcc := types.MatchingAccount{}
-		// mAcc.ImportKey = itx.AccountName
-		// 	mAcc.RefAccount = matchTx.AccountID
-		// 	mAccs.mu.Lock()
-		// 	mAccs.accounts = append(mAccs.accounts, mAcc)
-		// 	mAccs.mu.Unlock()
+		// // for _, mAcc := range mAccs.accounts {
+		// // if mAcc.RefAccountID == matchTx.AccountID {
+		// // 	v = true
+		// // 	// TSets.mu.Unlock()
+		// // 	break
+		// // }
+		// // }
+
+		// // messageData, err := json.Marshal(compareSet)
+		// // if err != nil {
+		// // 	panic(err)
+		// // }
+
+		// // message := types.WsMsg{}
+		// // message.Name = "compare"
+		// // message.Data = messageData
+
+		// // messageJSON, err := json.Marshal(message)
+		// // if err != nil {
+		// // 	panic(err)
+		// // }
+
+		// // // message := []byte(`{ "username": "Booh", }`)
+		// // socket.ExportHub.Broadcast <- messageJSON
+		// // answerJSON := <-socket.ExportHub.Response
+		// // // answer := types.CompareTransAnswer{}
+		// // // answer, err := json.Unmarshal(answerJSON)
+		// // if string(answerJSON) == "yes" {
+		// // 	mAcc := types.MatchingAccount{}
+		// // mAcc.ImportKey = itx.AccountName
+		// // 	mAcc.RefAccount = matchTx.AccountID
+		// // 	mAccs.mu.Lock()
+		// // 	mAccs.accounts = append(mAccs.accounts, mAcc)
+		// // 	mAccs.mu.Unlock()
+		// // }
+		// answer := []types.CompareCatsResponse{}
+		// if len(UCats.Cats) > 0 {
+
+		// 	compareSet := types.CompareCatsSet{}
+		// 	compareSet.DbCats = categories.SelectAll()
+		// 	compareSet.CompareCats = UCats.Cats
+		// 	compareSet.Type = "cats"
+
+		// 	messageData, err := json.Marshal(compareSet)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+
+		// 	message := types.WsMsg{}
+		// 	message.Name = "compare"
+		// 	message.Data = messageData
+
+		// 	messageJSON, err := json.Marshal(message)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+
+		// 	// message := []byte(`{ "username": "Booh", }`)
+		// 	socket.ExportHub.Broadcast <- messageJSON
+		// 	answerJSON := <-socket.ExportHub.Response
+
+		// 	// answer := []types.CompareCatsResponse{}
+		// 	if err := json.Unmarshal(answerJSON, &answer); err != nil {
+		// 		panic(err)
+		// 	}
 		// }
-		answer := []types.CompareCatsResponse{}
-		if len(uCats.cats) > 0 {
+		// var cAccs struct {
+		// 	mu       sync.Mutex
+		// 	accounts []types.Account
+		// }
 
-			compareSet := types.CompareCatsSet{}
-			compareSet.DbCats = categories.SelectAll()
-			compareSet.CompareCats = uCats.cats
-			compareSet.Type = "cats"
+		// var countInt struct {
+		// 	mu         sync.Mutex
+		// 	countDup   int
+		// 	countUncat int
+		// }
 
-			messageData, err := json.Marshal(compareSet)
-			if err != nil {
-				panic(err)
-			}
+		// dbAccs := accounts.SelectAll()
 
-			message := types.WsMsg{}
-			message.Name = "compare"
-			message.Data = messageData
+		// txn := db.DBCon.MustBegin()
 
-			messageJSON, err := json.Marshal(message)
-			if err != nil {
-				panic(err)
-			}
+		// astmt := types.PrepAccountSt(txn)
+		// tstmt := types.PrepTransSt(txn)
 
-			// message := []byte(`{ "username": "Booh", }`)
-			socket.ExportHub.Broadcast <- messageJSON
-			answerJSON := <-socket.ExportHub.Response
+		// var wgSecond sync.WaitGroup
+		// for _, transaction := range txArray {
+		// 	wgSecond.Add(1)
+		// 	go func(tx types.Transaction) {
+		// 		defer wgSecond.Done()
+		// 		if tx.Category == 0 {
+		// 			v := false
+		// 			for _, rCat := range answer {
+		// 				if rCat.Category == tx.CategoryName {
+		// 					tx.Category = rCat.AssignedCat
+		// 					tx.CategoryName = rCat.AssignedCatName
+		// 					v = true
+		// 					break
+		// 				}
+		// 			}
+		// 			if !v {
+		// 				countInt.mu.Lock()
+		// 				countInt.countUncat++
+		// 				countInt.mu.Unlock()
+		// 				tx.Category = 106
+		// 				tx.CategoryName = "Uncategorized"
+		// 			}
+		// 		}
+		// 		cAccs.mu.Lock()
+		// 		v := false
+		// 		for _, acc := range cAccs.accounts {
+		// 			if acc.Name == tx.AccountName {
+		// 				tx.AccountID = acc.AccountID
+		// 				v = true
+		// 				break
+		// 			}
+		// 		}
+		// 		if !v {
+		// 			v := false
+		// 			for _, acc := range mAccs.accounts {
+		// 				if acc.ImportKey == tx.AccountName {
+		// 					tx.AccountID = acc.RefAccountID
+		// 					tx.AccountName = acc.RefAccountName
+		// 					v = true
+		// 					break
+		// 				}
+		// 			}
+		// 			if !v {
+		// 				var newID string
+		// 				for {
+		// 					newID = strconv.FormatInt(rand.Int63(), 10)
+		// 					v := true
+		// 					for _, acc := range dbAccs {
+		// 						if acc.AccountID == newID {
+		// 							v = false
+		// 							break
+		// 						}
+		// 					}
+		// 					for _, acc := range cAccs.accounts {
+		// 						if acc.AccountID == newID {
+		// 							v = false
+		// 							break
+		// 						}
+		// 					}
+		// 					if v {
+		// 						break
+		// 					}
+		// 				}
+		// 				accountToCreate := types.Account{}
+		// 				accountToCreate.AccountID = newID
+		// 				tx.AccountID = newID
+		// 				accountToCreate.Name = tx.AccountName
+		// 				accountToCreate.Institution = "Import"
+		// 				accountToCreate.Provider = "Import"
+		// 				cAccs.accounts = append(cAccs.accounts, accountToCreate)
+		// 			}
+		// 		}
+		// 		cAccs.mu.Unlock()
+		// 		possibleMatches := []types.Transaction{}
+		// 		query := fmt.Sprintf(`SELECT * FROM transactions WHERE amount = %q AND 'date' = %q AND account_id = %q `, tx.Amount, tx.Date, tx.AccountID)
+		// 		err = db.DBCon.Get(&possibleMatches, query)
+		// 		if err != nil {
+		// 			panic(err)
+		// 		}
+		// 		if len(possibleMatches) < 1 {
+		// 			tstmt.MustExec(tx)
+		// 		} else {
+		// 			countInt.mu.Lock()
+		// 			countInt.countDup++
+		// 			countInt.mu.Unlock()
+		// 		}
+		// 	}(transaction)
+		// }
 
-			// answer := []types.CompareCatsResponse{}
-			if err := json.Unmarshal(answerJSON, &answer); err != nil {
-				panic(err)
-			}
-		}
+		// for _, acc := range cAccs.accounts {
+		// 	astmt.MustExec(acc)
+		// }
+
+		// wgSecond.Wait()
+
+		// log.Println("duplicate number in import = " + strconv.Itoa(countInt.countDup))
+		// log.Println("uncategorized number in import = " + strconv.Itoa(countInt.countUncat))
+
+		// errC := txn.Commit()
+		// if errC != nil {
+		// 	panic(errC)
+		// }
+
+		// res.WriteHeader(http.StatusOK)
+
+		// // dbdata := []account{}
+		// // // err := app.Database.Query("SELECT * FROM `categories`", id).Scan(&dbdata.id, &dbdata.topCategory, &dbdata.subCategory)
+		// // err := db.DBCon.Select(&dbdata, "SELECT * FROM `categories`")
+		// // if err != nil {
+		// // 	log.Fatal("Database SELECT failed")
+		// // 	// fmt.Println("Database SELECT failed")
+		// // 	// fmt.Println(err)
+		// // 	// return
+		// // }
+
+		// // log.Println("You fetched a thing!")
+		// // res.WriteHeader(http.StatusOK)
+		// // if err := json.NewEncoder(res).Encode(dbdata); err != nil {
+		// // 	panic(err)
+		// // }
+	}
+}
+
+func ImportFunction() func(http.ResponseWriter, *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+
+		db.GetNewXML()
+		baseCurrency := strings.ToUpper(os.Getenv("BASE_CURRENCY"))
+
 		var cAccs struct {
 			mu       sync.Mutex
 			accounts []types.Account
@@ -405,112 +586,204 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 			mu         sync.Mutex
 			countDup   int
 			countUncat int
+			countImp   int
+		}
+
+		p := types.ImportPostData{}
+
+		err := json.NewDecoder(req.Body).Decode(&p)
+		if err != nil {
+			panic(err)
 		}
 
 		dbAccs := accounts.SelectAll()
 
 		txn := db.DBCon.MustBegin()
-
 		astmt := types.PrepAccountSt(txn)
 		tstmt := types.PrepTransSt(txn)
 
-		var wgSecond sync.WaitGroup
-		for _, transaction := range txArray {
-			wgSecond.Add(1)
-			go func(tx types.Transaction) {
-				defer wgSecond.Done()
-				if tx.Category == 0 {
-					v := false
-					for _, rCat := range answer {
-						if rCat.Category == tx.CategoryName {
-							tx.Category = rCat.AssignedCat
-							tx.CategoryName = rCat.AssignedCatName
-							v = true
-							break
-						}
+		// var wgSecond sync.WaitGroup
+		// for _, transaction := range p.TxSet {
+		for _, itx := range p.TxSet {
+			// wgSecond.Add(1)
+			// go func(itx types.ImportTransaction) {
+			// defer wgSecond.Done()
+			tx := types.Transaction{}
+			if itx.Amount.IsZero() {
+				// return
+				continue
+			}
+			dt, err := date.Parse("01/02/2006", itx.Date)
+			if err != nil {
+				dt, err := date.Parse("1/02/2006", itx.Date)
+				if err != nil {
+					errString := fmt.Sprintf("Error with Import Date Parse: %v \n", err)
+					log.Println(errString)
+					res.WriteHeader(http.StatusInternalServerError)
+					res.Write([]byte(errString))
+				} else {
+					tx.Date = dt.Format("2006-01-02")
+				}
+			} else {
+				tx.Date = dt.Format("2006-01-02")
+			}
+			tx.Description = itx.Description
+			if itx.TransactionType == "debit" {
+				tx.Amount = itx.Amount.Mul(decimal.NewFromInt(-1))
+			} else {
+				tx.Amount = itx.Amount
+			}
+			if itx.CurrencyCode == "" {
+				tx.CurrencyCode = "USD"
+			} else {
+				tx.CurrencyCode = itx.CurrencyCode
+			}
+			tx.NormalizedAmount = db.GetNormalizedAmount(tx.CurrencyCode, baseCurrency, tx.Date, tx.Amount)
+
+			if itx.Category == "" {
+				// countInt.mu.Lock()
+				countInt.countUncat++
+				// countInt.mu.Unlock()
+				tx.Category = 106
+				tx.CategoryName = "Uncategorized"
+			} else {
+				if v, ok := types.MintCatMap[itx.Category]; ok {
+					tx.Category = v
+					var st string
+					query := fmt.Sprintf(`Select sub_category FROM categories WHERE id = %d`, tx.Category)
+					// log.Println(query)
+					err = db.DBCon.Get(&st, query)
+					if err != nil {
+						panic(err)
 					}
-					if !v {
-						countInt.mu.Lock()
-						countInt.countUncat++
-						countInt.mu.Unlock()
-						tx.Category = 106
-						tx.CategoryName = "Uncategorized"
+					tx.CategoryName = st
+				} else {
+					sCat := types.Category{}
+					query := fmt.Sprintf(`SELECT * FROM categories WHERE sub_category = %q`, itx.Category)
+					err = db.DBCon.Get(&sCat, query)
+					if err != nil && err != sql.ErrNoRows {
+						panic(err)
+					}
+					if (types.Category{}) == sCat {
+						v := false
+						for _, rCat := range p.Catres {
+							if rCat.Category == itx.Category {
+								tx.Category = rCat.AssignedCat
+								tx.CategoryName = rCat.AssignedCatName
+								v = true
+								break
+							}
+						}
+						if !v {
+							// countInt.mu.Lock()
+							countInt.countUncat++
+							// countInt.mu.Unlock()
+							tx.Category = 106
+							tx.CategoryName = "Uncategorized"
+						}
+					} else {
+						tx.Category = sCat.ID
+						tx.CategoryName = sCat.SubCategory
 					}
 				}
-				cAccs.mu.Lock()
+			}
+
+			var newTID string
+			for {
+				v := true
+				newTID = strconv.FormatInt(rand.Int63(), 10)
+				possibleMatches := []types.Transaction{}
+				query := fmt.Sprintf(`SELECT * FROM transactions WHERE transaction_id = %q`, newTID)
+				err = db.DBCon.Select(&possibleMatches, query)
+				if err != nil && err != sql.ErrNoRows {
+					panic(err)
+				}
+				if len(possibleMatches) > 0 {
+					v = false
+				}
+				if v {
+					break
+				}
+			}
+			tx.TransactionID = newTID
+
+			// cAccs.mu.Lock()
+			v := false
+			for _, acc := range cAccs.accounts {
+				if acc.Name == itx.AccountName {
+					tx.AccountID = acc.AccountID
+					v = true
+					break
+				}
+			}
+			if !v {
 				v := false
-				for _, acc := range cAccs.accounts {
-					if acc.Name == tx.AccountName {
-						tx.AccountID = acc.AccountID
+				for _, acc := range p.IdentifiedAccounts {
+					if acc.ImportKey == itx.AccountName {
+						tx.AccountID = acc.RefAccountID
+						tx.AccountName = acc.RefAccountName
 						v = true
 						break
 					}
 				}
 				if !v {
-					v := false
-					for _, acc := range mAccs.accounts {
-						if acc.ImportKey == tx.AccountName {
-							tx.AccountID = acc.RefAccountID
-							tx.AccountName = acc.RefAccountName
-							v = true
-							break
-						}
-					}
-					if !v {
-						var newID string
-						for {
-							newID = strconv.FormatInt(rand.Int63(), 10)
-							v := true
-							for _, acc := range dbAccs {
-								if acc.AccountID == newID {
-									v = false
-									break
-								}
-							}
-							for _, acc := range cAccs.accounts {
-								if acc.AccountID == newID {
-									v = false
-									break
-								}
-							}
-							if v {
+					var newID string
+					for {
+						newID = strconv.FormatInt(rand.Int63(), 10)
+						v := true
+						for _, acc := range dbAccs {
+							if acc.AccountID == newID {
+								v = false
 								break
 							}
 						}
-						accountToCreate := types.Account{}
-						accountToCreate.AccountID = newID
-						tx.AccountID = newID
-						accountToCreate.Name = tx.AccountName
-						accountToCreate.Institution = "Import"
-						accountToCreate.Provider = "Import"
-						cAccs.accounts = append(cAccs.accounts, accountToCreate)
+						for _, acc := range cAccs.accounts {
+							if acc.AccountID == newID {
+								v = false
+								break
+							}
+						}
+						if v {
+							break
+						}
 					}
+					accountToCreate := types.Account{}
+					accountToCreate.AccountID = newID
+					tx.AccountID = newID
+					tx.AccountName = itx.AccountName
+					accountToCreate.Name = itx.AccountName
+					accountToCreate.Institution = "Import"
+					accountToCreate.Provider = "Import"
+					cAccs.accounts = append(cAccs.accounts, accountToCreate)
 				}
-				cAccs.mu.Unlock()
-				possibleMatches := []types.Transaction{}
-				query := fmt.Sprintf(`SELECT * FROM transactions WHERE amount = %q AND 'date' = %q AND account_id = %q `, tx.Amount, tx.Date, tx.AccountID)
-				err = db.DBCon.Get(&possibleMatches, query)
-				if err != nil {
-					panic(err)
-				}
-				if len(possibleMatches) < 1 {
-					tstmt.MustExec(tx)
-				} else {
-					countInt.mu.Lock()
-					countInt.countDup++
-					countInt.mu.Unlock()
-				}
-			}(transaction)
+			}
+			// cAccs.mu.Unlock()
+			possibleMatches := []types.Transaction{}
+			query := fmt.Sprintf(`SELECT * FROM transactions WHERE amount = %q AND date = %q AND account_id = %q `, tx.Amount, tx.Date, tx.AccountID)
+			err = db.DBCon.Select(&possibleMatches, query)
+			if err != nil {
+				panic(err)
+			}
+			if len(possibleMatches) < 1 {
+				tstmt.MustExec(tx)
+				countInt.countImp++
+			} else {
+				// countInt.mu.Lock()
+				countInt.countDup++
+				// countInt.mu.Unlock()
+			}
+			// }(transaction)
 		}
 
 		for _, acc := range cAccs.accounts {
 			astmt.MustExec(acc)
 		}
 
-		wgSecond.Wait()
+		// wgSecond.Wait()
 
 		log.Println("duplicate number in import = " + strconv.Itoa(countInt.countDup))
 		log.Println("uncategorized number in import = " + strconv.Itoa(countInt.countUncat))
+		log.Println("total transactions imported = " + strconv.Itoa(countInt.countImp))
 
 		errC := txn.Commit()
 		if errC != nil {
@@ -534,5 +807,28 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 		// if err := json.NewEncoder(res).Encode(dbdata); err != nil {
 		// 	panic(err)
 		// }
+	}
+}
+
+func UpsertFunction() func(http.ResponseWriter, *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+
+		p := types.Transaction{}
+
+		err := json.NewDecoder(req.Body).Decode(&p)
+		if err != nil {
+			panic(err)
+		}
+
+		txn := db.DBCon.MustBegin()
+		tstmt := types.PrepTransSt(txn)
+
+		tstmt.MustExec(p)
+		errC := txn.Commit()
+		if errC != nil {
+			panic(errC)
+		}
+
+		res.WriteHeader(http.StatusOK)
 	}
 }

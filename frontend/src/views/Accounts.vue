@@ -1,5 +1,16 @@
 <template>
   <v-container>
+    <v-dialog v-model="sEdge" persistent max-width="800">
+      <v-card>
+        <v-toolbar flat dense>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="closeSEdge()">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-toolbar>
+        <iframe style="width:100%" height="700" :src="sEdgeURL" id="sEdgeRef" frameborder="0"></iframe>
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="fetch" persistent width="60%" max-width="800">
       <v-card color="primary" dark>
         <v-card-text>
@@ -93,14 +104,14 @@
               <td>{{item.institution}}</td>
               <!-- <td
                 v-show="item.last_downloaded_transactions !== null"
-              >{{localeDate(item.last_downloaded_transactions)}}</td> -->
+              >{{localeDate(item.last_downloaded_transactions)}}</td>-->
               <td
                 v-show="item.last_downloaded_transactions !== null"
-              >{{new Date(item.last_downloaded_transactions).toLocaleString()}}</td>
+              >{{localeDate(item.last_downloaded_transactions)}}</td>
               <td
                 v-show="item.last_downloaded_transactions == null"
               >{{"last transaction fetch: " + "Never"}}</td>
-              <td v-if="item.interactive == 1">{{new Date(item.last_refresh).toLocaleString()}}</td>
+              <td v-if="item.interactive == 1">{{localeDate(item.last_refresh)}}</td>
               <td v-else>
                 <v-icon>mdi-minus</v-icon>
               </td>
@@ -157,12 +168,21 @@
       </v-dialog>-->
     </v-layout>
     <!-- <v-row class = "ma-2 pa-0"> -->
-      <v-row>
-    <v-btn color="warning" dark class="my-8" @click.native="resetDB()">Reset Database</v-btn>
+    <v-row>
+      <v-btn color="warning" dark class="my-8" @click.native="resetDB()">Reset Database</v-btn>
     </v-row>
     <!-- <v-row class = "ma-2 pa-0"> -->
-      <v-row>
-    <v-btn color="warning" dark class="my-8" @click.native="resetDBFull()">Reset Database (Including Item Tokens)</v-btn>
+    <v-row>
+      <v-btn
+        color="warning"
+        dark
+        class="my-8"
+        @click.native="resetDBFull()"
+      >Reset Database (Including Item Tokens)</v-btn>
+    </v-row>
+
+    <v-row>
+      <v-btn color="warning" dark class="my-8" @click.native="resetToken()">reset token</v-btn>
     </v-row>
   </v-container>
 </template>
@@ -181,14 +201,19 @@ export default {
       apiStateLoaded: false,
       showRefresh: false,
       fetch: false,
+      sEdge: false,
+      sEdgeURL: "",
       dialogName: "Fetching Transactions",
       dialog: false,
       dialog2: false,
       vh: null,
       transactions: [],
       files: null,
-      environment: process.env.VUE_APP_ENVIRONMENT || window._env_.VUE_APP_ENVIRONMENT,
-      PLAID_PUBLIC_KEY: process.env.VUE_APP_PLAID_PUBLIC_KEY || window._env_.VUE_APP_PLAID_PUBLIC_KEY,
+      environment:
+        process.env.VUE_APP_PLAID_ENVIRONMENT || window._env_.VUE_APP_PLAID_ENVIRONMENT,
+      PLAID_PUBLIC_KEY:
+        process.env.VUE_APP_PLAID_PUBLIC_KEY ||
+        window._env_.VUE_APP_PLAID_PUBLIC_KEY,
       updateToken: null,
       itemTokens: [],
       accounts: [],
@@ -247,8 +272,14 @@ export default {
   },
   components: { PlaidLink },
   methods: {
+    closeSEdge() {
+      this.loading4 = false;
+      this.sEdge = false;
+      document.getElementById("sEdgeRef").src = "about:blank";
+      this.fetchRefreshData();
+    },
     localeDate(date) {
-      console.log(date)
+      // console.log(date)
       if (date == null) {
         return "Never";
       } else return new Date(date).toLocaleString();
@@ -265,32 +296,98 @@ export default {
       var vm = this;
       vm.loading4 = true;
       vm.refreshUrl = await api.createInteractive();
-      // console.log(vm.refreshUrl)
-      // vm.vh = window.parent.innerHeight / 1.5
-      // vm.vw = window.parent.innerWidth / 1.5
-      // window.open("https://vuetifyjs.com", '_blank', 'toolbar=0,location=0,menubar=0,height=800,width=700')
-      let win = window.open(
-        vm.refreshUrl,
-        "_blank",
-        "toolbar=0,location=0,menubar=0,height=800,width=700"
-      );
-      let interval = setInterval(() => {
-        // if (win.location.href === process.env.VUE_APP_BASE_URL) {
-        try {
-          if (win.document.domain === document.domain) {
-            clearInterval(interval);
-            vm.fetchRefreshData();
-            win.close();
-          }
-        } catch (e) {
-          if (win.closed) {
-            clearInterval(interval);
-            vm.fetchRefreshData();
-            return;
-          }
-        }
-      }, 500);
+      vm.sEdgeURL = vm.refreshUrl;
+      vm.sEdge = true;
+      // console.log(document.getElementById("sEdgeRef").contentWindow.location.href);
+      // await this.ensureSEReturned();
+
+      // function ensureSEReturned() {
+      //   // return new Promise(function (resolve, reject) {
+      await new Promise(function(resolve, reject) {
+        (function waitForSE() {
+          try {
+            if (
+              document
+                .getElementById("sEdgeRef")
+                .contentWindow.location.host.indexOf(document.domain) != -1
+            )
+              return resolve();
+          } catch {}
+          setTimeout(waitForSE, 30);
+        })();
+      });
+
       vm.loading4 = false;
+      vm.sEdge = false;
+      // document.getElementById("sEdgeRef").contentWindow.location.host = "";
+      document.getElementById("sEdgeRef").src = "about:blank";
+      vm.fetchRefreshData();
+      // }
+      // let fr = document.getElementById("sEdgeRef").contentWindow.location.host;
+      // let config = { attributes: true, childList: true};
+      // let callback = function(mutationsList) {
+      // console.log(fr)
+      // };
+
+      // let observer = new MutationObserver(callback);
+      // observer.observe(fr, config);
+
+      // console.log(document.getElementById("sEdgeRef").src);
+
+      // var observer = new MutationObserver(function(mutations, me, vm) {
+      //   // `mutations` is an array of mutations that occurred
+      //   // `me` is the MutationObserver instance
+      //   var sEdge = document.getElementById("sEdgeRef");
+      //   try {
+      //     if (sEdge.contentWindow.location.host) {
+      //       if (
+      //         sEdge.contentWindow.location.host.indexOf(document.domain) != -1
+      //       ) {
+      //         vm.loading4 = false;
+      //         vm.sEdge = false;
+      //         vm.fetchRefreshData();
+      //         me.disconnect();
+      //         return;
+      //       }
+      //     }
+      //   } catch {}
+      // });
+
+      // observer.observe(
+      //   document,
+      //   {
+      //     childList: true,
+      //     subtree: true
+      //   },
+      //   vm
+      // );
+
+      // // console.log(vm.refreshUrl)
+      // // vm.vh = window.parent.innerHeight / 1.5
+      // // vm.vw = window.parent.innerWidth / 1.5
+      // // window.open("https://vuetifyjs.com", '_blank', 'toolbar=0,location=0,menubar=0,height=800,width=700')
+      // let win = window.open(
+      //   vm.refreshUrl,
+      //   "_blank",
+      //   "toolbar=0,location=0,menubar=0,height=800,width=700"
+      // );
+      // let interval = setInterval(() => {
+      //   // if (win.location.href === process.env.VUE_APP_BASE_URL) {
+      //   try {
+      //     if (win.document.domain === document.domain) {
+      //       clearInterval(interval);
+      //       vm.fetchRefreshData();
+      //       win.close();
+      //     }
+      //   } catch (e) {
+      //     if (win.closed) {
+      //       clearInterval(interval);
+      //       vm.fetchRefreshData();
+      //       return;
+      //     }
+      //   }
+      // }, 500);
+      // vm.loading4 = false;
       // vm.dialog2 = true
     },
     async resetDB() {
@@ -301,46 +398,86 @@ export default {
       this.dialogName = "Fetching Transactions";
       this.refreshData();
     },
-    async resetDBFull() {
-    	if(confirm('are you sure?')) {
+    async resetToken() {
       this.dialogName = "Resetting Database";
       this.fetch = true;
-      await api.resetDBFull();
+      await api.resetToken();
       this.fetch = false;
       this.dialogName = "Fetching Transactions";
       this.refreshData();
+    },
+    async resetDBFull() {
+      if (confirm("are you sure?")) {
+        this.dialogName = "Resetting Database";
+        this.fetch = true;
+        await api.resetDBFull();
+        this.fetch = false;
+        this.dialogName = "Fetching Transactions";
+        this.refreshData();
       }
     },
     async startRefreshInteractive(id) {
       var vm = this;
-      vm.loading4 = true;
+
       vm.refreshUrl = await api.refreshInteractive(id);
-      // console.log(vm.refreshUrl)
-      // vm.vh = window.parent.innerHeight / 1.5
-      // vm.vw = window.parent.innerWidth / 1.5
-      // window.open("https://vuetifyjs.com", '_blank', 'toolbar=0,location=0,menubar=0,height=800,width=700')
-      let win = window.open(
-        vm.refreshUrl,
-        "_blank",
-        "toolbar=0,location=0,menubar=0,height=800,width=700"
-      );
-      let interval = setInterval(() => {
-        // if (win.location.href === process.env.VUE_APP_BASE_URL) {
-        try {
-          if (win.document.domain === document.domain) {
-            clearInterval(interval);
-            vm.fetchRefreshData();
-            win.close();
-          }
-        } catch (e) {
-          if (win.closed) {
-            clearInterval(interval);
-            vm.fetchRefreshData();
-            return;
-          }
-        }
-      }, 500);
+      if (vm.refreshUrl == "") {
+        alert("Try again in a minute");
+        return;
+      }
+      vm.loading4 = true;
+      vm.sEdgeURL = vm.refreshUrl;
+      vm.sEdge = true;
+      // console.log(document.getElementById("sEdgeRef").contentWindow.location.href);
+      // await this.ensureSEReturned();
+
+      // function ensureSEReturned() {
+      //   // return new Promise(function (resolve, reject) {
+      await new Promise(function(resolve, reject) {
+        (function waitForSE() {
+          try {
+            if (
+              document
+                .getElementById("sEdgeRef")
+                .contentWindow.location.host.indexOf(document.domain) != -1
+            )
+              return resolve();
+          } catch {}
+          setTimeout(waitForSE, 30);
+        })();
+      });
+
       vm.loading4 = false;
+      vm.sEdge = false;
+      // document.getElementById("sEdgeRef").contentWindow.location.host = "";
+      document.getElementById("sEdgeRef").src = "about:blank";
+      vm.fetchRefreshData();
+      // // console.log(vm.refreshUrl)
+      // // vm.vh = window.parent.innerHeight / 1.5
+      // // vm.vw = window.parent.innerWidth / 1.5
+      // // window.open("https://vuetifyjs.com", '_blank', 'toolbar=0,location=0,menubar=0,height=800,width=700')
+      // // this.$refs.sEdgeRef.on
+      // let win = window.open(
+      //   vm.refreshUrl,
+      //   "_blank",
+      //   "toolbar=0,location=0,menubar=0,height=800,width=700"
+      // );
+      // let interval = setInterval(() => {
+      //   // if (win.location.href === process.env.VUE_APP_BASE_URL) {
+      //   try {
+      //     if (win.document.domain === document.domain) {
+      //       clearInterval(interval);
+      //       vm.fetchRefreshData();
+      //       win.close();
+      //     }
+      //   } catch (e) {
+      //     if (win.closed) {
+      //       clearInterval(interval);
+      //       vm.fetchRefreshData();
+      //       return;
+      //     }
+      //   }
+      // }, 500);
+      // vm.loading4 = false;
       // vm.dialog2 = true
     },
     async onSuccess(token, metadata) {
@@ -356,6 +493,7 @@ export default {
       await api.plaidCreateItemToken(TokenToUpload);
       this.fetch = false;
       this.dialogName = "Fetching Transactions";
+      await this.fetchTransactions();
       this.refreshData();
     },
     async startReLogin(id) {
@@ -375,6 +513,7 @@ export default {
       this.plaidRefresh = false;
       await this.$refs.plaidLinkRef.onScriptLoaded();
       this.$refs.plaidLinkRef.handleOnClick();
+      await this.fetchTransactions();
       // btn.click();
     },
     saltEdge: function(itemTokens) {
@@ -390,7 +529,8 @@ export default {
       this.redraw2 += 1;
     },
     async fetchRefreshData() {
-      this.dialogName = "Checking for new SaltEdge connections to add and fetching transactions";
+      this.dialogName =
+        "Checking for new SaltEdge connections to add and fetching transactions";
       this.fetch = true;
       // await waitFor(2000);
       // let res = await api.getSaltEdgeConnections();
@@ -429,6 +569,7 @@ export default {
       this.redraw2 += 1;
     },
     async importTransactions() {
+      if (this.files == null) return;
       this.dialogName = "Importing Data from CSV";
       this.fetch = true;
       // if (!val) return;
@@ -452,7 +593,9 @@ export default {
         });
       };
       let parsedData = await parseFile(this.files);
+
       await api.importTransactions(parsedData);
+      this.files = null;
       this.$store.dispatch("getAll");
       this.fetch = false;
       this.dialogName = "Fetching Transactions";

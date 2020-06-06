@@ -11,7 +11,7 @@ type Account struct {
 	ID                 int             `json:"id"`
 	Name               string          `json:"name" db:"name"`
 	Institution        string          `json:"institution" db:"institution"`
-	IgnoreTransactions string          `json:"ignore_transactions" db:"ignore_transactions"`
+	IgnoreTransactions bool            `json:"ignore_transactions" db:"ignore_transactions"`
 	AccountID          string          `json:"account_id" db:"account_id"`
 	ItemID             string          `json:"item_id" db:"item_id"`
 	Type               string          `json:"type" db:"type"`
@@ -95,6 +95,24 @@ type Transaction struct {
 	UpdatedAt           time.Time       `json:"updated_at" db:"updated_at"`
 }
 
+var TreeRanges = [8]string{
+	"last30",
+	"thisMonth",
+	"lastMonth",
+	"last6Months",
+	"thisYear",
+	"lastYear",
+	"fromBeginning",
+	"custom",
+}
+
+type Tree struct {
+	Name      string `json:"name" db:"name"`
+	FirstDate string `json:"first_date" db:"first_date"`
+	LastDate  string `json:"last_date" db:"last_date"`
+	Data      string `json:"data" db:"data"`
+}
+
 var MintCatMap = map[string]int{
 	"Buy":                        69,
 	"Investments":                99,
@@ -118,31 +136,34 @@ var MintCatMap = map[string]int{
 }
 
 type MatchingAccount struct {
-	ImportKey      string
-	RefAccountID   string
-	RefAccountName string
+	ImportKey      string `json:"importKey"`
+	RefAccountID   string `json:"refAccountID"`
+	RefAccountName string `json:"refAccountName"`
 }
 
 type CompareTrans struct {
 	Date         string          `json:"date"`
 	Description  string          `json:"description"`
 	Amount       decimal.Decimal `json:"amount"`
+	AccountName  string          `json:"account_name"`
+	AccountID    string          `json:"account_id"`
 	CurrencyCode string          `json:"currency_code"`
 }
 
 type CompareTransSingle struct {
-	Trans1 CompareTrans `json:"trans1"`
-	Trans2 CompareTrans `json:"trans2"`
-	Type   string       `json:"type"`
+	Trans1  CompareTrans `json:"trans1"`
+	Trans2  CompareTrans `json:"trans2"`
+	IsMatch bool         `json:"isMatch`
+	Type    string       `json:"type"`
 }
 
-type CompareCatsSet struct {
-	CompareCats []string   `json:"compareCats"`
-	DbCats      []Category `json:"dbCats"`
-	Type        string     `json:"type"`
-}
+// type CompareCatsSet struct {
+// 	CompareCats []string   `json:"compareCats"`
+// 	DbCats      []Category `json:"dbCats"`
+// 	Type        string     `json:"type"`
+// }
 
-type CompareCatsResponse struct {
+type CompareCatsSingle struct {
 	Category        string `json:"category"`
 	AssignedCat     int    `json:"assignedCat"`
 	AssignedCatName string `json:"assignedCatName"`
@@ -197,6 +218,12 @@ type ImportTransaction struct {
 	Labels              string          `json:"labels"`
 	Notes               string          `json:"notes"`
 	CurrencyCode        string          `json:"currency_code"`
+}
+
+type ImportPostData struct {
+	Catres             []CompareCatsSingle `json:"catres"`
+	IdentifiedAccounts []MatchingAccount   `json:"identifiedAccounts"`
+	TxSet              []ImportTransaction `json:"transactions"`
 }
 
 type GenerateTokenPost struct {
@@ -394,12 +421,13 @@ func PrepTransSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 
 func PrepAccountSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
-	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype)
-				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype) 
+	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype, ignore_transactions)
+				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype, :ignore_transactions) 
 				ON CONFLICT (account_id, provider) DO UPDATE SET
 				'limit' = excluded.'limit',
 				available = excluded.available,
-				balance = excluded.balance`
+				balance = excluded.balance,
+				ignore_transactions = excluded.ignore_transactions`
 	astmt, err := txn.PrepareNamed(aquery)
 	// astmt, err := dbCon.PrepareNamed(aquery)
 	if err != nil {
@@ -417,6 +445,20 @@ func PrepItemSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 				last_refresh = excluded.last_refresh,
 				next_refresh_possible = excluded.next_refresh_possible,
 				needs_re_login = excluded.needs_re_login,
+				last_downloaded_transactions = excluded.last_downloaded_transactions`
+	istmt, err := txn.PrepareNamed(iquery)
+	// istmt, err := dbCon.PrepareNamed(iquery)
+	if err != nil {
+		panic(err)
+	}
+	return istmt
+}
+
+func PrepItemStOnlyTx(txn *sqlx.Tx) *sqlx.NamedStmt {
+	// func PrepItemSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
+	iquery := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id, needs_re_login, access_token, last_downloaded_transactions)
+				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id, :needs_re_login, :access_token, :last_downloaded_transactions) 
+				ON CONFLICT (item_id, provider) DO UPDATE SET
 				last_downloaded_transactions = excluded.last_downloaded_transactions`
 	istmt, err := txn.PrepareNamed(iquery)
 	// istmt, err := dbCon.PrepareNamed(iquery)

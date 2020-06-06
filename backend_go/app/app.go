@@ -5,8 +5,6 @@ import (
 	// "encoding/json"
 	// "log"
 
-	"net/http"
-
 	"github.com/gorilla/mux"
 	// "github.com/jmoiron/sqlx"
 
@@ -18,7 +16,6 @@ import (
 	"fintrack-go/routes/resetDB"
 	"fintrack-go/routes/saltedge"
 	"fintrack-go/routes/transactions"
-	"fintrack-go/socket"
 )
 
 type App struct {
@@ -31,6 +28,16 @@ func (app *App) SetupRouter() {
 		Methods("GET").
 		Path("/api/accounts").
 		HandlerFunc(accounts.GetFunction())
+
+	app.Router.
+		Methods("POST").
+		Path("/api/accountUpsert").
+		HandlerFunc(accounts.UpsertFunction())
+
+	app.Router.
+		Methods("POST").
+		Path("/api/transactionUpsert").
+		HandlerFunc(transactions.UpsertFunction())
 
 	app.Router.
 		Methods("GET").
@@ -73,6 +80,13 @@ func (app *App) SetupRouter() {
 		Path("/api/transactions").
 		HandlerFunc(transactions.PutFunction())
 
+	//Step one of import
+	app.Router.
+		Methods("POST").
+		Path("/api/checkTransactions").
+		HandlerFunc(transactions.CheckFunction())
+
+	//Step two of import
 	app.Router.
 		Methods("POST").
 		Path("/api/importTransactions").
@@ -110,9 +124,14 @@ func (app *App) SetupRouter() {
 		Path("/api/resetDBFull").
 		HandlerFunc(resetDB.ForceResetDBFullFunction())
 
-	app.Router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		socket.ServeWs(socket.ExportHub, w, r)
-	})
+	app.Router.
+		Methods("GET").
+		Path("/api/resetToken").
+		HandlerFunc(plaid.ResetToken())
+
+	// app.Router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	// 	socket.ServeWs(socket.ExportHub, w, r)
+	// })
 
 	// app.Router.HandleFunc("/ws", itemTokens.FetchTransactionsFunction())
 	// app.Router.

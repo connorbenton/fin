@@ -11,8 +11,10 @@ import (
 	//  "fintrack-go/app/server"
 	"fintrack-go/app"
 	"fintrack-go/db"
-	"fintrack-go/socket"
 
+	// _ "fintrack-go/socket"
+
+	// "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
 	//  "github.com/joho/godotenv"
@@ -67,7 +69,7 @@ func main() {
 	//    },
 	//   ).Info("starting the http server")
 
-	socket.StartHub()
+	// socket.StartHub()
 
 	app := &app.App{
 		Router: mux.NewRouter().StrictSlash(true),
@@ -76,8 +78,10 @@ func main() {
 	// app.DB = DB
 
 	app.SetupRouter()
+	// h := handlers.CompressHandler(app)
 
 	log.Fatal(http.ListenAndServe(":6060", app.Router))
+	// log.Fatal(http.ListenAndServe(":6060", h))
 	//   return app.Server.ListenAndServe()
 	//  })
 

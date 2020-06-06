@@ -21,7 +21,7 @@ import (
 )
 
 func newClient() (*plaid.Client, error) {
-	env := os.Getenv("ENVIRONMENT")
+	env := os.Getenv("PLAID_ENVIRONMENT")
 	if env == "sandbox" {
 		clientOptions := plaid.ClientOptions{
 			os.Getenv("PLAID_CLIENT_ID"),
@@ -262,7 +262,9 @@ func GeneratePublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 			res.WriteHeader(http.StatusInternalServerError)
 			res.Write([]byte(errString))
 		} else {
-			_, err2 := res.Write([]byte(pRes.PublicToken))
+			resJSON := `{"public_token": "` + pRes.PublicToken + `"}`
+			_, err2 := res.Write([]byte(resJSON))
+			// _, err2 := res.Write([]byte(pRes.PublicToken))
 			if err2 != nil {
 				errString := fmt.Sprintf("Error with Plaid Generate Public Token: %v \n", err2)
 				log.Println(errString)
@@ -296,6 +298,16 @@ func GeneratePublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 // 		}
 // 	}
 // }
+func ResetToken() func(http.ResponseWriter, *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+		pClient, err := newClient()
+		if err != nil {
+			panic(err)
+		}
+		pClient.ResetSandboxItem("access-sandbox-84adcd32-fe27-46ac-928c-1ae0b857f3c3")
+		res.WriteHeader(http.StatusOK)
+	}
+}
 
 func RefreshConnection(iTok types.ItemToken, istmt, astmt *sqlx.NamedStmt) {
 
@@ -334,7 +346,14 @@ func RefreshConnection(iTok types.ItemToken, istmt, astmt *sqlx.NamedStmt) {
 	// 	defer wgWrap.Done()
 	pAccountRes, err := pClient.GetAccounts(iTok.AccessToken)
 	if err != nil {
-		//also need login required error handling here
+		perr, ok := err.(plaid.Error)
+		if ok {
+			if perr.ErrorCode == "ITEM_LOGIN_REQUIRED" {
+				iTok.NeedsReLogin = true
+				upsertItemToken(iTok, istmt)
+				return
+			}
+		}
 		errString := fmt.Sprintf("Error with Create Token Client Get Accounts request: %v \n", err)
 		log.Println(errString)
 		panic(err)
@@ -424,13 +443,26 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, istmt *sqlx.NamedStmt, 
 	// go func() {
 	// defer wgWrap.Done()
 	var pTransRes plaid.GetTransactionsResponse
-	// var err error
+	// pErr := plaid.Error{}
 	if iTok.LastDownloadedTransactions.IsZero() {
 		pTransRes, err = pClient.GetTransactions(iTok.AccessToken, "2000-01-01", today)
 	} else {
 		pTransRes, err = pClient.GetTransactions(iTok.AccessToken, iTok.LastDownloadedTransactions.AddDate(0, 0, -40).Format("2006-01-02"), today)
 	}
 	if err != nil {
+		perr, ok := err.(plaid.Error)
+		if ok {
+			if perr.ErrorCode == "ITEM_LOGIN_REQUIRED" {
+				return
+			}
+		}
+		// p := err.Error()
+		// pErr := plaid.Error(err)
+		// if p.ErrorCode == "ITEM_LOGIN_REQUIRED" {
+		// iTok.NeedsReLogin = true
+		// upsertItemToken(iTok, istmt)
+		// return
+		// }
 		// Figure out how to handle login required error
 		// if err.Error.ErrorCode == "ITEM_LOGIN_REQUIRED" {
 		// iTok.NeedsReLogin = true
@@ -440,55 +472,56 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, istmt *sqlx.NamedStmt, 
 		// }
 	}
 
-	var wgTrans sync.WaitGroup
-	for _, transaction := range pTransRes.Transactions {
-		wgTrans.Add(1)
-		go func(ptx plaid.Transaction) {
-			defer wgTrans.Done()
-			tx := types.Transaction{}
+	// var wgTrans sync.WaitGroup
+	// for _, transaction := range pTransRes.Transactions {
+	for _, ptx := range pTransRes.Transactions {
+		// wgTrans.Add(1)
+		// go func(ptx plaid.Transaction) {
+		// defer wgTrans.Done()
+		tx := types.Transaction{}
 
-			// tx.Date, err = date.Parse("2006-01-02", ptx.Date)
-			tx.Date = ptx.Date
-			tx.TransactionID = ptx.ID
-			tx.Description = ptx.Name
-			tx.Amount = decimal.NewFromFloat(ptx.Amount * -1)
-			tx.CurrencyCode = ptx.ISOCurrencyCode
-			tx.NormalizedAmount = db.GetNormalizedAmount(tx.CurrencyCode, baseCurrency, tx.Date, tx.Amount)
+		// tx.Date, err = date.Parse("2006-01-02", ptx.Date)
+		tx.Date = ptx.Date
+		tx.TransactionID = ptx.ID
+		tx.Description = ptx.Name
+		tx.Amount = decimal.NewFromFloat(ptx.Amount * -1)
+		tx.CurrencyCode = ptx.ISOCurrencyCode
+		tx.NormalizedAmount = db.GetNormalizedAmount(tx.CurrencyCode, baseCurrency, tx.Date, tx.Amount)
 
-			//Searching for category ID match first
-			pCat := types.CategoryPlaid{}
-			query := fmt.Sprintf(`SELECT * FROM plaid__categories WHERE cat_i_d = %q`, ptx.CategoryID)
-			err = db.DBCon.Get(&pCat, query)
-			if err != nil && err != sql.ErrNoRows {
-				panic(err)
-			}
-			// if (types.CategoryPlaid{}) == pCat {
-			if err == sql.ErrNoRows {
-				//If still nil then set category to Uncategorized
-				tx.Category = 106
-				tx.CategoryName = "Uncategorized"
-			} else {
-				tx.Category = pCat.LinkToAppCat
-				tx.CategoryName = pCat.AppCatName
-			}
+		//Searching for category ID match first
+		pCat := types.CategoryPlaid{}
+		query := fmt.Sprintf(`SELECT * FROM plaid__categories WHERE cat_i_d = %q`, ptx.CategoryID)
+		err = db.DBCon.Get(&pCat, query)
+		if err != nil && err != sql.ErrNoRows {
+			panic(err)
+		}
+		// if (types.CategoryPlaid{}) == pCat {
+		if err == sql.ErrNoRows {
+			//If still nil then set category to Uncategorized
+			tx.Category = 106
+			tx.CategoryName = "Uncategorized"
+		} else {
+			tx.Category = pCat.LinkToAppCat
+			tx.CategoryName = pCat.AppCatName
+		}
 
-			var name string
-			err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE account_id='"+ptx.AccountID+"' AND provider='Plaid' LIMIT 1")
-			if err != nil {
-				panic(err)
-			}
-			tx.AccountName = name
-			tx.AccountID = ptx.AccountID
+		var name string
+		err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE account_id='"+ptx.AccountID+"' AND provider='Plaid' LIMIT 1")
+		if err != nil {
+			panic(err)
+		}
+		tx.AccountName = name
+		tx.AccountID = ptx.AccountID
 
-			tstmt.MustExec(tx)
-			// _, err = txn.NamedExec(queryIns, tx)
-			// if err != nil {
-			// 	panic(err)
-			// }
+		tstmt.MustExec(tx)
+		// _, err = txn.NamedExec(queryIns, tx)
+		// if err != nil {
+		// 	panic(err)
+		// }
 
-		}(transaction)
+		// }(transaction)
 	}
-	wgTrans.Wait()
+	// wgTrans.Wait()
 
 	// }()
 

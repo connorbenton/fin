@@ -44,10 +44,10 @@
     }),
     methods: {
       emitNo() {
-      this.$store.commit('answerGiven', 'no');
+      this.$store.commit('answerGiven', false);
       },
       emitYes() {
-      this.$store.commit('answerGiven', 'yes');
+      this.$store.commit('answerGiven', true);
       }
     },
     filters: {

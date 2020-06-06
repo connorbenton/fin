@@ -264,7 +264,8 @@ export default {
       a.category = foundCat.id;
       a.category_name = foundCat.sub_category;
 
-      api.updateTransaction(a.id, a);
+      // api.updateTransaction(a.id, a);
+      api.upsertTransaction(a);
 
       this.$store.commit( "updateTransaction", a);
       return 'update done';

@@ -379,88 +379,89 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, istmt *sqlx.NamedStmt, 
 	// Using txn from main function now
 	// txn := db.DBCon.MustBegin()
 
-	var wg sync.WaitGroup
-	for _, transaction := range data.Data {
-		wg.Add(1)
-		go func(tx types.SETransaction) {
-			var err error
-			defer wg.Done()
-			trans := types.Transaction{}
-			// if tx.Extra.PostingDate.IsZero() {
-			if tx.Extra.PostingDate == "" {
-				trans.Date = tx.MadeOn
-			} else {
-				trans.Date = tx.Extra.PostingDate
-			}
-			trans.Description = tx.Description
-			trans.Amount = tx.Amount
-			trans.AccountID = tx.AccountID
+	// var wg sync.WaitGroup
+	// for _, transaction := range data.Data {
+	for _, tx := range data.Data {
+		// wg.Add(1)
+		// go func(tx types.SETransaction) {
+		var err error
+		// defer wg.Done()
+		trans := types.Transaction{}
+		// if tx.Extra.PostingDate.IsZero() {
+		if tx.Extra.PostingDate == "" {
+			trans.Date = tx.MadeOn
+		} else {
+			trans.Date = tx.Extra.PostingDate
+		}
+		trans.Description = tx.Description
+		trans.Amount = tx.Amount
+		trans.AccountID = tx.AccountID
 
-			var name string
-			// err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE 'account_id'="+tx.AccountID+" AND provider='SaltEdge' LIMIT 1")
-			querytest := "SELECT name FROM accounts WHERE account_id='" + tx.AccountID + "' AND provider='SaltEdge'"
-			// log.Println(querytest)
-			err = db.DBCon.Get(&name, querytest)
-			if err != nil {
-				panic(err)
-			}
-			trans.AccountName = name
+		var name string
+		// err = db.DBCon.Get(&name, "SELECT name FROM accounts WHERE 'account_id'="+tx.AccountID+" AND provider='SaltEdge' LIMIT 1")
+		querytest := "SELECT name FROM accounts WHERE account_id='" + tx.AccountID + "' AND provider='SaltEdge'"
+		// log.Println(querytest)
+		err = db.DBCon.Get(&name, querytest)
+		if err != nil {
+			panic(err)
+		}
+		trans.AccountName = name
 
-			trans.TransactionID = tx.ID
+		trans.TransactionID = tx.ID
 
-			trans.CurrencyCode = tx.CurrencyCode
-			// query2 := fmt.Sprintf(`%+v`, tx)
-			// log.Println(query2)
-			trans.NormalizedAmount = db.GetNormalizedAmount(trans.CurrencyCode, baseCurrency, trans.Date, trans.Amount)
+		trans.CurrencyCode = tx.CurrencyCode
+		// query2 := fmt.Sprintf(`%+v`, tx)
+		// log.Println(query2)
+		trans.NormalizedAmount = db.GetNormalizedAmount(trans.CurrencyCode, baseCurrency, trans.Date, trans.Amount)
 
-			//Searching for bottom category match first
-			sCat := types.CategorySE{}
-			query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE bottom_category = %q AND top_category = 'personal'`, tx.Category)
-			err = db.DBCon.Get(&sCat, query)
+		//Searching for bottom category match first
+		sCat := types.CategorySE{}
+		query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE bottom_category = %q AND top_category = 'personal'`, tx.Category)
+		err = db.DBCon.Get(&sCat, query)
+		if err != nil && err != sql.ErrNoRows {
+			panic(err)
+		}
+		if (types.CategorySE{}) == sCat {
+			//If nil for bottom category then look for match in sub category
+			query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE sub_category = %q AND top_category = 'personal'`, tx.Category)
+			err := db.DBCon.Get(&sCat, query)
 			if err != nil && err != sql.ErrNoRows {
 				panic(err)
 			}
 			if (types.CategorySE{}) == sCat {
-				//If nil for bottom category then look for match in sub category
-				query := fmt.Sprintf(`SELECT * FROM salt_edge__categories WHERE sub_category = %q AND top_category = 'personal'`, tx.Category)
-				err := db.DBCon.Get(&sCat, query)
-				if err != nil && err != sql.ErrNoRows {
-					panic(err)
-				}
-				if (types.CategorySE{}) == sCat {
-					//If still nil then set category to Uncategorized
-					trans.Category = 106
-					trans.CategoryName = "Uncategorized"
-				} else {
-					trans.Category = sCat.LinkToAppCat
-					trans.CategoryName = sCat.AppCatName
-				}
+				//If still nil then set category to Uncategorized
+				trans.Category = 106
+				trans.CategoryName = "Uncategorized"
 			} else {
 				trans.Category = sCat.LinkToAppCat
 				trans.CategoryName = sCat.AppCatName
 			}
+		} else {
+			trans.Category = sCat.LinkToAppCat
+			trans.CategoryName = sCat.AppCatName
+		}
 
-			// queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
-			// 				category_name, account_name, currency_code, account_id)
-			// 				VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
-			// 				:category_name, :account_name, :currency_code, :account_id)
-			// 				ON CONFLICT (transaction_id) DO UPDATE SET
-			// 				'date' = excluded.'date',
-			// 				description = excluded.description,
-			// 				amount = excluded.amount
-			// 				normalized_amount = excluded.normalized_amount
-			// 				category = excluded.category
-			// 				category_name = excluded.category_name`
+		// queryIns := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
+		// 				category_name, account_name, currency_code, account_id)
+		// 				VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
+		// 				:category_name, :account_name, :currency_code, :account_id)
+		// 				ON CONFLICT (transaction_id) DO UPDATE SET
+		// 				'date' = excluded.'date',
+		// 				description = excluded.description,
+		// 				amount = excluded.amount
+		// 				normalized_amount = excluded.normalized_amount
+		// 				category = excluded.category
+		// 				category_name = excluded.category_name`
 
-			// _, err = txn.NamedExec(queryIns, trans)
-			// if err != nil {
-			// 	panic(err)
-			// }
-			tstmt.MustExec(trans)
-		}(transaction)
+		// _, err = txn.NamedExec(queryIns, trans)
+		// if err != nil {
+		// 	panic(err)
+		// }
+		tstmt.MustExec(trans)
+		// }(transaction)
 	}
 
-	wg.Wait()
+	// wg.Wait()
 
 	if iTok.Interactive {
 		iTok.LastDownloadedTransactions = iTok.LastRefresh

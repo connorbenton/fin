@@ -9,6 +9,7 @@ import (
 
 	// "fmt"
 	"fintrack-go/db"
+	"fintrack-go/routes/analysisTrees"
 	"fintrack-go/routes/plaid"
 	"fintrack-go/routes/saltedge"
 	"fintrack-go/types"
@@ -116,9 +117,10 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 		// Then we iterate through item tokens and process in either saltedge or plaid
 
 		txn := db.DBCon.MustBegin()
-		istmt := types.PrepItemSt(txn)
+		// istmt := types.PrepItemSt(txn)
 		astmt := types.PrepAccountSt(txn)
 		tstmt := types.PrepTransSt(txn)
+		istmtOnlyTx := types.PrepItemStOnlyTx(txn)
 
 		var wg sync.WaitGroup
 		for _, itemTok := range itemTokens {
@@ -133,7 +135,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 				if itemToken.Provider == "SaltEdge" {
 					// saltedge.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
 					// saltedge.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
-					saltedge.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
+					saltedge.FetchTransactionsForItemToken(itemToken, istmtOnlyTx, astmt, tstmt, baseCurrency)
 					// if itemToken.Interactive {
 					// 	// Needs to be direct DB call
 					// 	itemToken.LastDownloadedTransactions = itemToken.LastRefresh
@@ -144,7 +146,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 				} else {
 					// plaid.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
 					// plaid.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
-					plaid.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
+					plaid.FetchTransactionsForItemToken(itemToken, istmtOnlyTx, astmt, tstmt, baseCurrency)
 					// Needs direct DB call here to set LastDownloadedTransactions
 				}
 			}(itemTok)
@@ -156,6 +158,8 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 		if err2 != nil {
 			panic(err2)
 		}
+
+		analysisTrees.ReAnalyze()
 
 		res.WriteHeader(http.StatusOK)
 		// currencyRates := []CurrencyRate{}
