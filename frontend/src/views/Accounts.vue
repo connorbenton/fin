@@ -27,8 +27,8 @@
       @click.native="fetchTransactions()"
     >Fetch Transactions for All Accounts</v-btn>
 
-    <h1 class="title mt-3">Plaid Connections</h1>
-    <v-card class="d-inline-block mx-auto my-3" max-width="1000" tile :key="redraw">
+    <h1 :v-if="USE_PLAID==TRUE" class="title mt-3">Plaid Connections</h1>
+    <v-card :v-if="USE_PLAID==TRUE" class="d-inline-block mx-auto my-3" max-width="1000" tile :key="redraw">
       <v-simple-table>
         <template v-slot:default>
           <thead>
@@ -210,10 +210,16 @@ export default {
       transactions: [],
       files: null,
       environment:
-        process.env.VUE_APP_PLAID_ENVIRONMENT || window._env_.VUE_APP_PLAID_ENVIRONMENT,
+        process.env.PLAID_ENVIRONMENT || window._env_.PLAID_ENVIRONMENT,
       PLAID_PUBLIC_KEY:
-        process.env.VUE_APP_PLAID_PUBLIC_KEY ||
-        window._env_.VUE_APP_PLAID_PUBLIC_KEY,
+        process.env.PLAID_PUBLIC_KEY ||
+        window._env_.PLAID_PUBLIC_KEY,
+      USE_PLAID:
+        process.env.USE_PLAID ||
+        window._env_.USE_PLAID,
+      USE_SALTEDGE:
+        process.env.USE_SALTEDGE ||
+        window._env_.USE_SALTEDGE,
       updateToken: null,
       itemTokens: [],
       accounts: [],
@@ -372,7 +378,7 @@ export default {
       //   "toolbar=0,location=0,menubar=0,height=800,width=700"
       // );
       // let interval = setInterval(() => {
-      //   // if (win.location.href === process.env.VUE_APP_BASE_URL) {
+      //   // if (win.location.href === process.env.BASE_URL) {
       //   try {
       //     if (win.document.domain === document.domain) {
       //       clearInterval(interval);
@@ -462,7 +468,7 @@ export default {
       //   "toolbar=0,location=0,menubar=0,height=800,width=700"
       // );
       // let interval = setInterval(() => {
-      //   // if (win.location.href === process.env.VUE_APP_BASE_URL) {
+      //   // if (win.location.href === process.env.BASE_URL) {
       //   try {
       //     if (win.document.domain === document.domain) {
       //       clearInterval(interval);

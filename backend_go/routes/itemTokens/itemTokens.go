@@ -64,6 +64,21 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		baseCurrency := strings.ToUpper(os.Getenv("BASE_CURRENCY"))
+		SE := strings.ToUpper(os.Getenv("USE_SALTEDGE"))
+		Plaid := strings.ToUpper(os.Getenv("USE_PLAID"))
+		var useSE, usePlaid bool
+
+		if SE == "TRUE" {
+			useSE = true
+		} else {
+			useSE = false
+		}
+
+		if Plaid == "TRUE" {
+			usePlaid = true
+		} else {
+			usePlaid = false
+		}
 
 		// First get all item tokens
 		// itemTokens := []types.ItemToken{}
@@ -87,7 +102,9 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 			defer wgPre.Done()
 			// saltedge.RefreshConnectionsFunction(txn)
 			// saltedge.RefreshConnectionsFunction(istmt, astmt)
-			saltedge.RefreshConnectionsFunction(istmtPre, astmtPre)
+			if useSE {
+				saltedge.RefreshConnectionsFunction(istmtPre, astmtPre)
+			}
 		}()
 		wgPre.Add(1)
 		go func() {
@@ -98,7 +115,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 			wgPre.Add(1)
 			go func(itemToken types.ItemToken) {
 				defer wgPre.Done()
-				if itemToken.Provider == "Plaid" {
+				if itemToken.Provider == "Plaid" && usePlaid {
 					plaid.RefreshConnection(itemToken, istmtPre, astmtPre)
 				}
 			}(itemTok)
@@ -132,7 +149,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 				// message := []byte(`{ "username": "Booh", }`)
 				// socket.ExportHub.Broadcast <- message
 
-				if itemToken.Provider == "SaltEdge" {
+				if itemToken.Provider == "SaltEdge" && useSE {
 					// saltedge.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
 					// saltedge.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
 					saltedge.FetchTransactionsForItemToken(itemToken, istmtOnlyTx, astmt, tstmt, baseCurrency)
@@ -143,7 +160,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 					// 	// Needs to be direct DB call
 					// 	itemToken.LastDownloadedTransactions = time.Now()
 					// }
-				} else {
+				} else if usePlaid {
 					// plaid.FetchTransactionsForItemToken(itemToken, txn, baseCurrency)
 					// plaid.FetchTransactionsForItemToken(itemToken, istmt, astmt, tstmt, baseCurrency)
 					plaid.FetchTransactionsForItemToken(itemToken, istmtOnlyTx, astmt, tstmt, baseCurrency)

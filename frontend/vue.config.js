@@ -17,7 +17,7 @@ module.exports = {
     },
 
   devServer: {
-    public: process.env.VUE_APP_BASE_URL,
+    public: process.env.BASE_URL,
     port,
     host,
     hotOnly: true,
