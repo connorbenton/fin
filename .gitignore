@@ -21,6 +21,8 @@ data.sqlite
 itemTokenSeeds.js
 itemTokens.sql
 
+#yml files (only example)
+*.yml
 
 # Log files
 npm-debug.log*

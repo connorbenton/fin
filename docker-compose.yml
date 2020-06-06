@@ -3,7 +3,7 @@ services:
     fintrack:
         build:
           context: .
-          dockerfile: ./docker/dev/Dockerfile
+          dockerfile: ./docker/dev_frontend/Dockerfile
         env_file: 
           - '$PWD/.env' 
         volumes:

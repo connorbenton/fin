@@ -38,13 +38,13 @@ COPY ./backend/package*.json ./
 RUN npm ci --only=production
 COPY ./backend .
 COPY --from=build-stage /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY gzip.conf /etc/nginx/gzip.conf
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./nginx/gzip.conf /etc/nginx/gzip.conf
 WORKDIR /usr/share/nginx/html
-COPY ./env.sh .
+COPY ./entrypoints/env_load.sh .
 COPY .env .
 RUN apk add --no-cache bash
-RUN chmod +x env.sh
+RUN chmod +x env_load.sh
 
 # EXPOSE 80
 # CMD ["nginx", "-g", "daemon off;"]
@@ -108,7 +108,7 @@ RUN chmod +x env.sh
 # # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 # # RUN chmod +x /tini
 
-ADD start-stage.sh /
+ADD ./entrypoints/start-stage.sh /
 RUN chmod +x /start-stage.sh
 CMD ["/bin/sh", "/start-stage.sh"]
 # ENTRYPOINT ["/tini", "--", "/start.sh"]

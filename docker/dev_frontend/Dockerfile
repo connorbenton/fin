@@ -82,7 +82,7 @@ ENV PATH /usr/local/lib/python3.7/site-packages:$PATH
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 # RUN chmod +x /tini
 
-ADD start-dev.sh /
+ADD ./entrypoints/start-dev.sh /
 RUN chmod +x /start-dev.sh
 # RUN ls /
 # RUN ls ./
