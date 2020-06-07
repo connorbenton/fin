@@ -328,10 +328,16 @@ export default {
   resetDB() {
     return this.execute('get', `/api/resetDB`);
   },
-  resetToken() {
-    return this.execute('get', `/api/resetToken`);
-  },
+  // resetToken() {
+  //   return this.execute('get', `/api/resetToken`);
+  // },
   resetDBFull() {
     return this.execute('get', `/api/resetDBFull`);
+  },
+  getTrees() {
+    return this.execute('get', `/api/analysisTrees`);
+  },
+  customAnalyze(data: any) {
+    return this.execute('post', `/api/customTree`, data);
   },
 };

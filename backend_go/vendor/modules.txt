@@ -5,7 +5,6 @@
 github.com/gorilla/mux
 # github.com/gorilla/websocket v1.4.2
 ## explicit
-github.com/gorilla/websocket
 # github.com/jmoiron/sqlx v1.2.0
 ## explicit
 github.com/jmoiron/sqlx

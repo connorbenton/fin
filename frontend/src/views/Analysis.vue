@@ -1,28 +1,28 @@
 <template>
   <v-content v-if="apiStateLoaded" :key="reloadedData">
     <v-col cols="12" align="center">
-      <v-col cols="10" style="maxWidth:1600px"> 
+      <v-col cols="10" style="maxWidth:1600px">
         <v-card height="800">
-        <!-- <v-card> -->
+          <!-- <v-card> -->
           <v-row justify="center" align="start" style="maxWidth: 1200px">
             <!-- <v-col cols="12" sm="6" md="4"> -->
             <!-- <v-col cols="1" align="start"> -->
             <v-col cols="1" class="mr-4">
-                <v-checkbox 
-                class="mt-0" 
-                v-model="showInvestment" 
+              <v-checkbox
+                class="mt-0"
+                v-model="showInvestment"
                 label="Show Investment"
-                @click="loadTxData(select, showInvestment, true)"></v-checkbox>
+                @click="loadTxData(select, showInvestment, true)"
+              ></v-checkbox>
             </v-col>
             <!-- <v-col cols="2" align="start"> -->
             <v-col class="flex-grow-0 flex-shrink-0">
               <v-btn
-              class="ma-2"
-              small
-              @click="customFilter()"
-              :disabled="isNaN(daysNum) || select !== 'Custom'"
-              > {{prefix}} {{daysNum}} days
-              </v-btn>
+                class="ma-2"
+                small
+                @click="customFilter()"
+                :disabled="isNaN(daysNum) || select !== 'Custom'"
+              >{{prefix}} {{daysNum}} days</v-btn>
             </v-col>
             <v-col cols="2">
               <v-menu
@@ -49,10 +49,10 @@
                     v-on="on"
                   ></v-text-field>
                 </template>
-                <v-date-picker 
-                :disabled="select !== 'Custom'"
-                v-model="startDatePicker" 
-                @input="setDateFromPicker(0)"
+                <v-date-picker
+                  :disabled="select !== 'Custom'"
+                  v-model="startDatePicker"
+                  @input="setDateFromPicker(0)"
                 ></v-date-picker>
               </v-menu>
             </v-col>
@@ -83,43 +83,40 @@
                   ></v-text-field>
                 </template>
                 <!-- v-if="select === 'Custom'"  -->
-                <v-date-picker 
-                :disabled="select !== 'Custom'"
-                v-model="endDatePicker" 
-                @input="setDateFromPicker(1)"
+                <v-date-picker
+                  :disabled="select !== 'Custom'"
+                  v-model="endDatePicker"
+                  @input="setDateFromPicker(1)"
                 ></v-date-picker>
               </v-menu>
             </v-col>
             <v-col cols="2">
-              <v-select 
-              :items="dateRanges" 
-              outlined
-              dense
-              persistent-hint 
-              hint="Date Range" 
-              v-model="select"
-              @change="loadTxData(select, showInvestment)"></v-select>
+              <v-select
+                :items="dateRanges"
+                outlined
+                dense
+                persistent-hint
+                hint="Date Range"
+                v-model="select"
+                @change="loadTxData(select, showInvestment)"
+              ></v-select>
             </v-col>
           </v-row>
 
-          <div class="treemap"
-          
-          >
+          <div class="treemap">
             <!-- The SVG structure is explicitly defined in the template with attributes derived from component data -->
-              <!-- :viewBox="[0.5, -30.5, width, height + 30]" -->
-              <!-- :height="height"
+            <!-- :viewBox="[0.5, -30.5, width, height + 30]" -->
+            <!-- :height="height"
               style="1argin-left: 0px; margin-right: 0px"
               :width="width"
-              xmlns="http://www.w3.org/2000/svg" -->
+            xmlns="http://www.w3.org/2000/svg"-->
             <svg
               :height="height + margin.bottom + margin.top"
               style="margin-left: 0px; margin-right: 0px"
               :width="width + margin.left + margin.right"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <g 
-              style="shape-rendering: crispEdges;" 
-              transform="translate(0,40)">
+              <g style="shape-rendering: crispEdges;" transform="translate(0,40)">
                 <!-- We can use Vue transitions too! -->
                 <transition-group name="list" tag="g" class="depth">
                   <!-- Generate each of the visible squares at a given zoom level (the current selected node) -->
@@ -158,10 +155,12 @@
                       :style="{ fill: color(index) }"
                     >
                       <!-- The title attribute -->
-                      <title>{{ children.data.name }} | 
+                      <title>
+                        {{ children.data.name }} |
                         {{ formatBalance(children.value, 'USD') }} |
-                        {{children.data.percent}} | 
-                        {{children.data.count}} Tx</title>
+                        {{children.data.percent}} |
+                        {{children.data.count}} Tx
+                      </title>
                     </rect>
 
                     <!-- v-if="children.id.width > 170 && children.id.height > 93" -->
@@ -282,14 +281,11 @@
                   />
 
                   <!-- The visible square text element with the id (basically a breadcumb, if you will) -->
-                  <text
-                    dy=".65em"
-                    x="6"
-                    y="-24"
-                    v-if="selectedNode.data != undefined"
-                  >{{ selectedNode.id }} - {{selectedNode.data.count}} Transactions 
-                  ({{selectedNode.data.trueCount}} Total) - {{formatBalance(selectedNode.data.value, 'USD')}}</text>
-                    <!-- v-if="selectedNode.id != 'Transactions by Category'" -->
+                  <text dy=".65em" x="6" y="-24" v-if="selectedNode.data != undefined">
+                    {{ selectedNode.id }} - {{selectedNode.data.count}} Transactions
+                    ({{selectedNode.data.trueCount}} Total) - {{formatBalance(selectedNode.data.value, 'USD')}}
+                  </text>
+                  <!-- v-if="selectedNode.id != 'Transactions by Category'" -->
                   <foreignObject
                     id="popup"
                     class="popup"
@@ -319,7 +315,10 @@
     </v-col>
     <v-dialog v-model="dialog">
       <v-card>
-        <TransactionsTable v-bind:transactionsToDisplay="displayedTransactions" @changed="hideDialog()"></TransactionsTable>
+        <TransactionsTable
+          v-bind:transactionsToDisplay="displayedTransactions"
+          @changed="hideDialog()"
+        ></TransactionsTable>
       </v-card>
     </v-dialog>
   </v-content>
@@ -333,7 +332,7 @@ import TransactionsTable from "../components/TransactionsTable.vue";
 // import {hierarchy, treemap} from 'd3-hierarchy';
 import * as d3 from "d3";
 import api from "@/api";
-import moment from 'moment';
+import moment from "moment";
 // To be explicit about which methods are from D3 let's wrap them around an object
 // Is there a better way to do this?
 // let d3 = {
@@ -356,6 +355,8 @@ export default {
     xMenu: 0,
     yMenu: 0,
     rootNode: {},
+    analysisTrees: [],
+    treeJSON: {},
     transactionsTree: {},
     transactionsTreeNoInvest: {},
     transactionsTreeDisplayed: {},
@@ -402,25 +403,26 @@ export default {
     menu1: false,
     rules: {
       // required: value => !!value || 'Required',
-      validDate: value => moment(value, "YYYY-MM-DD", true).isValid() || 'Invalid date'
+      validDate: value =>
+        moment(value, "YYYY-MM-DD", true).isValid() || "Invalid date"
     }
-      // validDate: value => {
+    // validDate: value => {
 
-        // const pattern = /(\d{4})-(\d{2})-(\d{2})/
-        // return pattern.test(value) || 'Invalid date'
+    // const pattern = /(\d{4})-(\d{2})-(\d{2})/
+    // return pattern.test(value) || 'Invalid date'
     // }
   }),
   // You can do whatever when the selected node changes
   watch: {
     // selectedNode(newData, oldData) {
-      // console.log("The selected node changed...");
+    // console.log("The selected node changed...");
     // }
   },
   //Checks if API has loaded into Vuex store, then loads data
   async created() {
     this.startDate = moment();
-    this.startDate = this.startDate.subtract(29, 'days');
-    this.startDate = this.startDate.format('YYYY-MM-DD');
+    this.startDate = this.startDate.subtract(29, "days");
+    this.startDate = this.startDate.format("YYYY-MM-DD");
     this.startDatePicker = this.startDate;
     // this.startDatePicker = new Date(beginMonth).toISOString().substr(0, 10);
     this.apiStateLoaded = this.$store.state.apiStateLoaded;
@@ -436,8 +438,8 @@ export default {
       }
       if (mutation.type === "setReloading") {
         if (mutation.payload) {
+          this.initialImportData();
 
-          // this.reloadData();
           this.loadTxData(this.select, this.showInvestment);
           this.reloadedData += 1;
         }
@@ -462,13 +464,14 @@ export default {
     daysNum() {
       let a = moment(this.startDate);
       let b = moment(this.endDate);
-      let c =  b.diff(a, 'days') + 1;
-      if (isNaN(c)) return '＿';
+      let c = b.diff(a, "days") + 1;
+      if (isNaN(c)) return "＿";
       return c;
     },
     prefix() {
-      if (this.select === 'Custom' && !this.isCustomFilterApplied) return 'Custom Filter'
-      return 'Showing'
+      if (this.select === "Custom" && !this.isCustomFilterApplied)
+        return "Custom Filter";
+      return "Showing";
     },
     parentId() {
       if (
@@ -483,34 +486,40 @@ export default {
     // Returns the x position within the current domain
     // Maybe it can be replaced by a vuejs method
     x() {
-      return d3
-        .scaleLinear()
-        // .rangeRound([0, 580])
+      return (
+        d3
+          .scaleLinear()
+          // .rangeRound([0, 580])
           // .domain([0, 580])
           // .range([0, 580])
-        .domain([0, this.width])
-        .range([0, this.width]);
+          .domain([0, this.width])
+          .range([0, this.width])
+      );
     },
     // Returns the y position within the current domain
     // Maybe it can be replaced by a vuejs method
     y() {
-      return d3
-        .scaleLinear()
-        // .rangeRound([0, 590])
+      return (
+        d3
+          .scaleLinear()
+          // .rangeRound([0, 590])
           // .domain([0, 590])
           // .range([0, 590])
-        .domain([0, this.height - this.margin.top - this.margin.bottom])
-        .range([0, this.height - this.margin.top - this.margin.bottom]);
+          .domain([0, this.height - this.margin.top - this.margin.bottom])
+          .range([0, this.height - this.margin.top - this.margin.bottom])
+      );
     },
     // The D3 function that recursively subdivides an area into rectangles
     treemap() {
-      return d3
-        .treemap()
-        .size([this.width, this.height])
-        // .size([580, 590])
-        // .round(false)
-        .round(true)
-        .paddingInner(0);
+      return (
+        d3
+          .treemap()
+          .size([this.width, this.height])
+          // .size([580, 590])
+          // .round(false)
+          .round(true)
+          .paddingInner(0)
+      );
     },
     // The current selected node
     selectedNode() {
@@ -536,6 +545,7 @@ export default {
     async initialImportData() {
       this.categories = this.$store.getters.getAllCategories;
       this.accounts = this.$store.getters.getAllAccounts;
+      this.analysisTrees = this.$store.getters.getAllTrees;
       this.color = d3.scaleOrdinal(d3.schemeCategory10);
       // this.transactions = this.$store.getters.getAllTransactions;
       // this.transactions = this.$store.state.txData.txSets.last30TxSet;
@@ -571,16 +581,19 @@ export default {
     },
     customFilter() {
       // this.$store.commit('setCustomRange', {start:this.startDate, end:this.endDate});
-      this.$store.dispatch('customFilter', {startFromPage:this.startDate, endFromPage:this.endDate});
+      this.$store.dispatch("customFilter", {
+        startFromPage: this.startDate,
+        endFromPage: this.endDate
+      });
     },
     // toggleFinancial(showInvestment) {
-      // this.transactionsTreeDisplayed = {};
-      // if (!showInvestment) Object.assign(this.transactionsTreeDisplayed, this.transactionsTree);
-      // else Object.assign(this.transactionsTreeDisplayed, this.transactionsTreeNoInvest);
-      // this.showInvestment = !showInvestment;
-      // this.loadTxData(this.select);
-      // this.reloadedData += 1;
-      // this.reloadData();
+    // this.transactionsTreeDisplayed = {};
+    // if (!showInvestment) Object.assign(this.transactionsTreeDisplayed, this.transactionsTree);
+    // else Object.assign(this.transactionsTreeDisplayed, this.transactionsTreeNoInvest);
+    // this.showInvestment = !showInvestment;
+    // this.loadTxData(this.select);
+    // this.reloadedData += 1;
+    // this.reloadData();
     // },
     log(item) {
       console.log(item);
@@ -594,86 +607,113 @@ export default {
     loadTxData(range, showInvestment, toggleFinancial = 0) {
       if (toggleFinancial) this.showInvestment = !showInvestment;
       this.selected = this.rootNode.id;
-      this.endDate = moment().format('YYYY-MM-DD');
-      switch(range) {
+      // this.endDate = moment().format('YYYY-MM-DD');
+      switch (range) {
         case "Custom":
-          this.startDate = this.$store.state.customStart;
-          this.endDate = this.$store.state.customEnd;
-          this.transactions = this.$store.state.txData.txSets.customTxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.customTxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.customTxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(x => x.name === "custom");
+          // this.transactions = this.$store.state.txData.txSets.customTxSet;
           break;
         case "Last 30 Days":
-          this.transactions = this.$store.state.txData.txSets.last30TxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.last30TxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.last30TxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(x => x.name === "last30");
+          // this.transactions = this.$store.state.txData.txSets.last30TxSet;
+          // this.transactionsTree = this.$store.state.txData.txTrees.last30TxTree;
+          // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.last30TxTreeNoInvest;
           break;
         case "This Month":
-          this.startDate = moment(this.endDate).startOf('month').format('YYYY-MM-DD');
-          this.transactions = this.$store.state.txData.txSets.thisMonthTxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.thisMonthTxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.thisMonthTxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(x => x.name === "thisMonth");
+          // this.startDate = moment(this.endDate).startOf('month').format('YYYY-MM-DD');
+          // this.transactions = this.$store.state.txData.txSets.thisMonthTxSet;
+          // this.transactionsTree = this.$store.state.txData.txTrees.thisMonthTxTree;
+          // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.thisMonthTxTreeNoInvest;
           break;
         case "Last Month":
-          this.startDate = moment(this.endDate).subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
-          this.endDate = moment(this.endDate).subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
-          this.transactions = this.$store.state.txData.txSets.lastMonthTxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.lastMonthTxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.lastMonthTxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(x => x.name === "lastMonth");
+          // this.startDate = moment(this.endDate).subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
+          // this.endDate = moment(this.endDate).subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+          // this.transactions = this.$store.state.txData.txSets.lastMonthTxSet;
+          // this.transactionsTree = this.$store.state.txData.txTrees.lastMonthTxTree;
+          // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.lastMonthTxTreeNoInvest;
           break;
         case "Last 6 Months":
-          this.startDate = moment(this.endDate).subtract(6, 'month').format('YYYY-MM-DD');
-          this.transactions = this.$store.state.txData.txSets.lastSixMonthsTxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.lastSixMonthsTxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.lastSixMonthsTxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(
+            x => x.name === "last6Months"
+          );
+          // this.startDate = moment(this.endDate).subtract(6, 'month').format('YYYY-MM-DD');
+          // this.transactions = this.$store.state.txData.txSets.lastSixMonthsTxSet;
+          // this.transactionsTree = this.$store.state.txData.txTrees.lastSixMonthsTxTree;
+          // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.lastSixMonthsTxTreeNoInvest;
           break;
         case "This Year":
-          this.startDate = moment(this.endDate).startOf('year').format('YYYY-MM-DD');
-          this.transactions = this.$store.state.txData.txSets.thisYearTxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.thisYearTxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.thisYearTxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(x => x.name === "thisYear");
+          // this.startDate = moment(this.endDate).startOf('year').format('YYYY-MM-DD');
+          // this.transactions = this.$store.state.txData.txSets.thisYearTxSet;
+          // this.transactionsTree = this.$store.state.txData.txTrees.thisYearTxTree;
+          // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.thisYearTxTreeNoInvest;
           break;
         case "Last Year":
-          this.startDate = moment(this.endDate).subtract(1, 'year').startOf('year').format('YYYY-MM-DD');
-          this.endDate = moment(this.endDate).subtract(1, 'year').endOf('year').format('YYYY-MM-DD');
-          this.transactions = this.$store.state.txData.txSets.lastYearTxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.lastYearTxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.lastYearTxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(x => x.name === "lastYear");
+          // this.startDate = moment(this.endDate).subtract(1, 'year').startOf('year').format('YYYY-MM-DD');
+          // this.endDate = moment(this.endDate).subtract(1, 'year').endOf('year').format('YYYY-MM-DD');
+          // this.transactions = this.$store.state.txData.txSets.lastYearTxSet;
+          // this.transactionsTree = this.$store.state.txData.txTrees.lastYearTxTree;
+          // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.lastYearTxTreeNoInvest;
           break;
         case "From Beginning":
-          // this.startDate = '2000-01-01';
-          this.startDate = this.$store.state.txData.oldestDate;
-          this.transactions = this.$store.state.txData.txSets.fromBeginningTxSet;
-          this.transactionsTree = this.$store.state.txData.txTrees.fromBeginningTxTree;
-          this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.fromBeginningTxTreeNoInvest;
+          this.treeJSON = this.analysisTrees.find(
+            x => x.name === "fromBeginning"
+          );
+        // this.startDate = '2000-01-01';
+        // this.startDate = this.$store.state.txData.oldestDate;
+        // this.transactions = this.$store.state.txData.txSets.fromBeginningTxSet;
+        // this.transactionsTree = this.$store.state.txData.txTrees.fromBeginningTxTree;
+        // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.fromBeginningTxTreeNoInvest;
       }
+
+      this.startDate = this.treeJSON.first_date;
+      this.endDate = this.treeJSON.last_date;
+
+          this.startDatePicker = this.startDate;
+          this.endDatePicker = this.endDate;
+
+      this.transactionsTree = JSON.parse(this.treeJSON.data);
+      this.transactionsTreeNoInvest = JSON.parse(this.treeJSON.data_no_invest);
+      this.transactions = this.$store.state.transactions;
       this.displayedTransactions = this.transactions;
       this.transactionsTreeDisplayed = {};
-      if (this.showInvestment) Object.assign(this.transactionsTreeDisplayed, this.transactionsTree);
-      else Object.assign(this.transactionsTreeDisplayed, this.transactionsTreeNoInvest);
+      if (this.showInvestment)
+        Object.assign(this.transactionsTreeDisplayed, this.transactionsTree);
+      else
+        Object.assign(
+          this.transactionsTreeDisplayed,
+          this.transactionsTreeNoInvest
+        );
       this.reloadedData += 1;
       this.reloadData();
       // this.reloadData();
     },
     ClickedCat(item) {
-      if (item.depth === 0) this.displayedTransactions = this.transactions; 
-      else {
-      let CatsToFilter = [];
-      if (item.children) item.children.forEach(child => CatsToFilter.push(child.data.dbID));
-      CatsToFilter.push(item.data.dbID);
-      this.displayedTransactions = this.transactions.filter(trans => {
-        // CatsToFilter.indexOf(trans.category) > -1;
-        // CatsToFilter.indexOf(trans.category) < 0;
-        return CatsToFilter.includes(trans.category);
-        // let x = CatsToFilter.indexOf(trans.category);
-        // return x;
-      })
+      const start = moment(this.startDate, "YYYY-MM-DD", true);
+      const end = moment(this.endDate, "YYYY-MM-DD", true);
+      if (item.depth === 0) {
+        this.displayedTransactions = this.transactions.filter(trans => {
+          return moment(trans.date).isBetween(start, end, undefined, "[]");
+        });
+      } else {
+        let CatsToFilter = [];
+        if (item.children)
+          item.children.forEach(child => CatsToFilter.push(child.data.dbID));
+        CatsToFilter.push(item.data.dbID);
+        this.displayedTransactions = this.transactions.filter(trans => {
+          const inrange = moment(trans.date).isBetween(
+            start,
+            end,
+            undefined,
+            "[]"
+          );
+          return CatsToFilter.includes(trans.category) && inrange;
+        });
       }
-      // let y = this.displayedTransactions;
       this.dialog = true;
-
-      // console.log(item);
-      // console.log(CatsToFilter);
     },
     //Positions popups in X & Y to make sure they don't occlude the title/label
     positionPopupX(width, height) {
@@ -707,15 +747,15 @@ export default {
     setDateFromTextField(index) {
       if (index === 0) {
         if (moment(this.startDate, "YYYY-MM-DD", true).isValid()) {
-        this.startDatePicker = this.startDate;
+          this.startDatePicker = this.startDate;
         }
-      return this.startDate;
+        return this.startDate;
       }
       if (index === 1) {
         if (moment(this.endDate, "YYYY-MM-DD", true).isValid()) {
-        this.endDatePicker = this.endDate;
+          this.endDatePicker = this.endDate;
         }
-      return this.endDate;
+        return this.endDate;
       }
       // if (!date) return null;
       // if (!date) {
@@ -730,27 +770,27 @@ export default {
       //   }
       // }
       // try {
-        // if (moment(date, "YYYY-MM-DD", true).isValid()) {
-          // pickerDate = date; 
-        // }
-        // return date;
-        // return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-        // let mydate = new Date(parts[0], parts[1] - 1, parts[2]);
-        // return mydate.toISOString().substr(0, 10);
-        // console.log(mydate.getUTCDate())
-        // return new Date(mydate).toISOString().substr(0, 10);
+      // if (moment(date, "YYYY-MM-DD", true).isValid()) {
+      // pickerDate = date;
+      // }
+      // return date;
+      // return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      // let mydate = new Date(parts[0], parts[1] - 1, parts[2]);
+      // return mydate.toISOString().substr(0, 10);
+      // console.log(mydate.getUTCDate())
+      // return new Date(mydate).toISOString().substr(0, 10);
       // }
       // catch {
-        // return null;
-        // switch (item) {
-        //   case 0:
-        //     // this.menu0 = false;
-        //     return null;
-        //     break;
-        //   case 1:
-        //     // this.menu1 = false;
-        //     return null;
-        // }
+      // return null;
+      // switch (item) {
+      //   case 0:
+      //     // this.menu0 = false;
+      //     return null;
+      //     break;
+      //   case 1:
+      //     // this.menu1 = false;
+      //     return null;
+      // }
       // }
     },
     // dateFilteredTransactions() {},

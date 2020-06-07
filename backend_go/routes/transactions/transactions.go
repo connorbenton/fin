@@ -16,6 +16,7 @@ import (
 	// "fmt"
 	"fintrack-go/db"
 	"fintrack-go/routes/accounts"
+	"fintrack-go/routes/analysisTrees"
 	"fintrack-go/types"
 
 	_ "github.com/jmoiron/sqlx"
@@ -789,6 +790,8 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 		if errC != nil {
 			panic(errC)
 		}
+
+		analysisTrees.ReAnalyze()
 
 		res.WriteHeader(http.StatusOK)
 

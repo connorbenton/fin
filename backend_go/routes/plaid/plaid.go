@@ -298,16 +298,16 @@ func GeneratePublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 // 		}
 // 	}
 // }
-func ResetToken() func(http.ResponseWriter, *http.Request) {
-	return func(res http.ResponseWriter, req *http.Request) {
-		pClient, err := newClient()
-		if err != nil {
-			panic(err)
-		}
-		pClient.ResetSandboxItem("access-sandbox-84adcd32-fe27-46ac-928c-1ae0b857f3c3")
-		res.WriteHeader(http.StatusOK)
-	}
-}
+// func ResetToken() func(http.ResponseWriter, *http.Request) {
+// 	return func(res http.ResponseWriter, req *http.Request) {
+// 		pClient, err := newClient()
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		pClient.ResetSandboxItem("access-sandbox-84adcd32-fe27-46ac-928c-1ae0b857f3c3")
+// 		res.WriteHeader(http.StatusOK)
+// 	}
+// }
 
 func RefreshConnection(iTok types.ItemToken, istmt, astmt *sqlx.NamedStmt) {
 

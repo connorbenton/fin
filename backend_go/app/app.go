@@ -125,9 +125,14 @@ func (app *App) SetupRouter() {
 		HandlerFunc(resetDB.ForceResetDBFullFunction())
 
 	app.Router.
-		Methods("GET").
-		Path("/api/resetToken").
-		HandlerFunc(plaid.ResetToken())
+		Methods("POST").
+		Path("/api/customTree").
+		HandlerFunc(analysisTrees.CustomAnalyze())
+
+	// app.Router.
+	// 	Methods("GET").
+	// 	Path("/api/resetToken").
+	// 	HandlerFunc(plaid.ResetToken())
 
 	// app.Router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 	// 	socket.ServeWs(socket.ExportHub, w, r)

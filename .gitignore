@@ -3,12 +3,8 @@ node_modules/
 /dist
 
 # local env files
+.dev.env
 .env
-.env.dev
-.env.prod
-.env.local
-.env.*.local
-.env.sh
 
 backend_go/bin
 

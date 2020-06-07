@@ -852,4 +852,10 @@ CREATE TRIGGER IF NOT EXISTS UpdateLastTime7 UPDATE ON transactions
 BEGIN
     UPDATE transactions SET updated_at=CURRENT_TIMESTAMP WHERE id=id;
 END;
+CREATE TABLE IF NOT EXISTS `analysis_trees` (`name` STRING PRIMARY KEY, `first_date` STRING, `last_date` STRING, `data` STRING DEFAULT '', `data_no_invest` STRING DEFAULT '', `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP);
+
+CREATE TRIGGER IF NOT EXISTS UpdateLastTime8 UPDATE ON analysis_trees
+BEGIN
+    UPDATE analysis_trees SET updated_at=CURRENT_TIMESTAMP WHERE name=name;
+END;
 COMMIT;

@@ -10,10 +10,10 @@ module.exports = {
       output: {
         globalObject: "this"
       },
-      plugins: [
-        new WorkerPlugin(),
-        // new VuetifyLoaderPlugin()
-      ]
+      // plugins: [
+      //   new WorkerPlugin(),
+      //   // new VuetifyLoaderPlugin()
+      // ]
     },
 
   devServer: {
@@ -31,19 +31,9 @@ module.exports = {
     },
     proxy: {
       '^/api': {
-        // target: 'http://localhost:3000',
-        // target: 'http://localhost:6060',
         target: 'http://fintrack-go:6060',
         secure: false,
         ws: false,
-      },
-      // '^/socket.io': {
-      '^/ws': {
-        // target: 'http://localhost:3000',
-        // target: 'http://localhost:6060',
-        target: 'http://fintrack-go:6060',
-        secure: false,
-        ws: true,
       },
       '^/dbgo': {
         target: 'http://0.0.0.0:8085',

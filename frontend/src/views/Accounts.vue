@@ -27,8 +27,14 @@
       @click.native="fetchTransactions()"
     >Fetch Transactions for All Accounts</v-btn>
 
-    <h1 :v-if="USE_PLAID==TRUE" class="title mt-3">Plaid Connections</h1>
-    <v-card :v-if="USE_PLAID==TRUE" class="d-inline-block mx-auto my-3" max-width="1000" tile :key="redraw">
+    <h1 v-if="USE_PLAID=='TRUE'" class="title mt-3">Plaid Connections</h1>
+    <v-card
+      v-if="USE_PLAID=='TRUE'"
+      class="d-inline-block mx-auto my-3"
+      max-width="1000"
+      tile
+      :key="redraw"
+    >
       <v-simple-table>
         <template v-slot:default>
           <thead>
@@ -61,8 +67,9 @@
         </template>
       </v-simple-table>
     </v-card>
-    <v-btn text class="d-block px-0">
+    <v-btn v-if="USE_PLAID=='TRUE'" text class="d-block px-0">
       <plaid-link
+        v-if="USE_PLAID=='TRUE'"
         :env="environment"
         :publicKey="PLAID_PUBLIC_KEY"
         clientName="Test App"
@@ -76,8 +83,14 @@
         </template>
       </plaid-link>
     </v-btn>
-    <h1 class="title mt-3">Salt Edge Connections</h1>
-    <v-card class="d-inline-block mx-auto my-3" max-width="1000" tile :key="redraw2">
+    <h1 v-if="USE_SALTEDGE=='TRUE'" class="title mt-3">Salt Edge Connections</h1>
+    <v-card
+      v-if="USE_SALTEDGE=='TRUE'"
+      class="d-inline-block mx-auto my-3"
+      max-width="1000"
+      tile
+      :key="redraw2"
+    >
       <!-- <v-dialog v-model="dialog2" persistent>
                 <v-card>
                 <div id="wrapper" style="position:relative">
@@ -144,11 +157,12 @@
     </v-card>
     <v-btn
       class="d-block"
+      v-if="USE_SALTEDGE=='TRUE'"
       :loading="loading4"
       :disabled="loading4"
       @click.native="startCreateInteractive()"
     >Open Salt Edge To Add New Account</v-btn>
-    <v-layout column>
+    <v-col style="max-width: 700px">
       <h1 class="title mt-3">Import CSV from Mint.com</h1>
       <v-flex mt-4>
         <v-file-input accept=".csv" v-model="files" label="Choose CSV from mint.com to import"></v-file-input>
@@ -166,24 +180,27 @@
           </v-card-text>
         </v-card>
       </v-dialog>-->
-    </v-layout>
+    </v-col>
     <!-- <v-row class = "ma-2 pa-0"> -->
-    <v-row>
-      <v-btn color="warning" dark class="my-8" @click.native="resetDB()">Reset Database</v-btn>
-    </v-row>
+    <v-col class="px-4 py-2">
+      <v-row>
+        <v-btn color="warning" dark @click.native="resetDB()">Reset Database</v-btn>
+      </v-row>
+    </v-col>
     <!-- <v-row class = "ma-2 pa-0"> -->
-    <v-row>
-      <v-btn
-        color="warning"
-        dark
-        class="my-8"
-        @click.native="resetDBFull()"
-      >Reset Database (Including Item Tokens)</v-btn>
-    </v-row>
+    <v-col class="px-4 py-2">
+      <v-row>
+        <v-btn
+          color="warning"
+          dark
+          @click.native="resetDBFull()"
+        >Reset Database (Including Item Tokens)</v-btn>
+      </v-row>
+    </v-col>
 
-    <v-row>
+    <!-- <v-row>
       <v-btn color="warning" dark class="my-8" @click.native="resetToken()">reset token</v-btn>
-    </v-row>
+    </v-row>-->
   </v-container>
 </template>
 
@@ -210,16 +227,12 @@ export default {
       transactions: [],
       files: null,
       environment:
-        process.env.PLAID_ENVIRONMENT || window._env_.PLAID_ENVIRONMENT,
+        process.env.VUE_APP_PLAID_ENVIRONMENT || window._env_.PLAID_ENVIRONMENT,
       PLAID_PUBLIC_KEY:
-        process.env.PLAID_PUBLIC_KEY ||
-        window._env_.PLAID_PUBLIC_KEY,
-      USE_PLAID:
-        process.env.USE_PLAID ||
-        window._env_.USE_PLAID,
+        process.env.VUE_APP_PLAID_PUBLIC_KEY || window._env_.PLAID_PUBLIC_KEY,
+      USE_PLAID: process.env.VUE_APP_USE_PLAID || window._env_.USE_PLAID,
       USE_SALTEDGE:
-        process.env.USE_SALTEDGE ||
-        window._env_.USE_SALTEDGE,
+        process.env.VUE_APP_USE_SALTEDGE || window._env_.USE_SALTEDGE,
       updateToken: null,
       itemTokens: [],
       accounts: [],
@@ -404,14 +417,14 @@ export default {
       this.dialogName = "Fetching Transactions";
       this.refreshData();
     },
-    async resetToken() {
-      this.dialogName = "Resetting Database";
-      this.fetch = true;
-      await api.resetToken();
-      this.fetch = false;
-      this.dialogName = "Fetching Transactions";
-      this.refreshData();
-    },
+    // async resetToken() {
+    //   this.dialogName = "Resetting Database";
+    //   this.fetch = true;
+    //   await api.resetToken();
+    //   this.fetch = false;
+    //   this.dialogName = "Fetching Transactions";
+    //   this.refreshData();
+    // },
     async resetDBFull() {
       if (confirm("are you sure?")) {
         this.dialogName = "Resetting Database";

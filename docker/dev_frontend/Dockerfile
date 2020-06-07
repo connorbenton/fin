@@ -3,10 +3,10 @@ FROM node:10.15.0
 # FROM node:alpine
  
 RUN mkdir /usr/src/app
-RUN mkdir /usr/src/app/backend
-WORKDIR /usr/src/app/backend
-COPY ./backend/package*.json ./
-RUN npm install
+# RUN mkdir /usr/src/app/backend
+# WORKDIR /usr/src/app/backend
+# COPY ./backend/package*.json ./
+# RUN npm install
 
 # # RUN mkdir /usr/local
 # WORKDIR /usr/local

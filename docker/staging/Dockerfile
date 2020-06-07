@@ -15,6 +15,16 @@ RUN apk --no-cache --virtual .gyp add \
 COPY ./frontend .
 RUN npm run build-prod
 
+FROM golang:1.14.4-alpine3.12 as go-build
+ENV CGO_ENABLED 1
+RUN apk add --update gcc musl-dev
+RUN mkdir -p /usr/src/app/backend_go
+RUN mkdir /usr/src/app/db
+WORKDIR /usr/src/app/backend_go
+COPY ./backend_go ./
+RUN go mod vendor
+RUN go build -gcflags "all=-N -l" -o /server main.go 
+
 # #sqlite stage
 # FROM coleifer/sqlite as build-stage
 # RUN apk add --no-cache --virtual .build-reqs build-base gcc make \
@@ -32,11 +42,17 @@ RUN apk add --no-cache --virtual build-dependencies build-base gcc make \
       && pip install --no-cache-dir cython \
       && pip install --no-cache-dir flask peewee sqlite-web \
       && apk del build-dependencies
-RUN apk add --update npm
-WORKDIR /usr/src/app/backend
-COPY ./backend/package*.json ./
-RUN npm ci --only=production
-COPY ./backend .
+
+
+# RUN apk add --update npm
+# WORKDIR /usr/src/app/backend
+# COPY ./backend/package*.json ./
+# RUN npm ci --only=production
+# COPY ./backend .
+WORKDIR /usr/src/app/backend_go
+COPY --from=go-build /server /server
+COPY ./backend_go /usr/src/app/backend_go
+
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/gzip.conf /etc/nginx/gzip.conf

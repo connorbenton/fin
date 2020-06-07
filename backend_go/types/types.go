@@ -49,9 +49,13 @@ type Category struct {
 	ID                  int       `json:"id"`
 	TopCategory         string    `json:"top_category" db:"top_category"`
 	SubCategory         string    `json:"sub_category" db:"sub_category"`
-	ExcludeFromAnalysis int       `json:"exclude_from_analysis" db:"exclude_from_analysis"`
+	ExcludeFromAnalysis bool      `json:"exclude_from_analysis" db:"exclude_from_analysis"`
 	CreatedAt           time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
+	Count               int
+	Total               decimal.Decimal
+	// Count               sql.NullString
+	// Total               sql.NullString
 }
 
 type CategorySE struct {
@@ -110,7 +114,46 @@ type Tree struct {
 	Name      string `json:"name" db:"name"`
 	FirstDate string `json:"first_date" db:"first_date"`
 	LastDate  string `json:"last_date" db:"last_date"`
-	Data      string `json:"data" db:"data"`
+	// Data      TreeData `json:"data" db:"data"`
+	Data         string    `json:"data" db:"data"`
+	DataNoInvest string    `json:"data_no_invest" db:"data_no_invest"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type TreeData struct {
+	Name     string          `json:"name"`
+	Children []ChildTop      `json:"children"`
+	Value    decimal.Decimal `json:"value"`
+	Count    int             `json:"count"`
+	// TrueValue decimal.Decimal `json:"trueValue"`
+	TrueCount int `json:"trueCount"`
+}
+
+type ChildTop struct {
+	Name     string          `json:"name"`
+	Children []ChildSub      `json:"children"`
+	Value    decimal.Decimal `json:"value"`
+	Count    int             `json:"count"`
+	// TrueValue decimal.Decimal `json:"trueValue"`
+	TrueCount int    `json:"trueCount"`
+	DbID      int    `json:"dbID"`
+	Percent   string `json:"percent"`
+}
+
+type ChildSub struct {
+	Name    string          `json:"name"`
+	DbID    int             `json:"dbID"`
+	Value   decimal.Decimal `json:"value"`
+	Count   int             `json:"count"`
+	Percent string          `json:"percent"`
+	// TrueValue decimal.Decimal `json:"trueValue"`
+	TrueCount int `json:"trueCount"`
+}
+
+type CustomRange struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
 }
 
 var MintCatMap = map[string]int{
@@ -169,10 +212,10 @@ type CompareCatsSingle struct {
 	AssignedCatName string `json:"assignedCatName"`
 }
 
-type WsMsg struct {
-	Name string `json:"name"`
-	Data []byte `json:"data"`
-}
+// type WsMsg struct {
+// 	Name string `json:"name"`
+// 	Data []byte `json:"data"`
+// }
 
 // type MintComparison struct {
 // 	MintName string
@@ -460,6 +503,23 @@ func PrepItemStOnlyTx(txn *sqlx.Tx) *sqlx.NamedStmt {
 				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id, :needs_re_login, :access_token, :last_downloaded_transactions) 
 				ON CONFLICT (item_id, provider) DO UPDATE SET
 				last_downloaded_transactions = excluded.last_downloaded_transactions`
+	istmt, err := txn.PrepareNamed(iquery)
+	// istmt, err := dbCon.PrepareNamed(iquery)
+	if err != nil {
+		panic(err)
+	}
+	return istmt
+}
+
+func PrepTreeSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+	// func PrepItemSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
+	iquery := `INSERT INTO analysis_trees(name, first_date, last_date, data, data_no_invest)
+				VALUES(:name, :first_date, :last_date, :data, :data_no_invest) 
+				ON CONFLICT (name) DO UPDATE SET
+				first_date = excluded.first_date,
+				last_date = excluded.last_date,
+				data = excluded.data,
+				data_no_invest = excluded.data_no_invest`
 	istmt, err := txn.PrepareNamed(iquery)
 	// istmt, err := dbCon.PrepareNamed(iquery)
 	if err != nil {

@@ -78,13 +78,13 @@
                 class="hidden-sm-and-down nav-menu"
                 to="/database"
                 data-cy="dbBtn"
-                >DB Editor</v-btn >
+                >Currency DB Editor</v-btn >
             <v-btn
                 text
                 class="hidden-sm-and-down nav-menu"
                 to="/databasego"
                 data-cy="dbgoBtn"
-                >Go DB Editor</v-btn >
+                >DB Editor</v-btn >
             
 
         </v-app-bar>
@@ -106,8 +106,8 @@ export default {
                 { title: 'Analysis', url: '/analysis' },
                 // { title: 'Categories', url: '/categories' },
                 { title: 'Accounts', url: '/accounts' },
-                { title: 'DB Editor', url: '/database' },
-                { title: 'Go DB Editor', url: '/databasego' },
+                { title: 'Currency DB Editor', url: '/database' },
+                { title: 'DB Editor', url: '/databasego' },
             ]
         };
     }

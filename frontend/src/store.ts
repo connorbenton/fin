@@ -5,220 +5,7 @@ import moment from 'moment';
 
 Vue.use(Vuex);
 
-const workerActions = new Worker('./actions.ts', { type: 'module' });
-
-// function buildTxData(state, key, start = 0, end = 0) {
-//   return new Promise((resolve, reject) => {
-//     try {
-//       let setKey = key;
-//       let treeKey = key.toString().substring(0, key.length - 3) + 'Tree';
-//       // this.categories = this.$store.getters.getAllCategories;
-//       // this.accounts = this.$store.getters.getAllAccounts;
-//       // this.categories = await api.getCategories();
-//       // this.accounts = await api.getAccounts();
-//       let cats = state.categories.map(c => Object.assign({}, c));
-//       let accs = state.accounts.map(a => Object.assign({}, a));
-
-//       let a = moment();
-//       switch (setKey) {
-//         case 'last30TxSet':
-//           state.txData.txSets[setKey] = state.transactions.filter(x => {
-//             let b = moment(x.date, 'YYYY-MM-DD', true);
-//             let c = a.diff(b, 'days');
-//             return (c < 30);
-//           });
-//           break;
-//         case 'thisMonthTxSet':
-//           state.txData.txSets[setKey] = state.transactions.filter(x => {
-//             let b = moment(x.date, 'YYYY-MM-DD', true);
-//             return b.isSame(a, 'month');
-//             // let c = a.diff(b, 'days');
-//             // return (c < 30);
-//           });
-//           break;
-//         case 'lastMonthTxSet':
-//           a = a.subtract(1, 'month');
-//           state.txData.txSets[setKey] = state.transactions.filter(x => {
-//             let b = moment(x.date, 'YYYY-MM-DD', true);
-//             return b.isSame(a, 'month');
-//           });
-//           break;
-//         case 'lastSixMonthsTxSet':
-//           state.txData.txSets[setKey] = state.transactions.filter(x => {
-//             let b = moment(x.date, 'YYYY-MM-DD', true);
-//             let c = a.diff(b, 'months');
-//             return (c < 6);
-//           });
-//           break;
-//         case 'thisYearTxSet':
-//           state.txData.txSets[setKey] = state.transactions.filter(x => {
-//             let b = moment(x.date, 'YYYY-MM-DD', true);
-//             return b.isSame(a, 'year');
-//           });
-//           break;
-//         case 'lastYearTxSet':
-//           a = a.subtract(1, 'year');
-//           state.txData.txSets[setKey] = state.transactions.filter(x => {
-//             let b = moment(x.date, 'YYYY-MM-DD', true);
-//             return b.isSame(a, 'year');
-//           });
-//           break;
-//         case 'fromBeginningTxSet':
-//           state.txData.txSets[setKey] = state.transactions;
-//           break;
-//         case 'customTxSet':
-//           if (start === 0) state.txData.txSets[setKey] = state.txData.txSets.last30TxSet;
-//           else {
-//           let st = moment(start, 'YYYY-MM-DD', true);
-//           let en = moment(end, 'YYYY-MM-DD', true);
-//           state.txData.txSets[setKey] = state.transactions.filter(x => {
-//             let c = moment(x.date, 'YYYY-MM-DD', true);
-//             return !(c.isBefore(st) || c.isAfter(en));
-//           });
-//         }
-//       }
-
-//       // let loadcats = this.$store.getters.getAllCategories;
-//       // let loadaccs = this.$store.getters.getAllAccounts;
-//       // let cats = loadcats.slice(0);
-//       // let accs = loadaccs.slice(0);
-//       // let y = this.$store.getters.getAllCategories;
-//       // this.transactions = await api.getTransactions();
-//       // this.transactions = [...this.$store.getters.getAllTransactions];
-//       let txSet = state.txData.txSets[setKey];
-//       for (let i in txSet) {
-//         txSet[i].account_name = accs.find(
-//           x => x.account_id === txSet[i].account_id
-//         ).name;
-//         let matchCat = cats.find(x => x.id === txSet[i].category);
-//         txSet[i].category_name = matchCat.sub_category;
-//         if (matchCat.count === undefined) matchCat.count = 0;
-//         matchCat.count = matchCat.count + 1;
-//         if (matchCat.total === undefined) matchCat.total = 0;
-//         matchCat.total =
-//           matchCat.total + parseFloat(txSet[i].normalized_amount);
-
-//         // matchCat.count = matchCat.count + 1;
-//         // matchCat.total = matchCat.total + parseFloat(txSet[i].amount);
-//       }
-
-//       let txTree = {};
-
-//       txTree.name = "Transactions by Category";
-//       txTree.children = [];
-//       txTree.value = 0;
-//       for (let j in cats) {
-//         // if (cats[j].exclude_from_analysis || cats[j].top_category === "Income")
-//         if (cats[j].exclude_from_analysis)
-//           continue;
-//         if (cats[j].sub_category === cats[j].top_category) {
-//           let newChild = {};
-//           newChild.name = cats[j].top_category;
-//           newChild.children = [];
-//           newChild.value = 0;
-//           newChild.count = 0;
-//           // newChild.dbID = '';
-
-//           let children = cats.filter(
-//             x => x.top_category === cats[j].top_category
-//           );
-//           for (let k in children) {
-//             let subCatChildToPush = {};
-//             if (children[k].sub_category === children[k].top_category) {
-//               subCatChildToPush.name = children[k].sub_category + ` (General)`;
-//               newChild.dbID = children[k].id;
-//             } else {
-//               subCatChildToPush.name = children[k].sub_category;
-//             }
-
-//             subCatChildToPush.dbID = children[k].id;
-//             let value = children[k].total;
-//             let count = children[k].count;
-//             subCatChildToPush.value =
-//               value === undefined ? 0 : -1 * value;
-//             subCatChildToPush.count = count === undefined ? 0 : count;
-//             // subCatChildToPush.percent = "";
-//             // if (newChild.name === 'Income' || child.value < 0) {
-//             if (children[k].top_category === 'Income' || subCatChildToPush.value < 0) {
-//               subCatChildToPush.trueValue = subCatChildToPush.value;
-//               subCatChildToPush.value = 0;
-//             }
-//             newChild.value = newChild.value + subCatChildToPush.value;
-//             newChild.count = newChild.count + subCatChildToPush.count;
-//             //  subCatChildToPush.count = children[k].count;
-//             newChild.children.push(subCatChildToPush);
-//           }
-//           // newChild.children.map(obj => ({...obj, percent: (obj.value / newChild.value).toFixed(1)+"%"}));
-//           newChild.children.forEach(function (child) {
-//             // newChild.children[k].percent = '';
-//             // if (newChild.name === 'Income' || child.value < 0) {
-//               // child.trueValue = child.value;
-//               // child.value = 0;
-//             // }
-//             child.percent = ((child.value / newChild.value) * 100).toFixed(1) + "%";
-//             // let x = "y";
-//           });
-//           txTree.children.push(newChild);
-//           txTree.value =
-//             txTree.value + newChild.value;
-//         }
-//       }
-//       let total = txTree.value;
-//       // txTree.children = txTree.children.filter(child => child.count > 0 && child.value > 0);
-//       // txTree.children = txTree.children.filter(child => child.value > -1);
-//         // for (let index in txTree.children) {
-//       txTree.children.forEach(child => {
-//             if (child.name === 'Income' || child.value < 0) {
-//               child.trueValue = child.value;
-//               child.value = 0;
-//             }
-//         // let index = txTree.children.indexOf(child);
-//         // let child = txTree.children[index]
-//         child.percent = ((child.value / total) * 100).toFixed(1) + "%";
-//         // if (child.value / total < 0.1) {
-//         // if (child.count < 1 || child.value < 0) {
-//           // txTree.children.splice(index, 1);
-//           // return;
-//         // }
-//         // if (setKey == 'last30TxSet' && child.name === 'Health & Fitness')
-//         // {
-//         //   console.log('h');
-//         // }
-//       // }
-//       });
-
-//       let treeKeyNoInvest = treeKey + 'NoInvest';
-//       // let txTreeNoInvest = {...txTree};
-//       // Object.assign(txTreeNoInvest, txTree);
-//       let txTreeNoInvest = JSON.parse(JSON.stringify(txTree))
-//       // txTreeNoInvest.name = "Transactions by Category (Financial Excluded)"
-//       if (txTreeNoInvest.value) {
-//         let fin = txTreeNoInvest.children[5];
-//         if (fin.value) {
-//           txTreeNoInvest.value = txTreeNoInvest.value - fin.value;
-//           fin.trueValue = fin.value;
-//           fin.value = 0;
-//           fin.children.forEach(subcat => {
-//             subcat.trueValue = subcat.value;
-//             subcat.value = 0;
-//             subcat.percent = 0;
-//           })
-//           txTreeNoInvest.children.forEach(cat => {
-//             cat.percent = ((cat.value / txTreeNoInvest.value) * 100).toFixed(1) + "%";
-//           })
-//         }
-//       }
-//       state.txData.txTrees[treeKeyNoInvest] = txTreeNoInvest;
-//       state.txData.txTrees[treeKey] = txTree;
-//       resolve();
-//     }
-//     catch (error) {
-//       reject(error);
-//     }
-//   })
-//   // let a = this.transactionsTree;
-//   // let b = "ha";
-// }
+// const workerActions = new Worker('./actions.ts', { type: 'module' });
 
 const store = new Vuex.Store({
   state: {
@@ -233,46 +20,48 @@ const store = new Vuex.Store({
     compareAnswer: '',
     catsToCompare: [],
     finishedCats: [],
-    txData: {
-      oldestDate: null,
-      txMatrix: {
-        rangeDays: {},
-        catData: {},
-      },
-      txSets: {
-        last30TxSet: [],
-        thisMonthTxSet: [],
-        lastMonthTxSet: [],
-        lastSixMonthsTxSet: [],
-        thisYearTxSet: [],
-        lastYearTxSet: [],
-        fromBeginningTxSet: [],
-        customTxSet: [],
-      },
-      txTrees: {
-        last30TxTree: [],
-        last30TxTreeNoInvest: [],
-        thisMonthTxTree: [],
-        thisMonthTxTreeNoInvest: [],
-        lastMonthTxTree: [],
-        lastMonthTxTreeNoInvest: [],
-        lastSixMonthsTxTree: [],
-        lastSixMonthsTxTreeNoInvest: [],
-        thisYearTxTree: [],
-        thisYearTxTreeNoInvest: [],
-        lastYearTxTree: [],
-        lastYearTxTreeNoInvest: [],
-        fromBeginningTxTree: [],
-        fromBeginningTxTreeNoInvest: [],
-        customTxTree: [],
-        customTxTreeNoInvest: [],
-      },
-    },
+    // txData: {
+    //   oldestDate: null,
+    //   txMatrix: {
+    //     rangeDays: {},
+    //     catData: {},
+    //   },
+    //   txSets: {
+    //     last30TxSet: [],
+    //     thisMonthTxSet: [],
+    //     lastMonthTxSet: [],
+    //     lastSixMonthsTxSet: [],
+    //     thisYearTxSet: [],
+    //     lastYearTxSet: [],
+    //     fromBeginningTxSet: [],
+    //     customTxSet: [],
+    //   },
+    //   txTrees: {
+    //     last30TxTree: [],
+    //     last30TxTreeNoInvest: [],
+    //     thisMonthTxTree: [],
+    //     thisMonthTxTreeNoInvest: [],
+    //     lastMonthTxTree: [],
+    //     lastMonthTxTreeNoInvest: [],
+    //     lastSixMonthsTxTree: [],
+    //     lastSixMonthsTxTreeNoInvest: [],
+    //     thisYearTxTree: [],
+    //     thisYearTxTreeNoInvest: [],
+    //     lastYearTxTree: [],
+    //     lastYearTxTreeNoInvest: [],
+    //     fromBeginningTxTree: [],
+    //     fromBeginningTxTreeNoInvest: [],
+    //     customTxTree: [],
+    //     customTxTreeNoInvest: [],
+    //   },
+    // },
 
     customStart: '',
     customEnd: '',
 
     itemTokens: [],
+
+    analysisTrees: [] as any,
 
     transactions: [] as any,
 
@@ -292,6 +81,7 @@ const store = new Vuex.Store({
     getAllCategories: (state) => state.categories,
     getAllAccounts: (state) => state.accounts,
     getAllItemTokens: (state) => state.itemTokens,
+    getAllTrees: (state) => state.analysisTrees,
     getTrans1: (state) => state.trans1,
     getTrans2: (state) => state.trans2,
   },
@@ -316,8 +106,8 @@ const store = new Vuex.Store({
     },
     updateTransactions(state, transactions) {
       state.transactions = transactions;
-      const cats: any[] = state.categories;
-      const accs: any[] = state.accounts;
+      // const cats: any[] = state.categories;
+      // const accs: any[] = state.accounts;
       // for (const trans of state.transactions) {
       //   // const trans: any = state.transactions[i];
       //   trans.category_name = cats.find(
@@ -341,6 +131,15 @@ const store = new Vuex.Store({
       const accSet: any[] = state.accounts;
       const accToUpdate = accSet.find((x) => x.id === account.id);
       accToUpdate.ignore_transactions = account.ignore_transactions;
+    },
+    updateTrees(state, trees) {
+      state.analysisTrees = trees;
+    },
+    updateCustomTree(state, tree) {
+      const index = state.analysisTrees.findIndex((x: any) => x.name === 'custom');
+      state.analysisTrees[index] = tree;
+      // console.log(treeSet);
+      // console.log(state.analysisTrees);
     },
     updateCategories(state, categories) {
       state.categories = categories;
@@ -380,9 +179,9 @@ const store = new Vuex.Store({
     setReloading(state, value) {
       state.doneReloading = value;
     },
-    setTxData(state, value) {
-      state.txData = value;
-    },
+    // setTxData(state, value) {
+    //   state.txData = value;
+    // },
     setCustomRange(state, value) {
       state.customStart = value.start;
       state.customEnd = value.end;
@@ -403,25 +202,28 @@ const store = new Vuex.Store({
       commit('updateAccounts', res);
     },
     async customFilter({ commit }, { startFromPage, endFromPage }) {
-      commit('setCustomRange', { start: startFromPage, end: endFromPage });
-      this.state.webWorkerType = 'custom';
-      workerActions.postMessage(this.state);
-      // await buildTxData(this.state, 'customTxSet', start, end);
-      // commit('setReloading', true);
+      const res = await api.customAnalyze({start: startFromPage, end: endFromPage});
+      commit('updateCustomTree', res);
+    //   commit('setCustomRange', { start: startFromPage, end: endFromPage });
+    //   this.state.webWorkerType = 'custom';
+    //   workerActions.postMessage(this.state);
+    //   // await buildTxData(this.state, 'customTxSet', start, end);
+      commit('setReloading', true);
     },
-    async reanalyze({ commit }) {
-      this.state.webWorkerType = 'full';
-      workerActions.postMessage(this.state);
-      // commit('analysisDataInitial');
-      // commit('analysisData');
-      // commit('setReloading');
-      // let res = await api.getAccounts();
-      // commit('updateAccounts', res);
-    },
+    // async reanalyze({ commit }) {
+    //   this.state.webWorkerType = 'full';
+    //   workerActions.postMessage(this.state);
+    //   // commit('analysisDataInitial');
+    //   // commit('analysisData');
+    //   // commit('setReloading');
+    //   // let res = await api.getAccounts();
+    //   // commit('updateAccounts', res);
+    // },
     async getAll({ commit }) {
       try {
-        const [cats, accs, trans, toks] =
-          await Promise.all([api.getCategories(), api.getAccounts(), api.getTransactions(), api.getItemTokens()]);
+        const [cats, accs, trans, toks, trees] =
+          await Promise.all([api.getCategories(), api.getAccounts(), api.getTransactions(),
+            api.getItemTokens(), api.getTrees()]);
         // Promise.all([
         //   api.getCategories(),
         //   api.getAccounts(),
@@ -431,18 +233,19 @@ const store = new Vuex.Store({
         // ]).then((values) => {
         // console.log(values);
         // this.state.customEnd = moment();
-        this.state.customEnd = moment().format('YYYY-MM-DD');
+        // this.state.customEnd = moment().format('YYYY-MM-DD');
         // this.state.customStart = moment();
-        this.state.customStart = moment().subtract(29, 'days').format('YYYY-MM-DD');
+        // this.state.customStart = moment().subtract(29, 'days').format('YYYY-MM-DD');
         // this.state.customStart = this.state.customStart.format('YYYY-MM-DD');
         commit('updateCategories', cats);
         commit('updateAccounts', accs);
         commit('updateTransactions', trans);
         commit('updateItemTokens', toks);
-        this.state.webWorkerType = 'initial';
-        workerActions.postMessage(this.state);
+        commit('updateTrees', trees);
+        // this.state.webWorkerType = 'initial';
+        // workerActions.postMessage(this.state);
         // commit('analysisDataInitial');
-        // commit('doneLoading', true);
+        commit('doneLoading', true);
 
         // Send this to worker as well
         // commit('analysisData');
@@ -469,8 +272,8 @@ const store = new Vuex.Store({
   },
 });
 
-workerActions.onmessage = (e) => {
-  store.commit(e.data.type, e.data.payload);
-};
+// workerActions.onmessage = (e) => {
+  // store.commit(e.data.type, e.data.payload);
+// };
 
 export default store;

@@ -31,4 +31,3 @@ do
 done < .env
 
 echo "}" >> ./env-config.js
-sed '1d' ./env-config.js > tmpfile; mv tmpfile ./env-config.js
