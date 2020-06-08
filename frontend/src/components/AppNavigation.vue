@@ -74,12 +74,14 @@
                 >Accounts</v-btn
             >
             <v-btn
+                v-if="!isProduction"
                 text
                 class="hidden-sm-and-down nav-menu"
                 to="/database"
                 data-cy="dbBtn"
                 >Currency DB Editor</v-btn >
             <v-btn
+                v-if="!isProduction"
                 text
                 class="hidden-sm-and-down nav-menu"
                 to="/databasego"
@@ -98,7 +100,7 @@ export default {
         return {
             appTitle: 'Fintrack',
             drawer: false,
-            items: [
+            itemsDev: [
                 // { title: 'Summary', url: '/' },
                 { title: 'Transactions', url: '/transactions' },
                 // { title: 'Bills', url: '/bills' },
@@ -108,8 +110,22 @@ export default {
                 { title: 'Accounts', url: '/accounts' },
                 { title: 'Currency DB Editor', url: '/database' },
                 { title: 'DB Editor', url: '/databasego' },
-            ]
+            ],
+            itemsProd: [
+                { title: 'Transactions', url: '/transactions' },
+                // { title: 'Bills', url: '/bills' },
+                // { title: 'Investments', url: '/investments' },
+                { title: 'Analysis', url: '/analysis' },
+                // { title: 'Categories', url: '/categories' },
+                { title: 'Accounts', url: '/accounts' },
+            ],
+            isProduction: false,
+            items: [], 
         };
+    },
+    created() {
+        this.isProduction = process.env.NODE_ENV === 'production';
+        this.items = this.isProduction ? this.itemsProd : this.itemsDev;
     }
 };
 </script>

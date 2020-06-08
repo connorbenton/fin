@@ -1,5 +1,6 @@
-const path = require('path')
-const WorkerPlugin = require('worker-plugin')
+// const path = require('path')
+// const WorkerPlugin = require('worker-plugin')
+// const { GenerateSW } = require("workbox-webpack-plugin");
 // const VuetifyLoaderPlugin = require('vuetify-loader/lib/plugin')
 
 const host = '0.0.0.0'
@@ -10,12 +11,21 @@ module.exports = {
       output: {
         globalObject: "this"
       },
+      // plugins: [new GenerateSW()]
       // plugins: [
       //   new WorkerPlugin(),
       //   // new VuetifyLoaderPlugin()
       // ]
     },
-
+  pwa : {
+    iconPaths: {
+      favicon32: 'img/icons/favicon-32x32.png',
+      favicon16: 'img/icons/favicon-16x16.png',
+      appleTouchIcon: 'img/icons/apple-touch-icon-152x152.png',
+      maskIcon: 'img/icons/safari-pinned-tab.svg',
+      msTileImage: 'img/icons/msapplication-icon-144x144.png'
+    }  
+  },
   devServer: {
     public: process.env.BASE_URL,
     port,

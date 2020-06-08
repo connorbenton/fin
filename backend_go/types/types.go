@@ -464,6 +464,22 @@ func PrepTransSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 
 func PrepAccountSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
+	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype)
+				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype) 
+				ON CONFLICT (account_id, provider) DO UPDATE SET
+				'limit' = excluded.'limit',
+				available = excluded.available,
+				balance = excluded.balance`
+	astmt, err := txn.PrepareNamed(aquery)
+	// astmt, err := dbCon.PrepareNamed(aquery)
+	if err != nil {
+		panic(err)
+	}
+	return astmt
+}
+
+func PrepAccountUpsertSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype, ignore_transactions)
 				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype, :ignore_transactions) 
 				ON CONFLICT (account_id, provider) DO UPDATE SET

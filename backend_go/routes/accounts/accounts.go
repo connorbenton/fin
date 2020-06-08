@@ -48,7 +48,7 @@ func UpsertFunction() func(http.ResponseWriter, *http.Request) {
 		}
 
 		txn := db.DBCon.MustBegin()
-		astmt := types.PrepAccountSt(txn)
+		astmt := types.PrepAccountUpsertSt(txn)
 
 		astmt.MustExec(p)
 		errC := txn.Commit()

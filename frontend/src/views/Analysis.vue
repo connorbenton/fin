@@ -118,14 +118,14 @@
             >
               <g style="shape-rendering: crispEdges;" transform="translate(0,40)">
                 <!-- We can use Vue transitions too! -->
-                <transition-group name="list" tag="g" class="depth">
+                <transition-group name="list" tag="g" class="depth" v-if="selectedNode">
                   <!-- Generate each of the visible squares at a given zoom level (the current selected node) -->
                   <g
                     class="children"
                     v-for="(children, index) in selectedNode._children"
                     :key="'c_' + children.id"
-                    v-if="selectedNode"
                   >
+                    <!-- v-if="selectedNode" -->
                     <!-- Generate the children squares (only visible on hover of a square) -->
                     <rect
                       v-for="child in children._children"

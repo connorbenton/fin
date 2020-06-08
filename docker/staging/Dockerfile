@@ -37,11 +37,14 @@ RUN go build -gcflags "all=-N -l" -o /server main.go
 
 # production stage
 FROM nginx:stable-alpine as production-stage
-RUN apk add --no-cache python py-pip 
-RUN apk add --no-cache --virtual build-dependencies build-base gcc make \
-      && pip install --no-cache-dir cython \
-      && pip install --no-cache-dir flask peewee sqlite-web \
-      && apk del build-dependencies
+# RUN apk add --no-cache python py-pip 
+# RUN apk add --no-cache --virtual build-dependencies build-base gcc make \
+#       && pip install --no-cache-dir cython \
+#       && pip install --no-cache-dir flask peewee sqlite-web \
+#       && apk del build-dependencies
+
+RUN apk add --no-cache supervisor
+# RUN apk add --update supervisor && rm  -rf /tmp/* /var/cache/apk/*
 
 
 # RUN apk add --update npm
@@ -55,12 +58,15 @@ COPY ./backend_go /usr/src/app/backend_go
 
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
-COPY ./nginx/gzip.conf /etc/nginx/gzip.conf
+# COPY ./nginx/gzip.conf /etc/nginx/gzip.conf
 WORKDIR /usr/share/nginx/html
 COPY ./entrypoints/env_load.sh .
 COPY .env .
 RUN apk add --no-cache bash
 RUN chmod +x env_load.sh
+
+COPY ./entrypoints/supervisord.conf /etc/supervisord.conf
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
 # EXPOSE 80
 # CMD ["nginx", "-g", "daemon off;"]
@@ -124,9 +130,12 @@ RUN chmod +x env_load.sh
 # # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 # # RUN chmod +x /tini
 
-ADD ./entrypoints/start-stage.sh /
-RUN chmod +x /start-stage.sh
-CMD ["/bin/sh", "/start-stage.sh"]
+
+# ADD ./entrypoints/start-stage.sh /
+# RUN chmod +x /start-stage.sh
+# CMD ["/bin/sh", "/start-stage.sh"]
+
+
 # ENTRYPOINT ["/tini", "--", "/start.sh"]
 # CMD ["/start.sh"]
 
