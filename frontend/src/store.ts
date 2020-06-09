@@ -105,6 +105,7 @@ const store = new Vuex.Store({
       state.finishedCats = payload;
     },
     updateTransactions(state, transactions) {
+      Object.freeze(transactions);
       state.transactions = transactions;
       // const cats: any[] = state.categories;
       // const accs: any[] = state.accounts;

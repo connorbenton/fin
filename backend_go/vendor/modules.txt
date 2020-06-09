@@ -1,3 +1,5 @@
+# github.com/eliben/gosax v0.1.0
+## explicit
 # github.com/gorilla/handlers v1.4.2
 ## explicit
 # github.com/gorilla/mux v1.7.4
@@ -33,6 +35,12 @@ github.com/rickb777/plural
 # github.com/shopspring/decimal v1.2.0
 ## explicit
 github.com/shopspring/decimal
+# github.com/tamerh/xml-stream-parser v1.4.0
+## explicit
+github.com/tamerh/xml-stream-parser
+# github.com/tamerh/xpath v1.0.0
+## explicit
+github.com/tamerh/xpath
 # golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 ## explicit
 golang.org/x/sync/errgroup

@@ -80,6 +80,7 @@ func main() {
 	app.SetupRouter()
 	// h := handlers.CompressHandler(app)
 
+	log.Println("Starting HTTP server")
 	log.Fatal(http.ListenAndServe(":6060", app.Router))
 	// log.Fatal(http.ListenAndServe(":6060", h))
 	//   return app.Server.ListenAndServe()

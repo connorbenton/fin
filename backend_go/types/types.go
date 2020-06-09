@@ -278,24 +278,28 @@ type CreateTokenPost struct {
 	Name  string `json:"name"`
 }
 
+type EcbFXRate struct {
+	Date struct {
+		Value string `xml:"value,attr"`
+	} `xml:"ObsDimension"`
+	Rate struct {
+		Value string `xml:"value,attr"`
+	} `xml:"ObsValue"`
+}
+
+type EcbFXCurrency struct {
+	SeriesKey struct {
+		Text   string `xml:",chardata"`
+		Values []struct {
+			ID    string `xml:"id,attr"`
+			Value string `xml:"value,attr"`
+		} `xml:"Value"`
+	} `xml:"SeriesKey"`
+	Rates []EcbFXRate `xml:"Obs"`
+}
+
 type EcbFX struct {
-	Currencies []struct {
-		SeriesKey struct {
-			Text   string `xml:",chardata"`
-			Values []struct {
-				ID    string `xml:"id,attr"`
-				Value string `xml:"value,attr"`
-			} `xml:"Value"`
-		} `xml:"SeriesKey"`
-		Rates []struct {
-			Date struct {
-				Value string `xml:"value,attr"`
-			} `xml:"ObsDimension"`
-			Rate struct {
-				Value string `xml:"value,attr"`
-			} `xml:"ObsValue"`
-		} `xml:"Obs"`
-	} `xml:"DataSet>Series"`
+	Currencies []EcbFXCurrency `xml:"DataSet>Series"`
 }
 
 // Fx type exported for currency rate lookups
@@ -542,4 +546,12 @@ func PrepTreeSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 		panic(err)
 	}
 	return istmt
+}
+
+func PrepFXTableSt(txn *sqlx.Tx, query string) *sqlx.Stmt {
+	stmt, err := txn.Preparex(query)
+	if err != nil {
+		panic(err)
+	}
+	return stmt
 }

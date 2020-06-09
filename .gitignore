@@ -19,6 +19,7 @@ itemTokens.sql
 
 #yml files (only example)
 *.yml
+!*example.yml
 
 # Log files
 npm-debug.log*

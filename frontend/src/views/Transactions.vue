@@ -182,6 +182,7 @@ export default {
       this.categories = this.$store.getters.getAllCategories;
       this.accounts = this.$store.getters.getAllAccounts;
       this.transactions = this.$store.getters.getAllTransactions;
+      Object.freeze(this.transactions);
       this.itemTokens = this.$store.getters.getAllItemTokens;
     },
     toggleAccountShow(acct) {

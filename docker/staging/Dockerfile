@@ -36,14 +36,16 @@ RUN go build -gcflags "all=-N -l" -o /server main.go
 # WORKDIR /data
 
 # production stage
-FROM nginx:stable-alpine as production-stage
+# FROM nginx:stable-alpine as production-stage
+FROM alpine:3.12.0 as production-stage
+
 # RUN apk add --no-cache python py-pip 
 # RUN apk add --no-cache --virtual build-dependencies build-base gcc make \
 #       && pip install --no-cache-dir cython \
 #       && pip install --no-cache-dir flask peewee sqlite-web \
 #       && apk del build-dependencies
 
-RUN apk add --no-cache supervisor
+# RUN apk add --no-cache supervisor && apk add --no-cache bash
 # RUN apk add --update supervisor && rm  -rf /tmp/* /var/cache/apk/*
 
 
@@ -52,21 +54,32 @@ RUN apk add --no-cache supervisor
 # COPY ./backend/package*.json ./
 # RUN npm ci --only=production
 # COPY ./backend .
-WORKDIR /usr/src/app/backend_go
+# WORKDIR /usr/src/app/backend_go
+WORKDIR /usr/share/nginx/html
+COPY --from=build-stage /app/dist ./
+COPY ./entrypoints/env_load.sh .env ./
+
 COPY --from=go-build /server /server
 COPY ./backend_go /usr/src/app/backend_go
 
-COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 # COPY ./nginx/gzip.conf /etc/nginx/gzip.conf
-WORKDIR /usr/share/nginx/html
-COPY ./entrypoints/env_load.sh .
-COPY .env .
-RUN apk add --no-cache bash
-RUN chmod +x env_load.sh
+# COPY .env .
+# RUN apk add --no-cache bash
+
+# RUN apk add --update --no-cache supervisor && apk add --no-cache bash && chmod +x env_load.sh
+# RUN apk add --update --no-cache supervisor && apk add --no-cache nginx && apk add --no-cache bash && chmod +x env_load.sh
+# RUN apk add --no-cache --virtual .pipbuild python3 py3-pip && pip install --no-cache-dir supervisor && apk del .pipbuild \ 
+RUN apk add --no-cache py3-pip && pip install --no-cache-dir supervisor \ 
+&& apk add --no-cache nginx && apk add --no-cache bash && chmod +x env_load.sh
+
+
+# RUN apk add --update supervisor && apk add --update bash && rm -rf /tmp/* /var/cache/apk/* && chmod +x env_load.sh
+# RUN chmod +x env_load.sh
 
 COPY ./entrypoints/supervisord.conf /etc/supervisord.conf
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/etc/supervisord.conf"]
+# CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
 # EXPOSE 80
 # CMD ["nginx", "-g", "daemon off;"]

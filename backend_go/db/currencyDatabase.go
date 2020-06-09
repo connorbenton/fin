@@ -3,13 +3,17 @@ package db
 import (
 	// "database/sql"
 
+	"bufio"
+	"compress/gzip"
 	"database/sql"
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
+
 	"time"
 
 	"fintrack-go/types"
@@ -18,6 +22,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rickb777/date"
 	"github.com/shopspring/decimal"
+	"github.com/tamerh/xml-stream-parser"
 )
 
 var CurrencyDBCon *sqlx.DB
@@ -25,101 +30,206 @@ var CurrencyDBCon *sqlx.DB
 //CreateCurrencyDatabase starts currency database and loads it with initial info from the XML
 func CreateCurrencyDatabase() (*sqlx.DB, error) {
 
+	start := time.Now()
+	// var wg sync.WaitGroup
+	// wg.Add(2)
+	// go func() {
+	// defer wg.Done()
 	var err error
 	CurrencyDBCon, err = sqlx.Open("sqlite3", "/usr/src/app/db/currencyData.sqlite")
 	if err != nil {
-		return nil, err
+		log.Fatalln(err)
 	}
+	// }()
 
+	// log.Println("extracting currencyInitial")
 	// raw2, err := ioutil.ReadFile("/usr/src/app/backend_go/db/currencyCreate.sql")
-	raw2, err := ioutil.ReadFile("/usr/src/app/backend_go/db/currencyInitial.xml")
+	// raw2, err := ioutil.ReadFile("/usr/src/app/backend_go/db/currencyInitial.xml")
+	// raw2, err := ioutil.ReadFile("/usr/src/app/backend_go/db/currencyInitial.xml.gz")
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// go func() {
+	// defer wg.Done()
+	raw2, err := os.Open("/usr/src/app/backend_go/db/currencyInitial.xml.gz")
 	if err != nil {
-		return nil, err
+		log.Fatalln(err)
 	}
+	defer raw2.Close()
 
-	xmlString := string(raw2)
+	fz, err := gzip.NewReader(raw2)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer fz.Close()
 
-	insertXMLData(xmlString, true)
+	// s, err := ioutil.ReadAll(fz)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// log.Println("uploading initial currency XML")
+
+	// xmlString := string(s)
+
+	// data := types.EcbFX{}
+
+	// if err := xml.NewDecoder(fz).Decode(&data); err != nil {
+	// 	return nil, err
+	// }
+
+	// insertXMLData(xmlString, true)
+	// insertXMLData(data, true)
+	insertXMLData(fz, true)
+	// }()
+	// wg.Wait()
+	// GetNewXML()
+
+	// raw2, err := os.Open("/usr/src/app/backend_go/db/createCurrency.sql.gz")
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// defer raw2.Close()
+	// log.Println("Open sql done:", time.Since(start))
+
+	// fz, err := gzip.NewReader(raw2)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// defer fz.Close()
+	// log.Println("Unzip sql done:", time.Since(start))
+
+	// raw, err := ioutil.ReadAll(fz)
+	// query := string(raw)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// log.Println("Read sql done:", time.Since(start))
+	// CurrencyDBCon.MustExec(query)
+
+	log.Println("Currency DB done:", time.Since(start))
 
 	return DBCon, nil
 }
 
-func insertXMLData(data string, ignoreBool bool) {
-	m := &types.EcbFX{}
+// func insertXMLData(data string, ignoreBool bool) {
+// func insertXMLData(m types.EcbFX, ignoreBool bool) {
+func insertXMLData(stream *gzip.Reader, ignoreBool bool) {
 
-	if err := xml.Unmarshal([]byte(data), &m); err != nil {
-		panic(err)
-	}
+	start := time.Now()
 
-	txn := CurrencyDBCon.MustBegin()
-	// txn, err := CurrencyDBCon.Begin()
-	// if err != nil {
-	// 	log.Fatal(err)
+	// m := &types.EcbFX{}
+
+	// if err := xml.Unmarshal([]byte(data), &m); err != nil {
+	// 	panic(err)
 	// }
-	//Create tables if does not exist
-	// tblSt, err := txn.Prepare(`CREATE TABLE IF NOT EXISTS $1 ("fx_date" DATE PRIMARY KEY, "rate" TEXT)`)
+	txn := CurrencyDBCon.MustBegin()
+
 	tblStr1 := `CREATE TABLE IF NOT EXISTS `
 	tblStr2 := ` (fx_date DATE PRIMARY KEY, rate STRING);`
-	// Don't need these, SQLite creates on its own
-	// indexStr1 := `CREATE UNIQUE INDEX IF NOT EXISTS fx ON `
-	// indexStr2 := ` ("fx_date");`
-	//Upsert rows to table
 	var upsertStr1 string
 	var upsertStr2 string
-	// var upsertStr3 string
 	if ignoreBool {
 		upsertStr1 = `INSERT OR IGNORE INTO `
 		upsertStr2 = ` (fx_date, rate) VALUES($1,$2);`
 	} else {
-		// upsertStr1 = `INSERT INTO ARS(fx_date, rate) VALUES($1,$2) ON CONFLICT (fx_date) DO UDPATE SET counter = counter + 1`
 		upsertStr1 = "INSERT INTO "
 		upsertStr2 = "(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate"
-		// upsertStr2 = `(fx_date, rate) VALUES($1,$2) ON CONFLICT (fx_date) DO NOTHING;`
-	}
-	// upsertSt, err := txn.Prepare(upsertStr)
-	for _, currency := range m.Currencies {
-		var curr string
-		for _, key := range currency.SeriesKey.Values {
-			if key.ID == "CURRENCY" {
-				curr = key.Value
-				txn.MustExec(tblStr1 + curr + tblStr2)
-				// txn.Exec(tblStr1 + curr + tblStr2)
-				// txn.MustExec(indexStr1 + curr + tblStr2)
-				// if _, err = tblSt.Exec(key.Value); err != nil {
-				// 	log.Fatal(err)
-				// }
-			}
-		}
-		for _, fx := range currency.Rates {
-			if isNumDot(fx.Rate.Value) {
-				// if ignoreBool {
-				txStr := upsertStr1 + curr + upsertStr2
-				// log.Println(txStr)
-				txn.MustExec(txStr, fx.Date.Value, fx.Rate.Value)
-				// if _, err = txn.Exec(upsertStr1+curr+upsertStr2, fx.Date.Value, fx.Rate.Value); err != nil {
-				// 	panic(err)
-				// }
-				// } else {
-				// txStr := []byte(upsertStr1 + curr + upsertStr2)
-				// str1 := []byte("INSERT INTO ARS(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate")
-				// log.Println(txStr)
-				// log.Println(str1)
-				// txn.MustExec(str1, fx.Date.Value, fx.Rate.Value)
-				// 	str2 := upsertStr1 + curr + upsertStr2
-				// 	log.Println(str1)
-				// 	log.Println(str2)
-				// 	txn.MustExec("INSERT INTO ARS(fx_date, rate) VALUES($1, $2) ON CONFLICT (fx_date) DO UPDATE SET rate = excluded.rate", fx.Date.Value, fx.Rate.Value)
-				// }
-				// txn.MustExec(upsertStr1+curr+upsertStr2, fx.Date.Value, fx.Rate.Value)
-			}
-			// if _, err = upsertSt.Exec(curr, fx.Date.Value, fx.Rate.Value); err != nil {
-			// 	log.Fatal(err)
-			// }
-		}
 	}
 
-	txn.Commit()
-	// getNewXML()
+	// d := xml.NewDecoder(stream)
+	var wg sync.WaitGroup
+
+	br := bufio.NewReaderSize(stream, 65536)
+
+	parser := xmlparser.NewXMLParser(br, "Series")
+
+	for xml := range parser.Stream() {
+		var curr string
+		for _, fxKey := range xml.Childs["SeriesKey"][0].Childs["Value"] {
+			if fxKey.Attrs["id"] == "CURRENCY" {
+				curr = fxKey.Attrs["value"]
+				txn.MustExec(tblStr1 + curr + tblStr2)
+				break
+			}
+		}
+		txStr := upsertStr1 + curr + upsertStr2
+		fxSt := types.PrepFXTableSt(txn, txStr)
+
+		for _, fx := range xml.Childs["Obs"] {
+			wg.Add(1)
+			go func(fx xmlparser.XMLElement) {
+				defer wg.Done()
+				if isNumDot(fx.Childs["ObsValue"][0].Attrs["value"]) {
+					fxSt.MustExec(fx.Childs["ObsDimension"][0].Attrs["value"], fx.Childs["ObsValue"][0].Attrs["value"])
+				}
+			}(fx)
+		}
+	}
+	wg.Wait()
+
+	// for {
+
+	// 	tok, err := d.Token()
+	// 	if tok == nil || err == io.EOF {
+	// 		// EOF means we're done.
+	// 		break
+	// 	} else if err != nil {
+	// 		log.Fatalf("Error decoding token: %s", err)
+	// 	}
+
+	// 	switch ty := tok.(type) {
+	// 	case xml.StartElement:
+	// 		if ty.Name.Local == "Series" {
+
+	// 			// go func(d *xml.Decoder, ty xml.StartElement) {
+	// 			// start2 := time.Now()
+	// 			// log.Println("Found series", time.Since(start))
+	// 			var currency types.EcbFXCurrency
+	// 			if err = d.DecodeElement(&currency, &ty); err != nil {
+	// 				log.Fatalf("Error decoding item: %s", err)
+	// 			}
+	// 			// wg.Add(1)
+	// 			// go func(currency types.EcbFXCurrency) {
+	// 			// defer wg.Done()
+	// 			// log.Println("series decoded in: ", time.Since(start2))
+	// 			var curr string
+	// 			for _, key := range currency.SeriesKey.Values {
+	// 				if key.ID == "CURRENCY" {
+	// 					curr = key.Value
+	// 					txn.MustExec(tblStr1 + curr + tblStr2)
+	// 				}
+	// 			}
+	// 			txStr := upsertStr1 + curr + upsertStr2
+	// 			fxSt := types.PrepFXTableSt(txn, txStr)
+
+	// 			for _, fx := range currency.Rates {
+
+	// 				if isNumDot(fx.Rate.Value) {
+
+	// 					fxSt.MustExec(fx.Date.Value, fx.Rate.Value)
+
+	// 				}
+
+	// 			}
+
+	// 			// log.Println("series done in: ", time.Since(start2))
+	// 			// }(currency)
+	// 			// }(d, ty)
+
+	// 		}
+
+	// 	}
+	// }
+
+	// wg.Wait()
+
+	err2 := txn.Commit()
+	if err2 != nil {
+		panic(err2)
+	}
+	log.Println("insertXML done:", time.Since(start))
 	// if err = txn.Commit(); err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -157,17 +267,28 @@ func GetNewXML() {
 	}
 	utc := time.Now().UTC()
 	daysDiff := utc.Sub(fx.FxDate).Hours() / 24
+
 	// log.Println(utc)
 	// log.Println(daysDiff)
 	// hours, _, _ := utc.Clock()
 
 	// if daysDiff > 1 && hours > 15 {
 	if daysDiff > 1.66 {
+
+		start := time.Now()
+		log.Println("Pulling new data from ECB API")
 		// log.Println("ready to fetch")
 		url1 := "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/D..EUR.SP00.A?updatedAfter="
 		url2 := "T16%3A30%3A00%2B00%3A00&detail=dataonly"
 		urlDate := fx.FxDate.Format("2006-01-02")
-		resp, err := http.Get(url1 + urlDate + url2)
+
+		client := new(http.Client)
+
+		request, err := http.NewRequest("GET", url1+urlDate+url2, nil)
+		request.Header.Add("Accept-Encoding", "gzip")
+
+		// resp, err := http.Get(url1 + urlDate + url2)
+		resp, err := client.Do(request)
 		if err != nil {
 			xmlerr := fmt.Errorf("GET error: %v", err)
 			log.Println(xmlerr.Error())
@@ -190,15 +311,31 @@ func GetNewXML() {
 			log.Println(xmlerr.Error())
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
+		fz, err := gzip.NewReader(resp.Body)
+
 		if err != nil {
-			xmlerr := fmt.Errorf("Read body: %v", err)
-			log.Println(xmlerr.Error())
+			log.Println("Response gzip error: ", err)
 		}
+		defer fz.Close()
 
-		xmlString := string(data)
+		// data := types.EcbFX{}
 
-		insertXMLData(xmlString, false)
+		// if err := xml.NewDecoder(resp.Body).Decode(&data); err != nil {
+		// 	panic(err)
+		// }
+
+		// data, err := ioutil.ReadAll(resp.Body)
+		// if err != nil {
+		// 	xmlerr := fmt.Errorf("Read body: %v", err)
+		// 	log.Println(xmlerr.Error())
+		// }
+
+		// xmlString := string(data)
+
+		// insertXMLData(xmlString, false)
+		// insertXMLData(data, false)
+		insertXMLData(fz, false)
+		log.Println("Data pulled and inserted from ECB API in: ", time.Since(start))
 
 	}
 
