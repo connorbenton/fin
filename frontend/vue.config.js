@@ -17,6 +17,10 @@ module.exports = {
       //   // new VuetifyLoaderPlugin()
       // ]
     },
+    // chainWebpack: config => {
+    //   config.plugins.delete('prefetch')
+    //   // config.plugins.delete('preload')
+    // },
   pwa : {
     iconPaths: {
       favicon32: 'img/icons/favicon-32x32.png',
@@ -37,7 +41,7 @@ module.exports = {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
+      'Access-Control-Allow-Headers': 'Origin, Accept, X-Requested-With, content-type, Authorization'
     },
     proxy: {
       '^/api': {

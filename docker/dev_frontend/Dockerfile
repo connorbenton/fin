@@ -82,13 +82,13 @@ ENV PATH /usr/local/lib/python3.7/site-packages:$PATH
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 # RUN chmod +x /tini
 
-ADD ./entrypoints/start-dev.sh /
+COPY ./entrypoints/start-dev.sh /
 RUN chmod +x /start-dev.sh
 # RUN ls /
 # RUN ls ./
 # RUN ls /usr/src/app
 # RUN ls /usr/src/app/server
-CMD ["/bin/sh", "/start-dev.sh"]
+CMD ["/bin/bash", "-c", "source /start-dev.sh"]
 # ENTRYPOINT ["/tini", "--", "/start.sh"]
 # CMD ["/start.sh"]
 

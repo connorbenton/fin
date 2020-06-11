@@ -1,19 +1,25 @@
 <template>
-  <v-content v-if="apiStateLoaded" :key="reloadedData">
+  <v-content v-show="apiStateLoaded" :key="reloadedData">
     <v-col cols="12" align="center">
-      <v-col cols="10" style="maxWidth:1600px">
-        <v-card height="800">
-          <!-- <v-card> -->
-          <v-row justify="center" align="start" style="maxWidth: 1200px">
+      <v-col cols="10" style="maxWidth:2400px" align="center" justify="center">
+        <!-- <v-card height="800"> -->
+          <!-- <v-card height="85vh" ref="mainCard"> -->
+          <v-row justify="center" align="start" style="maxWidth: 1400px">
             <!-- <v-col cols="12" sm="6" md="4"> -->
             <!-- <v-col cols="1" align="start"> -->
             <v-col cols="1" class="mr-4">
-              <v-checkbox
+              <!-- <v-checkbox
                 class="mt-0"
                 v-model="showInvestment"
                 label="Show Investment"
                 @click="loadTxData(select, showInvestment, true)"
-              ></v-checkbox>
+              ></v-checkbox> -->
+              <v-switch
+                class="mt-0"
+                v-model="showInvestment"
+                label="Show Invest"
+                @click="loadTxData(select, showInvestment, true)"
+                ></v-switch>
             </v-col>
             <!-- <v-col cols="2" align="start"> -->
             <v-col class="flex-grow-0 flex-shrink-0">
@@ -103,6 +109,7 @@
             </v-col>
           </v-row>
 
+          <v-row justify="center">
           <div class="treemap">
             <!-- The SVG structure is explicitly defined in the template with attributes derived from component data -->
             <!-- :viewBox="[0.5, -30.5, width, height + 30]" -->
@@ -144,7 +151,7 @@
               restructuring the data tree, that reactivly gets reflected in the template.
                     -->
                     <rect
-                      class="parent"
+                      :class="'parent ' + (isDark?'darkRect':'lightRect')"
                       v-on:click="selectNode"
                       :id="children.id"
                       :key="children.id"
@@ -157,9 +164,10 @@
                       <!-- The title attribute -->
                       <title>
                         {{ children.data.name }} |
-                        {{ formatBalance(children.value, 'USD') }} |
+                        {{ formatBalance(children.value) }} |
                         {{children.data.percent}} |
-                        {{children.data.count}} Tx
+                        {{children.data.count}} Tx |
+                        {{ formatBalance(children.data.per30)}} per 30
                       </title>
                     </rect>
 
@@ -223,7 +231,7 @@
                       :y="y(children.y0) + 6"
                       style="fill-opacity: 1"
                       font-weight="bold"
-                    >{{ formatBalance(children.data.value, 'USD') }} - {{children.data.percent}}</text>
+                    >{{ formatBalance(children.data.value) }} - {{children.data.percent}}</text>
 
                     <text
                       v-if="x(children.x1 - children.x0 + children.parent.x0) > 120 &&
@@ -242,6 +250,15 @@
                       :y="y(children.y0) + 6"
                       style="fill-opacity: 1;"
                     >{{ children.data.count}} Tx</text>
+                    <text
+                      v-if="y(children.y1 - children.y0 + children.parent.y0) > 78"
+                      dy="4.75em"
+                      :key="'t_' + children.id + 'per30'"
+                      :x="x(children.x0) + 6"
+                      :y="y(children.y0) + 6"
+                      style="fill-opacity: 1;"
+                    >{{ formatBalance(children.data.per30)}} per 30</text>
+
                     <!-- <foreignObject 
               :id="children.id + 'selector'"
               :key="children.id + 'selector'"
@@ -283,7 +300,7 @@
                   <!-- The visible square text element with the id (basically a breadcumb, if you will) -->
                   <text dy=".65em" x="6" y="-24" v-if="selectedNode.data != undefined">
                     {{ selectedNode.id }} - {{selectedNode.data.count}} Transactions
-                    ({{selectedNode.data.trueCount}} Total) - {{formatBalance(selectedNode.data.value, 'USD')}}
+                    ({{selectedNode.data.trueCount}} Total) - {{formatBalance(selectedNode.data.value)}} - ({{formatBalance(selectedNode.data.per30)}} per 30)
                   </text>
                   <!-- v-if="selectedNode.id != 'Transactions by Category'" -->
                   <foreignObject
@@ -310,15 +327,19 @@
               </g>
             </svg>
           </div>
-        </v-card>
+          </v-row>
+        <!-- </v-card> -->
       </v-col>
     </v-col>
-    <v-dialog v-model="dialog">
+    <v-dialog 
+    v-model="dialog"
+    @input="v => v || refreshTrees()"
+    >
       <v-card>
         <TransactionsTable
           v-bind:transactionsToDisplay="displayedTransactions"
-          @changed="hideDialog()"
         ></TransactionsTable>
+          <!-- @changed="hideDialog()" -->
       </v-card>
     </v-dialog>
   </v-content>
@@ -333,6 +354,7 @@ import TransactionsTable from "../components/TransactionsTable.vue";
 import * as d3 from "d3";
 import api from "@/api";
 import moment from "moment";
+import vuetify from '../plugins/vuetify';
 // To be explicit about which methods are from D3 let's wrap them around an object
 // Is there a better way to do this?
 // let d3 = {
@@ -347,6 +369,7 @@ export default {
   name: "Treemap",
   // the component's data
   data: vm => ({
+    isDark: null,
     showInvestment: false,
     reloadedData: 0,
     apiStateLoaded: "",
@@ -365,7 +388,7 @@ export default {
     transactions: [],
     displayedTransactions: [],
     date: new Date().toISOString().substr(0, 10),
-
+    baseCurrency: process.env.VUE_APP_BASE_CURRENCY || window._env_.BASE_CURRENCY,
     isCustomFilterApplied: false,
     select: "Last 30 Days",
     dateRanges: [
@@ -396,7 +419,7 @@ export default {
       left: 0
     },
     width: 960,
-    height: 630,
+    height: 930,
     selected: null,
     color: {},
     menu0: false,
@@ -414,6 +437,9 @@ export default {
   }),
   // You can do whatever when the selected node changes
   watch: {
+    '$store.state.isDark': function() {
+      this.isDark = this.$store.state.isDark;
+    }
     // selectedNode(newData, oldData) {
     // console.log("The selected node changed...");
     // }
@@ -447,8 +473,19 @@ export default {
       }
     });
   },
+  mounted() {
+    window.addEventListener('resize', this.setTreemapSize);
+    this.isDark = this.$vuetify.theme.dark;
+    // console.log(this.isDark);
+    let string = this.isDark?"darkRect":"lightRect"
+    // console.log("parent " + string);
+    // console.log("parent " + (this.isDark?"darkRect":"lightRect"));
+
+    // this.setTreemapSize();
+  },
   beforeDestroy() {
     this.unsub();
+    window.removeEventListener('resize', this.setTreemapSize);
   },
   // The reactive computed variables that fire rerenders
   computed: {
@@ -541,6 +578,11 @@ export default {
     }
   },
   methods: {
+    setTreemapSize() {
+      this.height = window.innerHeight * 0.7;
+      this.width = window.innerWidth * 0.8;
+      this.reloadData();
+    },
     //Initializes data and then draws treemap
     async initialImportData() {
       this.categories = this.$store.getters.getAllCategories;
@@ -585,6 +627,9 @@ export default {
         startFromPage: this.startDate,
         endFromPage: this.endDate
       });
+    },
+    refreshTrees() {
+      this.$store.dispatch("getTrees");
     },
     // toggleFinancial(showInvestment) {
     // this.transactionsTreeDisplayed = {};
@@ -669,6 +714,9 @@ export default {
         // this.transactionsTreeNoInvest = this.$store.state.txData.txTrees.fromBeginningTxTreeNoInvest;
       }
 
+      this.height = window.innerHeight * 0.7;
+      this.width = window.innerWidth * 0.8;
+
       this.startDate = this.treeJSON.first_date;
       this.endDate = this.treeJSON.last_date;
 
@@ -717,21 +765,21 @@ export default {
     },
     //Positions popups in X & Y to make sure they don't occlude the title/label
     positionPopupX(width, height) {
-      if (width < 170 && height > 93) return -170;
-      if (width < 170 && height < 93) return -170;
-      if (width > 170 && height < 93) return 120;
+      if (width < 170 && height > 110) return -170;
+      if (width < 170 && height < 110) return -170;
+      if (width > 170 && height < 110) return 120;
       return -5;
     },
     positionPopupY(width, height) {
-      if (width > 170 && height > 93) return 58;
-      else if (width > 170 && height < 93) return 10;
+      if (width > 170 && height > 110) return 75;
+      else if (width > 170 && height < 110) return 10;
       return 5;
     },
     //Format balance to display correctly as currency
-    formatBalance(bal, code) {
+    formatBalance(bal) {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: code
+        currency: this.baseCurrency
       }).format(bal);
     },
     setDateFromPicker(index) {
@@ -972,8 +1020,17 @@ text {
 }
 rect {
   fill: none;
+  fill-opacity: 0.7;
+  /* stroke: #fff; */
+  /* stroke: #000; */
+}
+rect.lightRect {
   stroke: #fff;
 }
+rect.darkRect {
+  stroke: #000;
+}
+
 rect.parent,
 .grandparent rect {
   stroke-width: 2px;
@@ -993,7 +1050,7 @@ rect.parent,
 }
 .children rect.parent {
   fill: #bbb;
-  fill-opacity: 0.5;
+  /* fill-opacity: 0.7; */
 }
 rect.child {
   fill: #bbb;

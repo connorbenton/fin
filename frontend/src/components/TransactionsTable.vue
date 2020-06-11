@@ -4,6 +4,7 @@
     <v-col class="flex-grow-1 flex-shrink-0 mx-auto">
         <!-- v-on:keyup.enter="$event.target.blur()" -->
       <v-text-field
+        class="mt-0 pt-0"
         v-model="searchDisplay"
         prepend-inner-icon="search"
         label="Search"
@@ -20,7 +21,7 @@
         :sort-by.sync="sortBy"
         :sort-desc.sync="sortDesc"
         :footer-props="{
-            'items-per-page-options': [25, 50, 100, -1]
+            'items-per-page-options': [20, 50, 100, -1]
           }"
         :items-per-page="25"
         :single-select="singleSelectStatus"
@@ -250,7 +251,10 @@ export default {
     async editCategory(cat, categories) {
       let catToSave = cat;
       let foundCat = categories.find(x => x.sub_category === catToSave);
-      const editArray = this.selected.map(item => {
+
+      // let editArray = this.selected.map(item => {
+        let editArray = [];
+     this.selected.forEach(item => {
 
       // for (let i in this.selected) {
         // console.log(this.selected[i].description);
@@ -263,15 +267,20 @@ export default {
       // this.transactions[this.editedIndex].category_name = foundCat.sub_category;
       a.category = foundCat.id;
       a.category_name = foundCat.sub_category;
+      editArray.push(a)
 
       // api.updateTransaction(a.id, a);
-      api.upsertTransaction(a);
+      // api.upsertTransaction(a);
 
-      this.$store.commit( "updateTransaction", a);
-      return 'update done';
+      // this.$store.commit( "updateTransaction", a);
+      // return 'update done';
       });
+      // console.log(editArray)
       
-      await Promise.all(editArray).then(() => {
+
+      // await Promise.all(editArray).then(() => {
+        await this.$store.commit("updateTransaction", editArray);
+        await api.upsertTransaction(editArray).then(() => {
 
       // }
 
@@ -280,7 +289,7 @@ export default {
       // this.$forceUpdate;
       // this.reloadedData += 1;
       this.$emit("changed");
-      this.$store.dispatch("reanalyze");
+      // this.$store.dispatch("reanalyze");
       });
       // .then(() => this.$store.dispatch("reanalyze")); 
       // this.dispatchReanalyze();

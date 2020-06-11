@@ -125,30 +125,33 @@ type TreeData struct {
 	Name     string          `json:"name"`
 	Children []ChildTop      `json:"children"`
 	Value    decimal.Decimal `json:"value"`
-	Count    int             `json:"count"`
+	Count    int64           `json:"count"`
 	// TrueValue decimal.Decimal `json:"trueValue"`
-	TrueCount int `json:"trueCount"`
+	TrueCount int64           `json:"trueCount"`
+	Per30     decimal.Decimal `json:"per30"`
 }
 
 type ChildTop struct {
 	Name     string          `json:"name"`
 	Children []ChildSub      `json:"children"`
 	Value    decimal.Decimal `json:"value"`
-	Count    int             `json:"count"`
+	Count    int64           `json:"count"`
 	// TrueValue decimal.Decimal `json:"trueValue"`
-	TrueCount int    `json:"trueCount"`
-	DbID      int    `json:"dbID"`
-	Percent   string `json:"percent"`
+	TrueCount int64           `json:"trueCount"`
+	DbID      int             `json:"dbID"`
+	Percent   string          `json:"percent"`
+	Per30     decimal.Decimal `json:"per30"`
 }
 
 type ChildSub struct {
 	Name    string          `json:"name"`
 	DbID    int             `json:"dbID"`
 	Value   decimal.Decimal `json:"value"`
-	Count   int             `json:"count"`
+	Count   int64           `json:"count"`
 	Percent string          `json:"percent"`
 	// TrueValue decimal.Decimal `json:"trueValue"`
-	TrueCount int `json:"trueCount"`
+	TrueCount int64           `json:"trueCount"`
+	Per30     decimal.Decimal `json:"per30"`
 }
 
 type CustomRange struct {
@@ -448,6 +451,23 @@ type CreateRefreshResponse struct {
 }
 
 func PrepTransSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+	tquery := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
+				category_name, account_name, currency_code, account_id)
+				VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,
+				:category_name, :account_name, :currency_code, :account_id) 
+				ON CONFLICT (transaction_id) DO UPDATE SET
+				'date' = excluded.'date',
+				description = excluded.description,
+				amount = excluded.amount,
+				normalized_amount = excluded.normalized_amount`
+	tstmt, err := txn.PrepareNamed(tquery)
+	if err != nil {
+		panic(err)
+	}
+	return tstmt
+}
+
+func PrepTransUpsertSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 	tquery := `INSERT INTO transactions('date', transaction_id, description, amount, normalized_amount, category,
 				category_name, account_name, currency_code, account_id)
 				VALUES(:date, :transaction_id, :description, :amount, :normalized_amount, :category,

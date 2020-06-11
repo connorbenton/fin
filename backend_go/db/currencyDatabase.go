@@ -4,15 +4,16 @@ import (
 	// "database/sql"
 
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 
 	"log"
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 
 	"time"
 
@@ -22,12 +23,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rickb777/date"
 	"github.com/shopspring/decimal"
-	"github.com/tamerh/xml-stream-parser"
+	xmlparser "github.com/tamerh/xml-stream-parser"
 )
 
 var CurrencyDBCon *sqlx.DB
 
-//CreateCurrencyDatabase starts currency database and loads it with initial info from the XML
+// CreateCurrencyDatabase starts currency database and loads it with initial info from the XML
 func CreateCurrencyDatabase() (*sqlx.DB, error) {
 
 	start := time.Now()
@@ -64,6 +65,11 @@ func CreateCurrencyDatabase() (*sqlx.DB, error) {
 	}
 	defer fz.Close()
 
+	body, err := ioutil.ReadAll(fz)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	// s, err := ioutil.ReadAll(fz)
 	// if err != nil {
 	// 	return nil, err
@@ -80,7 +86,8 @@ func CreateCurrencyDatabase() (*sqlx.DB, error) {
 
 	// insertXMLData(xmlString, true)
 	// insertXMLData(data, true)
-	insertXMLData(fz, true)
+	// insertXMLData(fz, true)
+	insertXMLData(body, true)
 	// }()
 	// wg.Wait()
 	// GetNewXML()
@@ -108,16 +115,17 @@ func CreateCurrencyDatabase() (*sqlx.DB, error) {
 	// log.Println("Read sql done:", time.Since(start))
 	// CurrencyDBCon.MustExec(query)
 
-	log.Println("Currency DB done:", time.Since(start))
+	log.Println("Currency DB setup done in:", time.Since(start))
 
 	return DBCon, nil
 }
 
-// func insertXMLData(data string, ignoreBool bool) {
-// func insertXMLData(m types.EcbFX, ignoreBool bool) {
-func insertXMLData(stream *gzip.Reader, ignoreBool bool) {
+// func insertXMLData(data string, isInitialLoad bool) {
+// func insertXMLData(m types.EcbFX, isInitialLoad bool) {
+// func insertXMLData(stream *gzip.Reader, isInitialLoad bool) {
+func insertXMLData(bytesXML []byte, isInitialLoad bool) {
 
-	start := time.Now()
+	// start := time.Now()
 
 	// m := &types.EcbFX{}
 
@@ -130,7 +138,7 @@ func insertXMLData(stream *gzip.Reader, ignoreBool bool) {
 	tblStr2 := ` (fx_date DATE PRIMARY KEY, rate STRING);`
 	var upsertStr1 string
 	var upsertStr2 string
-	if ignoreBool {
+	if isInitialLoad {
 		upsertStr1 = `INSERT OR IGNORE INTO `
 		upsertStr2 = ` (fx_date, rate) VALUES($1,$2);`
 	} else {
@@ -139,15 +147,21 @@ func insertXMLData(stream *gzip.Reader, ignoreBool bool) {
 	}
 
 	// d := xml.NewDecoder(stream)
-	var wg sync.WaitGroup
+	// var wg sync.WaitGroup
 
+	stream := bytes.NewReader(bytesXML)
+	// if !isInitialLoad {
+	// log.Println(string(bytesXML))
+	// }
 	br := bufio.NewReaderSize(stream, 65536)
+	// str, _ := br.ReadString('Q')
+	// log.Println(str)
 
-	parser := xmlparser.NewXMLParser(br, "Series")
+	parser := xmlparser.NewXMLParser(br, "generic:Series")
 
 	for xml := range parser.Stream() {
 		var curr string
-		for _, fxKey := range xml.Childs["SeriesKey"][0].Childs["Value"] {
+		for _, fxKey := range xml.Childs["generic:SeriesKey"][0].Childs["generic:Value"] {
 			if fxKey.Attrs["id"] == "CURRENCY" {
 				curr = fxKey.Attrs["value"]
 				txn.MustExec(tblStr1 + curr + tblStr2)
@@ -157,17 +171,20 @@ func insertXMLData(stream *gzip.Reader, ignoreBool bool) {
 		txStr := upsertStr1 + curr + upsertStr2
 		fxSt := types.PrepFXTableSt(txn, txStr)
 
-		for _, fx := range xml.Childs["Obs"] {
-			wg.Add(1)
-			go func(fx xmlparser.XMLElement) {
-				defer wg.Done()
-				if isNumDot(fx.Childs["ObsValue"][0].Attrs["value"]) {
-					fxSt.MustExec(fx.Childs["ObsDimension"][0].Attrs["value"], fx.Childs["ObsValue"][0].Attrs["value"])
-				}
-			}(fx)
+		for _, fx := range xml.Childs["generic:Obs"] {
+			// wg.Add(1)
+			// go func(fx xmlparser.XMLElement) {
+			// defer wg.Done()
+			if isNumDot(fx.Childs["generic:ObsValue"][0].Attrs["value"]) {
+				fxSt.MustExec(fx.Childs["generic:ObsDimension"][0].Attrs["value"], fx.Childs["generic:ObsValue"][0].Attrs["value"])
+				// if !isInitialLoad {
+				// 	log.Println(fx.Childs["generic:ObsDimension"][0].Attrs["value"], fx.Childs["generic:ObsValue"][0].Attrs["value"])
+				// }
+			}
+			// }(fx)
 		}
 	}
-	wg.Wait()
+	// wg.Wait()
 
 	// for {
 
@@ -229,7 +246,7 @@ func insertXMLData(stream *gzip.Reader, ignoreBool bool) {
 	if err2 != nil {
 		panic(err2)
 	}
-	log.Println("insertXML done:", time.Since(start))
+	// log.Println("insertXML done:", time.Since(start))
 	// if err = txn.Commit(); err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -285,7 +302,7 @@ func GetNewXML() {
 		client := new(http.Client)
 
 		request, err := http.NewRequest("GET", url1+urlDate+url2, nil)
-		request.Header.Add("Accept-Encoding", "gzip")
+		// request.Header.Add("Accept-Encoding", "gzip")
 
 		// resp, err := http.Get(url1 + urlDate + url2)
 		resp, err := client.Do(request)
@@ -311,12 +328,12 @@ func GetNewXML() {
 			log.Println(xmlerr.Error())
 		}
 
-		fz, err := gzip.NewReader(resp.Body)
+		// fz, err := gzip.NewReader(resp.Body)
 
-		if err != nil {
-			log.Println("Response gzip error: ", err)
-		}
-		defer fz.Close()
+		// if err != nil {
+		// 	log.Println("Response gzip error: ", err)
+		// }
+		// defer fz.Close()
 
 		// data := types.EcbFX{}
 
@@ -334,7 +351,12 @@ func GetNewXML() {
 
 		// insertXMLData(xmlString, false)
 		// insertXMLData(data, false)
-		insertXMLData(fz, false)
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("Read error:", err)
+		}
+		insertXMLData(body, false)
 		log.Println("Data pulled and inserted from ECB API in: ", time.Since(start))
 
 	}

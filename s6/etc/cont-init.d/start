@@ -1,0 +1,4 @@
+#!/usr/bin/with-contenv sh
+mkdir -p /var/log/fintrack
+chown nobody:nogroup /var/log/fintrack
+exec /usr/share/nginx/html/env_load.sh

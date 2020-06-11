@@ -18,6 +18,7 @@
             </v-list>
         </v-navigation-drawer>
         <v-app-bar dense dark>
+
             <v-app-bar-nav-icon
                 class="hidden-md-and-up"
                 @click="drawer = !drawer"
@@ -87,6 +88,15 @@
                 to="/databasego"
                 data-cy="dbgoBtn"
                 >DB Editor</v-btn >
+
+            <v-spacer></v-spacer>
+            <v-switch class="mt-5"
+            inset
+            color="grey lighten-4"
+            v-model="isDark"
+            :label="isDark?'Dark mode':'Light mode'"
+            ></v-switch>
+
             
 
         </v-app-bar>
@@ -94,10 +104,12 @@
 </template>
 
 <script>
+import vuetify from '../plugins/vuetify';
 export default {
     name: 'AppNavigation',
     data() {
         return {
+            isDark: null,
             appTitle: 'Fintrack',
             drawer: false,
             itemsDev: [
@@ -126,6 +138,24 @@ export default {
     created() {
         this.isProduction = process.env.NODE_ENV === 'production';
         this.items = this.isProduction ? this.itemsProd : this.itemsDev;
+    },
+    mounted() {
+        if (localStorage.isDark) {
+            const isTrueSet = (localStorage.isDark == 'true')
+            // const isTrueSet = localStorage.isDark
+            this.isDark = isTrueSet;
+            this.$vuetify.theme.dark = isTrueSet;
+            this.$store.state.isDark = isTrueSet;
+        }
+    },
+    watch: {
+        isDark(newState) {
+            // const isTrueSet = (newState == 'true')
+            const isTrueSet = newState
+            this.$vuetify.theme.dark = isTrueSet;
+            localStorage.isDark = isTrueSet;
+            this.$store.state.isDark = isTrueSet;
+        },
     }
 };
 </script>

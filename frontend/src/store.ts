@@ -72,6 +72,8 @@ const store = new Vuex.Store({
     apiStateLoaded: false,
 
     doneReloading: false,
+
+    isDark: null,
   },
   getters: {
     ItemsDone: (state) => state.fetchTransactionsItemDone,
@@ -84,6 +86,7 @@ const store = new Vuex.Store({
     getAllTrees: (state) => state.analysisTrees,
     getTrans1: (state) => state.trans1,
     getTrans2: (state) => state.trans2,
+    getDark: (state) => state.isDark,
   },
   mutations: {
     incrementItem(state) {
@@ -122,11 +125,13 @@ const store = new Vuex.Store({
       //   ).name;
       // }
     },
-    updateTransaction(state, transaction) {
+    updateTransaction(state, transactions) {
       const transSet: any[] = state.transactions;
+      transactions.forEach((transaction: any) => {
       const transToUpdate = transSet.find((x) => x.id === transaction.id);
       transToUpdate.category = transaction.category;
       transToUpdate.category_name = transaction.category_name;
+      });
     },
     updateAccount(state, account) {
       const accSet: any[] = state.accounts;
@@ -201,6 +206,11 @@ const store = new Vuex.Store({
     async getAccounts({ commit }) {
       const res = await api.getAccounts();
       commit('updateAccounts', res);
+    },
+    async getTrees({ commit }) {
+      const res = await api.getTrees();
+      commit('updateTrees', res);
+      commit('setReloading', true);
     },
     async customFilter({ commit }, { startFromPage, endFromPage }) {
       const res = await api.customAnalyze({start: startFromPage, end: endFromPage});

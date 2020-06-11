@@ -5,12 +5,12 @@ services:
           context: ../../
           dockerfile: ./docker/dev_go/Dockerfile
         env_file: 
-          - ../../.env
+          - ../../.dev.env
         volumes:
-          - ../../db:/usr/src/app/db
+          - ../../db_dev:/usr/src/app/db
           - ../../backend_go:/usr/src/app/backend_go
+        network_mode: {YOUR_PROXY_NETWORK_HERE} 
         container_name: fintrack-go
-        ports:
-          - '6060:6060'
-          - '40000:40000'
+        expose:
+          - '6060'
         image: fintrack-go

@@ -12,7 +12,7 @@ echo "window._env_ = {" >> ./env-config.js
 while read -r line || [[ -n "$line" ]];
 do
   # Filter out all unwanted variables for client
-  if [[ ! "$line" =~ ^PLAID_PUBLIC_KEY*|^PLAID_ENVIRONMENT*|^USE_PLAID*|^USE_SALTEDGE* ]]; then
+  if [[ ! "$line" =~ ^PLAID_PUBLIC_KEY*|^PLAID_ENVIRONMENT*|^USE_PLAID*|^USE_SALTEDGE*|^BASE_CURRENCY* ]]; then
     continue
   fi
   # Split env variables by character `=`

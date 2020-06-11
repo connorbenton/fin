@@ -5,7 +5,7 @@
         <v-toolbar flat dense>
           <v-spacer></v-spacer>
           <v-btn icon @click="closeSEdge()">
-            <v-icon>mdi-close</v-icon>
+            <v-icon>close</v-icon>
           </v-btn>
         </v-toolbar>
         <iframe style="width:100%" height="700" :src="sEdgeURL" id="sEdgeRef" frameborder="0"></iframe>
@@ -41,11 +41,13 @@
             <tr>
               <th>Name</th>
               <th>Last Transaction Fetch</th>
-              <th>Status</th>
+              <th :colspan="2">Status</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index1) in plaid(itemTokens)" :key="index1">
+            <template v-for="(item, index1) in plaid(itemTokens)">
+            <!-- <tr v-for="(item, index1) in plaid(itemTokens)" :key="index1"> -->
+              <tr :key="index1">
               <td>{{item.institution}}</td>
               <td>{{ localeDate(item.last_downloaded_transactions) }}</td>
               <td v-if="item.needs_re_login == 1">
@@ -60,9 +62,28 @@
                 </v-btn>
               </td>
               <td v-else>
-                <v-icon color="success">mdi-check</v-icon>
+                <v-icon color="success">check</v-icon>
               </td>
-            </tr>
+              <td>
+               <v-btn icon><v-icon>build</v-icon></v-btn>
+              </td>
+              </tr>
+              <tr v-for="(account, j) in matchAccounts(item.item_id)" :key="j">
+                <!-- <td :colspan="3" class="pl-10"> -->
+                <td class="pl-10">
+                  <v-btn icon>
+                <v-icon dense>create</v-icon>
+                  </v-btn>
+                {{account.name}}
+                </td>
+                <td class="pl-10">
+                  {{formatBalance(account.balance, account.currency)}}
+                </td>
+                <td class="pl-10">
+                  {{account.type}}
+                </td>
+              </tr>
+            </template>
           </tbody>
         </template>
       </v-simple-table>
@@ -91,17 +112,6 @@
       tile
       :key="redraw2"
     >
-      <!-- <v-dialog v-model="dialog2" persistent>
-                <v-card>
-                <div id="wrapper" style="position:relative">
-                  <iframe width=100%, :height="vh" :src="refreshUrl"></iframe>
-                </div>
-                <v-card-actions>
-                <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" text @click="dialog2 = false">Close</v-btn>
-                </v-card-actions>
-                </v-card>
-      </v-dialog>-->
       <v-simple-table>
         <template v-slot:default>
           <thead>
@@ -115,9 +125,6 @@
           <tbody>
             <tr v-for="(item, index2) in saltEdge(itemTokens)" :key="index2">
               <td>{{item.institution}}</td>
-              <!-- <td
-                v-show="item.last_downloaded_transactions !== null"
-              >{{localeDate(item.last_downloaded_transactions)}}</td>-->
               <td
                 v-show="item.last_downloaded_transactions !== null"
               >{{localeDate(item.last_downloaded_transactions)}}</td>
@@ -126,7 +133,7 @@
               >{{"last transaction fetch: " + "Never"}}</td>
               <td v-if="item.interactive == 1">{{localeDate(item.last_refresh)}}</td>
               <td v-else>
-                <v-icon>mdi-minus</v-icon>
+                <v-icon>remove</v-icon>
               </td>
               <td v-if="item.interactive == 1 && showRefresh">
                 <v-btn
@@ -142,14 +149,8 @@
               </td>
               <td v-else-if="item.interactive == 1">{{ timeToRefresh(item.next_refresh_possible) }}</td>
               <td v-else>
-                <v-icon>mdi-minus</v-icon>
+                <v-icon>remove</v-icon>
               </td>
-              <!-- <td
-                v-if="item.interactive == 1"
-              >
-              {{new Date(item.next_refresh_possible).toLocaleString()}}</td>
-              {{ timeToRefresh(item.next_refresh_possible) }}</td>
-              <td v-else><v-icon>mdi-minus</v-icon></td>-->
             </tr>
           </tbody>
         </template>
@@ -165,21 +166,18 @@
     <v-col style="max-width: 700px">
       <h1 class="title mt-3">Import CSV from Mint.com</h1>
       <v-flex mt-4>
-        <v-file-input accept=".csv" v-model="files" label="Choose CSV from mint.com to import"></v-file-input>
+        <v-file-input
+          prepend-icon="attach_file"
+          accept=".csv"
+          v-model="files"
+          label="Choose CSV from mint.com to import"
+        ></v-file-input>
         <v-btn
           :loading="loading2"
           :disabled="loading2"
           @click.native="importTransactions()"
         >Import CSV</v-btn>
       </v-flex>
-      <!-- <v-dialog v-model="dialog" persistent width="300">
-        <v-card color="primary" dark>
-          <v-card-text>
-            Importing CSV
-            <v-progress-linear indeterminate color="white" class="mb-0"></v-progress-linear>
-          </v-card-text>
-        </v-card>
-      </v-dialog>-->
     </v-col>
     <!-- <v-row class = "ma-2 pa-0"> -->
     <v-col class="px-4 py-2">
@@ -208,9 +206,7 @@
 import PlaidLink from "vue-plaid-link";
 import api from "@/api";
 import moment from "moment";
-// import VueFriendlyIframe from 'vue-friendly-iframe'
 const Papa = require("papaparse");
-// const waitFor = delay => new Promise(resolve => setTimeout(resolve, delay));
 
 export default {
   data() {
@@ -251,18 +247,7 @@ export default {
       redraw2: 1
     };
   },
-  // computed: {
-  //   dialogName: {
-  //     get () {
-  //       return this.$store.getters.getName
-  //     }
-  //   },
-  //   fetch: {
-  //     get () {
-  //       return this.$store.state.isFetchTransactions
-  //     }
-  //   }
-  // },
+
   created() {
     // console.log(this.PLAID_PUBLIC_KEY);
     this.apiStateLoaded = this.$store.state.apiStateLoaded;
@@ -297,6 +282,9 @@ export default {
       document.getElementById("sEdgeRef").src = "about:blank";
       this.fetchRefreshData();
     },
+    matchAccounts(id) {
+      return this.accounts.filter(acc => acc.item_id === id);
+    },
     localeDate(date) {
       // console.log(date)
       if (date == null) {
@@ -311,17 +299,19 @@ export default {
       if (diffsec > -60) return diffsec * -1 + " seconds";
       else return diffmin * -1 + " minutes";
     },
+    formatBalance: function(bal, code) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: code
+      }).format(bal);
+    },
     async startCreateInteractive() {
       var vm = this;
       vm.loading4 = true;
       vm.refreshUrl = await api.createInteractive();
       vm.sEdgeURL = vm.refreshUrl;
       vm.sEdge = true;
-      // console.log(document.getElementById("sEdgeRef").contentWindow.location.href);
-      // await this.ensureSEReturned();
 
-      // function ensureSEReturned() {
-      //   // return new Promise(function (resolve, reject) {
       await new Promise(function(resolve, reject) {
         (function waitForSE() {
           try {
@@ -338,76 +328,9 @@ export default {
 
       vm.loading4 = false;
       vm.sEdge = false;
-      // document.getElementById("sEdgeRef").contentWindow.location.host = "";
       document.getElementById("sEdgeRef").src = "about:blank";
       vm.fetchRefreshData();
-      // }
-      // let fr = document.getElementById("sEdgeRef").contentWindow.location.host;
-      // let config = { attributes: true, childList: true};
-      // let callback = function(mutationsList) {
-      // console.log(fr)
-      // };
 
-      // let observer = new MutationObserver(callback);
-      // observer.observe(fr, config);
-
-      // console.log(document.getElementById("sEdgeRef").src);
-
-      // var observer = new MutationObserver(function(mutations, me, vm) {
-      //   // `mutations` is an array of mutations that occurred
-      //   // `me` is the MutationObserver instance
-      //   var sEdge = document.getElementById("sEdgeRef");
-      //   try {
-      //     if (sEdge.contentWindow.location.host) {
-      //       if (
-      //         sEdge.contentWindow.location.host.indexOf(document.domain) != -1
-      //       ) {
-      //         vm.loading4 = false;
-      //         vm.sEdge = false;
-      //         vm.fetchRefreshData();
-      //         me.disconnect();
-      //         return;
-      //       }
-      //     }
-      //   } catch {}
-      // });
-
-      // observer.observe(
-      //   document,
-      //   {
-      //     childList: true,
-      //     subtree: true
-      //   },
-      //   vm
-      // );
-
-      // // console.log(vm.refreshUrl)
-      // // vm.vh = window.parent.innerHeight / 1.5
-      // // vm.vw = window.parent.innerWidth / 1.5
-      // // window.open("https://vuetifyjs.com", '_blank', 'toolbar=0,location=0,menubar=0,height=800,width=700')
-      // let win = window.open(
-      //   vm.refreshUrl,
-      //   "_blank",
-      //   "toolbar=0,location=0,menubar=0,height=800,width=700"
-      // );
-      // let interval = setInterval(() => {
-      //   // if (win.location.href === process.env.BASE_URL) {
-      //   try {
-      //     if (win.document.domain === document.domain) {
-      //       clearInterval(interval);
-      //       vm.fetchRefreshData();
-      //       win.close();
-      //     }
-      //   } catch (e) {
-      //     if (win.closed) {
-      //       clearInterval(interval);
-      //       vm.fetchRefreshData();
-      //       return;
-      //     }
-      //   }
-      // }, 500);
-      // vm.loading4 = false;
-      // vm.dialog2 = true
     },
     async resetDB() {
       this.dialogName = "Resetting Database";
@@ -446,11 +369,7 @@ export default {
       vm.loading4 = true;
       vm.sEdgeURL = vm.refreshUrl;
       vm.sEdge = true;
-      // console.log(document.getElementById("sEdgeRef").contentWindow.location.href);
-      // await this.ensureSEReturned();
 
-      // function ensureSEReturned() {
-      //   // return new Promise(function (resolve, reject) {
       await new Promise(function(resolve, reject) {
         (function waitForSE() {
           try {
@@ -467,37 +386,8 @@ export default {
 
       vm.loading4 = false;
       vm.sEdge = false;
-      // document.getElementById("sEdgeRef").contentWindow.location.host = "";
       document.getElementById("sEdgeRef").src = "about:blank";
       vm.fetchRefreshData();
-      // // console.log(vm.refreshUrl)
-      // // vm.vh = window.parent.innerHeight / 1.5
-      // // vm.vw = window.parent.innerWidth / 1.5
-      // // window.open("https://vuetifyjs.com", '_blank', 'toolbar=0,location=0,menubar=0,height=800,width=700')
-      // // this.$refs.sEdgeRef.on
-      // let win = window.open(
-      //   vm.refreshUrl,
-      //   "_blank",
-      //   "toolbar=0,location=0,menubar=0,height=800,width=700"
-      // );
-      // let interval = setInterval(() => {
-      //   // if (win.location.href === process.env.BASE_URL) {
-      //   try {
-      //     if (win.document.domain === document.domain) {
-      //       clearInterval(interval);
-      //       vm.fetchRefreshData();
-      //       win.close();
-      //     }
-      //   } catch (e) {
-      //     if (win.closed) {
-      //       clearInterval(interval);
-      //       vm.fetchRefreshData();
-      //       return;
-      //     }
-      //   }
-      // }, 500);
-      // vm.loading4 = false;
-      // vm.dialog2 = true
     },
     async onSuccess(token, metadata) {
       // console.log(token)
@@ -521,19 +411,13 @@ export default {
         item_id: id
       };
       let tok = await api.plaidGeneratePublicToken(ItemToUpload);
-      // console.log(this.updateToken);
       this.updateToken = tok.public_token;
-      // let btn = this.$refs.plaidBtn;
-      // console.log(this.PLAID_PUBLIC_KEY);
-      // console.log(this.updateToken);
-      // await waitFor(2000);
-      // await this.$nextTick();
+
       await this.$nextTick();
       this.plaidRefresh = false;
       await this.$refs.plaidLinkRef.onScriptLoaded();
       this.$refs.plaidLinkRef.handleOnClick();
       await this.fetchTransactions();
-      // btn.click();
     },
     saltEdge: function(itemTokens) {
       return itemTokens.filter(itemToken => itemToken.provider == "SaltEdge");
@@ -551,10 +435,7 @@ export default {
       this.dialogName =
         "Checking for new SaltEdge connections to add and fetching transactions";
       this.fetch = true;
-      // await waitFor(2000);
-      // let res = await api.getSaltEdgeConnections();
-      // this.itemTokens = res.resTokens;
-      // this.accounts = res.resAccounts;
+;
       let res = await api.fetchTransactions();
       this.itemTokens = await api.getItemTokens();
       this.accounts = await api.getAccounts();
@@ -566,19 +447,8 @@ export default {
     async refreshData() {
       this.itemTokens = await api.getItemTokens();
       this.accounts = await api.getAccounts();
-      // this.itemTokens = await api.getItemTokens();
-      // // console.log("itemTokens: ", (this.itemTokens))
-      // this.accounts = await api.getAccounts();
-      // // console.log("accounts: ", this.accounts)
       this.redraw -= 1;
       this.redraw2 += 1;
-      // this.redraw = Math.random()
-      //   .toString(36)
-      //   .substring(7);
-      // this.redraw2 = Math.random()
-      //   .toString(36)
-      //   .substring(7);
-      // this.$forceUpdate()
     },
     async fetchTransactions() {
       this.fetch = true;
@@ -591,11 +461,7 @@ export default {
       if (this.files == null) return;
       this.dialogName = "Importing Data from CSV";
       this.fetch = true;
-      // if (!val) return;
-      // var self = this;
-      // const that = this.files;
-      // console.log(that)
-      //console.log(that)
+
       const parseFile = rawFile => {
         return new Promise(resolve => {
           Papa.parse(rawFile, {
@@ -619,101 +485,8 @@ export default {
       this.fetch = false;
       this.dialogName = "Fetching Transactions";
 
-      // Papa.parse(this.files, {
-      //   header: true,
-      //   transformHeader: function(h) {
-      //     var f = h.replace(/\s/g, "");
-      //     var i = f.charAt(0).toLowerCase() + f.slice(1);
-      //     return i;
-      //   },
-      //   //step: function (results, parser) {
-      //   //  var upload = JSON.stringify(results.data, null, 2)
-      //   //  if(results.data.amount) {
-      //   //    api.createTransaction(results.data)
-      //   //    console.log(results.data)
-      //   //  }
-      //   //},
-      //   async complete(results) {
-      // self.dialog = true;
-      // that.doc = JSON.stringify(results.data, null, 2);
-      // //console.log(that.doc)
-      // //console.log(results.data)
-      // for (let i in results.data) {
-      //   //console.log(results.data[i])
-      //   //setTimeout(function timer(){
-      //   //console.log(results.data[i])
-      //   //api.createTransaction(results.data[i])
-      //   //}, i*40)
-      // }
-      // await api.importTransactions(results.data);
-      // that.$store.dispatch("getAll");
-      // // await api.importTransactions(that.doc)
-      // self.dialog = false;
-      //   },
-      //   error(errors) {
-      //     console.log("error", errors);
-      //   }
-      // });
     }
-    //async updateSaltEdgeConnections () {
-    //  this.loading = true
-    //  this.connections = await api.getSaltEdgeConnections()
-    //  this.connections = this.connections.data
-    //  console.log('Salt Edge Data')
-    //  console.log(JSON.stringify(this.connections))
-    //  this.loading = false
-    //},
-  },
-  watch: {
-    // async loader3() {
-    //   // console.log(this)
-    //   var vm = this;
-    //   const l = this.loader3;
-    //   this[l] = !this[l];
-    //   if (l) {
-    //     // console.log(vm)
-    //     vm.refreshUrl = await api.refreshInteractive(vm.item.item_id);
-    //     // console.log(vm.refreshUrl)
-    //   }
-    //   vm.dialog2 = true;
-    //   this[l] = false;
-    //   this.loader3 = null;
-    // },
-    // async loader2() {
-    //   const l = this.loader2;
-    //   this[l] = !this[l];
-    //   if (l) {
-    //     await api.fetchTransactions();
-    //     // let fetchStatus = await api.fetchTransactions()
-    //     // console.log(fetchStatus)
-    //     await this.refreshData();
-    //   }
-    //   this[l] = false;
-    //   this.loader2 = null;
-    // },
-    // async loader() {
-    //   const l = this.loader;
-    //   this[l] = !this[l];
-    //   //if (l) api.getSaltEdgeConnections()
-    //   //if (l) setTimeout(() => (this[l] = false), 3000)
 
-    //   if (l) {
-    //     // this.$store.state.isFetchTransactions = true
-    //     await api.getSaltEdgeConnections();
-    //     // this.$store.state.isFetchTransactions = false
-    //     await this.refreshData();
-    //   }
-    //   //this.connections = await api.getSaltEdgeConnections()
-    //   //this.connections = this.connections.data
-    //   //console.log('Salt Edge Data')
-    //   //console.log(JSON.stringify(this.connections))
-    //   this[l] = false;
-    //   this.loader = null;
-    // },
-    dialog(val) {}
-  }
+  },
 };
 </script>
-
-<style scoped>
-</style>

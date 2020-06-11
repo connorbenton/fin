@@ -38,6 +38,7 @@ RUN go build -gcflags "all=-N -l" -o /server main.go
 # production stage
 # FROM nginx:stable-alpine as production-stage
 FROM alpine:3.12.0 as production-stage
+# FROM python:alpine3.12 as production-stage
 
 # RUN apk add --no-cache python py-pip 
 # RUN apk add --no-cache --virtual build-dependencies build-base gcc make \
@@ -57,12 +58,17 @@ FROM alpine:3.12.0 as production-stage
 # WORKDIR /usr/src/app/backend_go
 WORKDIR /usr/share/nginx/html
 COPY --from=build-stage /app/dist ./
+
 COPY ./entrypoints/env_load.sh .env ./
 
 COPY --from=go-build /server /server
 COPY ./backend_go /usr/src/app/backend_go
 
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+
+# COPY ./s6/etc ./s6/libexec ./s6/usr ./s6/init /
+# COPY ./s6/bin /usr/bin
+COPY ./s6 /
 # COPY ./nginx/gzip.conf /etc/nginx/gzip.conf
 # COPY .env .
 # RUN apk add --no-cache bash
@@ -70,15 +76,18 @@ COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 # RUN apk add --update --no-cache supervisor && apk add --no-cache bash && chmod +x env_load.sh
 # RUN apk add --update --no-cache supervisor && apk add --no-cache nginx && apk add --no-cache bash && chmod +x env_load.sh
 # RUN apk add --no-cache --virtual .pipbuild python3 py3-pip && pip install --no-cache-dir supervisor && apk del .pipbuild \ 
-RUN apk add --no-cache py3-pip && pip install --no-cache-dir supervisor \ 
-&& apk add --no-cache nginx && apk add --no-cache bash && chmod +x env_load.sh
+# RUN apk add --no-cache py3-pip && pip install --no-cache-dir supervisor \ 
+# RUN pip install --no-cache-dir supervisor \ 
+RUN apk add --no-cache nginx && apk add --no-cache bash && chmod +x env_load.sh
 
+ENTRYPOINT ["/init"]
 
 # RUN apk add --update supervisor && apk add --update bash && rm -rf /tmp/* /var/cache/apk/* && chmod +x env_load.sh
 # RUN chmod +x env_load.sh
 
-COPY ./entrypoints/supervisord.conf /etc/supervisord.conf
-ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/etc/supervisord.conf"]
+# COPY ./entrypoints/supervisord.conf /etc/supervisord.conf
+# ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/etc/supervisord.conf"]
+
 # CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
 # EXPOSE 80

@@ -2,6 +2,7 @@ package analysisTrees
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -60,8 +61,9 @@ func CustomAnalyze() func(http.ResponseWriter, *http.Request) {
 		var st, end, dbEnd string
 		st = customRange.Start
 		end = customRange.End
-		dbEndDate, _ := date.ParseISO(customRange.End)
-		dbEnd = dbEndDate.AddDate(0, 0, 1).Format("2006-01-02")
+		stDt, _ := date.ParseISO(customRange.Start)
+		endDt, _ := date.ParseISO(customRange.End)
+		dbEnd = endDt.AddDate(0, 0, 1).Format("2006-01-02")
 		err = db.DBCon.Select(&rangedata, "SELECT * FROM `transactions` WHERE DATE between '"+st+"' and '"+dbEnd+"'")
 		// log.Println("number in ", name, len(rangedata))
 		if err != nil {
@@ -69,7 +71,9 @@ func CustomAnalyze() func(http.ResponseWriter, *http.Request) {
 			panic(err)
 		}
 
-		tree := SetupTree(dbcatsBase, rangedata, "custom", st, end)
+		diff := int64(endDt.Sub(stDt) + 1)
+
+		tree := SetupTree(dbcatsBase, rangedata, "custom", st, end, diff)
 		tstmt.MustExec(tree)
 
 		errC := txn.Commit()
@@ -85,6 +89,7 @@ func CustomAnalyze() func(http.ResponseWriter, *http.Request) {
 }
 
 func ReAnalyze() {
+	log.Println("today: ", date.Today().Format("2006-01-02"), date.Today().FormatISO(4), date.Today().String())
 
 	start := time.Now()
 	dbcatsBase := []types.Category{}
@@ -99,8 +104,6 @@ func ReAnalyze() {
 
 	tstmt := types.PrepTreeSt(txn)
 
-	log.Println("First select of tx categories:", time.Since(start))
-
 	var wg sync.WaitGroup
 	for _, name := range types.TreeRanges {
 		wg.Add(1)
@@ -108,51 +111,53 @@ func ReAnalyze() {
 			defer wg.Done()
 			rangedata := []types.Transaction{}
 			today := date.Today()
+			var stDt, endDt date.Date
 			var st, end, dbEnd string
 			var err error
 			switch name {
 			case "last30":
-				st = today.AddDate(0, 0, -29).Format("2006-01-02")
-				end = today.Format("2006-01-02")
-				dbEnd = today.AddDate(0, 0, 1).Format("2006-01-02")
+				stDt = today.AddDate(0, 0, -29)
+				endDt = today
 			case "thisMonth":
-				st = date.New(today.Year(), today.Month(), 1).Format("2006-01-02")
-				end = today.Format("2006-01-02")
-				dbEnd = today.AddDate(0, 0, 1).Format("2006-01-02")
+				stDt = date.New(today.Year(), today.Month(), 1)
+				endDt = today
 			case "lastMonth":
-				stdate := today.AddDate(0, -1, 0)
-				st = date.New(stdate.Year(), stdate.Month(), 1).Format("2006-01-02")
-				enddate := date.New(stdate.Year(), stdate.Month(), 1).AddDate(0, 1, -1)
-				end = enddate.Format("2006-01-02")
-				dbEnd = enddate.AddDate(0, 0, 1).Format("2006-01-02")
+				stPre := today.AddDate(0, -1, 0)
+				stDt = date.New(stPre.Year(), stPre.Month(), 1)
+				endDt = date.New(stPre.Year(), stPre.Month(), 1).AddDate(0, 1, -1)
 			case "last6Months":
-				st = today.AddDate(0, -6, 0).Format("2006-01-02")
-				end = today.Format("2006-01-02")
-				dbEnd = today.AddDate(0, 0, 1).Format("2006-01-02")
+				stDt = today.AddDate(0, -6, 0)
+				endDt = today
 			case "thisYear":
-				st = date.New(today.Year(), 1, 1).Format("2006-01-02")
-				end = today.Format("2006-01-02")
-				dbEnd = today.AddDate(0, 0, 1).Format("2006-01-02")
+				stDt = date.New(today.Year(), 1, 1)
+				endDt = today
 			case "lastYear":
-				stdate := today.AddDate(-1, 0, 0)
-				st = date.New(stdate.Year(), 1, 1).Format("2006-01-02")
-				enddate := date.New(stdate.Year(), 1, 1).AddDate(1, 0, -1)
-				end = enddate.Format("2006-01-02")
-				dbEnd = enddate.AddDate(0, 0, 1).Format("2006-01-02")
+				stPre := today.AddDate(-1, 0, 0)
+				stDt = date.New(stPre.Year(), 1, 1)
+				endDt = date.New(stPre.Year(), 1, 1).AddDate(1, 0, -1)
 			case "fromBeginning":
-				err2 := db.DBCon.Get(&st, "SELECT MIN(date) FROM `transactions`")
+				var dbst sql.NullString
+				err2 := db.DBCon.Get(&dbst, "SELECT MIN(date) FROM `transactions`")
 				if err2 != nil {
 					panic(err2)
 				}
-				end = today.Format("2006-01-02")
-				dbEnd = today.AddDate(0, 0, 1).Format("2006-01-02")
+				if !dbst.Valid {
+					return
+				}
+				st = dbst.String
+				stDt, _ = date.ParseISO(st)
+				endDt = today
 				// err = db.DBCon.Select(&rangedata, "SELECT * FROM `transactions`")
 				// log.Println("number in ", name, len(rangedata))
 			case "custom":
-				st = today.AddDate(0, 0, -29).Format("2006-01-02")
-				end = today.Format("2006-01-02")
-				dbEnd = today.AddDate(0, 0, 1).Format("2006-01-02")
+				stDt = today.AddDate(0, 0, -29)
+				endDt = today
 			}
+
+			st = stDt.Format("2006-01-02")
+			end = endDt.Format("2006-01-02")
+			dbEnd = endDt.AddDate(0, 0, 1).Format("2006-01-02")
+
 			err = db.DBCon.Select(&rangedata, "SELECT * FROM `transactions` WHERE DATE between '"+st+"' and '"+dbEnd+"'")
 			// log.Println("number in ", name, len(rangedata))
 			if err != nil {
@@ -160,7 +165,9 @@ func ReAnalyze() {
 				panic(err)
 			}
 
-			tree := SetupTree(dbcatsBase, rangedata, name, st, end)
+			diff := int64(endDt.Sub(stDt) + 1)
+
+			tree := SetupTree(dbcatsBase, rangedata, name, st, end, diff)
 
 			// dbcats := append(dbcatsBase[:0:0], dbcatsBase...)
 			// // for _, tx := range rangedata {
@@ -213,10 +220,10 @@ func ReAnalyze() {
 	if errC != nil {
 		panic(errC)
 	}
-	log.Println("Reanalyze tx ranges done in:", time.Since(start))
+	log.Println("Regenerate analysis trees done in:", time.Since(start))
 }
 
-func SetupTree(dbcatsBase []types.Category, rangedata []types.Transaction, name, st, end string) types.Tree {
+func SetupTree(dbcatsBase []types.Category, rangedata []types.Transaction, name, st, end string, diff int64) types.Tree {
 	dbcats := append(dbcatsBase[:0:0], dbcatsBase...)
 	// for _, tx := range rangedata {
 	for _, tx := range rangedata {
@@ -243,13 +250,13 @@ func SetupTree(dbcatsBase []types.Category, rangedata []types.Transaction, name,
 	tree.Name = name
 	tree.FirstDate = st
 	tree.LastDate = end
-	var totalcount int
-	tree.Data, totalcount = GenerateDataTree(dbcats, 0, false)
-	tree.DataNoInvest, _ = GenerateDataTree(dbcatsNoInvest, totalcount, true)
+	var totalcount int64
+	tree.Data, totalcount = GenerateDataTree(dbcats, diff, 0, false)
+	tree.DataNoInvest, _ = GenerateDataTree(dbcatsNoInvest, diff, totalcount, true)
 	return tree
 }
 
-func GenerateDataTree(dbcats []types.Category, trueTotal int, useTrueTotalFlag bool) (string, int) {
+func GenerateDataTree(dbcats []types.Category, diff, trueTotal int64, useTrueTotalFlag bool) (string, int64) {
 
 	var Zero = decimal.New(0, 1)
 	treeData := types.TreeData{}
@@ -292,8 +299,9 @@ func GenerateDataTree(dbcats []types.Category, trueTotal int, useTrueTotalFlag b
 
 					subChild.DbID = cat2.ID
 					subChild.Value = cat2.Total.Mul(decimal.NewFromInt(-1))
-					subChild.Count = cat2.Count
-					subChild.TrueCount = cat2.Count
+					subChild.Per30 = subChild.Value.Div(decimal.NewFromInt(diff)).Mul(decimal.NewFromInt(30))
+					subChild.Count = int64(cat2.Count)
+					subChild.TrueCount = int64(cat2.Count)
 					if cat2.ExcludeFromAnalysis || cat2.TopCategory == "Income" {
 						subChild.Value = Zero
 						subChild.Count = 0
@@ -321,10 +329,12 @@ func GenerateDataTree(dbcats []types.Category, trueTotal int, useTrueTotalFlag b
 	for i := range treeData.Children {
 		if !treeData.Value.IsZero() {
 			treeData.Children[i].Percent = treeData.Children[i].Value.Div(treeData.Value).Mul(decimal.NewFromInt(100)).StringFixed(1) + "%"
+			treeData.Children[i].Per30 = treeData.Children[i].Value.Div(decimal.NewFromInt(diff)).Mul(decimal.NewFromInt(30))
 		} else {
 			treeData.Children[i].Percent = "0%"
 		}
 	}
+	treeData.Per30 = treeData.Value.Div(decimal.NewFromInt(diff)).Mul(decimal.NewFromInt(30))
 
 	if useTrueTotalFlag {
 		treeData.TrueCount = trueTotal

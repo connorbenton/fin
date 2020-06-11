@@ -55,7 +55,7 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 
 		start := time.Now()
 		dbdata := SelectAll()
-		log.Println("SelectAll done:", time.Since(start))
+		// log.Println("SelectAll Transactions done in:", time.Since(start))
 		// err := db.DBCon.Select(&dbdata, "SELECT * FROM `item_tokens`")
 		// if err != nil {
 		// log.Fatal(err)
@@ -65,7 +65,8 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 		if err := json.NewEncoder(res).Encode(dbdata); err != nil {
 			panic(err)
 		}
-		log.Println("Encode done:", time.Since(start))
+		log.Println("SelectAll Transactions done in:", time.Since(start))
+		// log.Println("Encode done:", time.Since(start))
 	}
 }
 
@@ -618,10 +619,15 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 			if err != nil {
 				dt, err := date.Parse("1/02/2006", itx.Date)
 				if err != nil {
-					errString := fmt.Sprintf("Error with Import Date Parse: %v \n", err)
-					log.Println(errString)
-					res.WriteHeader(http.StatusInternalServerError)
-					res.Write([]byte(errString))
+					dt, err := date.Parse("2006-01-02", itx.Date)
+					if err != nil {
+						errString := fmt.Sprintf("Error with Import Date Parse: %v \n", err)
+						log.Println(errString)
+						res.WriteHeader(http.StatusInternalServerError)
+						res.Write([]byte(errString))
+					} else {
+						tx.Date = dt.Format("2006-01-02")
+					}
 				} else {
 					tx.Date = dt.Format("2006-01-02")
 				}
@@ -816,7 +822,7 @@ func ImportFunction() func(http.ResponseWriter, *http.Request) {
 func UpsertFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
-		p := types.Transaction{}
+		p := []types.Transaction{}
 
 		err := json.NewDecoder(req.Body).Decode(&p)
 		if err != nil {
@@ -824,13 +830,20 @@ func UpsertFunction() func(http.ResponseWriter, *http.Request) {
 		}
 
 		txn := db.DBCon.MustBegin()
-		tstmt := types.PrepTransSt(txn)
+		tstmt := types.PrepTransUpsertSt(txn)
 
-		tstmt.MustExec(p)
+		for _, tx := range p {
+
+			tstmt.MustExec(tx)
+
+		}
+
 		errC := txn.Commit()
 		if errC != nil {
 			panic(errC)
 		}
+
+		analysisTrees.ReAnalyze()
 
 		res.WriteHeader(http.StatusOK)
 	}

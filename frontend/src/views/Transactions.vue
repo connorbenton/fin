@@ -1,7 +1,9 @@
 <template>
   <!-- <v-content v-if="apiStateLoaded"> -->
   <v-content :key="apiStateLoaded">
-    <v-card class="d-flex mb-6">
+    <!-- <v-card class="d-flex mb-6"> -->
+      <v-col align="center">
+      <v-col class="d-flex mb-2 pa-2" style="maxWidth:2400px">
       <v-col class="flex-grow-0 flex-shrink-1 mx-auto">
         <v-expansion-panels
           v-model="panel"
@@ -37,7 +39,7 @@
                   <v-col class="ma-0 pa-0">
                     <v-row no-gutters align="center" class="px-4" style="flex-wrap: nowrap">
                       <v-col cols="8" class="flex-grow-1 flex-shrink-0 pa-0">
-                        <v-list-item-content class="pa-0">
+                        <v-list-item-content class="text-left pa-0">
                           <v-list-item-title class="body-2">{{acct.name}}</v-list-item-title>
                           <v-list-item-subtitle class="caption">{{acct.institution}}</v-list-item-subtitle>
                         </v-list-item-content>
@@ -83,7 +85,9 @@
       </v-col>
       <TransactionsTable v-bind:transactionsToDisplay="filteredItems"></TransactionsTable>
       <!-- <TransactionsTable v-if="apiStateLoaded" v-bind:transactionsToDisplay="filteredItems"></TransactionsTable> -->
-    </v-card>
+      </v-col>
+      </v-col>
+    <!-- </v-card> -->
   </v-content>
 </template>
 

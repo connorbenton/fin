@@ -348,6 +348,7 @@ func RefreshConnection(iTok types.ItemToken, istmt, astmt *sqlx.NamedStmt) {
 	if err != nil {
 		perr, ok := err.(plaid.Error)
 		if ok {
+			log.Println(fmt.Sprintf("Plaid error: %v", perr))
 			if perr.ErrorCode == "ITEM_LOGIN_REQUIRED" {
 				iTok.NeedsReLogin = true
 				upsertItemToken(iTok, istmt)
@@ -385,6 +386,7 @@ func FetchTransactionsForItemToken(iTok types.ItemToken, istmt *sqlx.NamedStmt, 
 	if err != nil {
 		panic(err)
 	}
+
 
 	// istmt := upsertItemTokenPrep(txn)
 	// astmt := upsertAccountPrep(txn)

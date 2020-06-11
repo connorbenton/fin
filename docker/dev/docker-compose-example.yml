@@ -1,31 +1,31 @@
 version: '3.3'
 services:
-    fintrack:
+    fintrack-dev:
         build:
           context: ../../
           dockerfile: ./docker/dev_frontend/Dockerfile
         env_file: 
           - ../../.dev.env 
         volumes:
+            - ../../db_dev:/usr/src/app/db
             - ../../:/usr/src/app
             - /usr/src/app/frontend/node_modules
-        container_name: fintrack
-        ports:
-            - '9028:9028'
-        image: fintrack
+        network_mode: {YOUR_PROXY_NETWORK_HERE} 
+        container_name: fintrack-dev
+        expose:
+            - '9028'
+        image: fintrack-dev
     fintrack-go:
         build:
           context: ../../
           dockerfile: ./docker/dev_go/Dockerfile
         env_file: 
-          - ../../.env
+          - ../../.dev.env
         volumes:
-          - ../../db:/usr/src/app/db
+          - ../../db_dev:/usr/src/app/db
           - ../../backend_go:/usr/src/app/backend_go
+        network_mode: {YOUR_PROXY_NETWORK_HERE} 
         container_name: fintrack-go
-        ports:
-          - '6060:6060'
-          - '40000:40000'
         expose:
           - '6060'
         image: fintrack-go
