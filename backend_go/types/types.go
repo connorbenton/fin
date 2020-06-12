@@ -502,15 +502,26 @@ func PrepAccountSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 	return astmt
 }
 
-func PrepAccountUpsertSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+func PrepAccountUpsertIgnoreSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype, ignore_transactions)
 				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype, :ignore_transactions) 
 				ON CONFLICT (account_id, provider) DO UPDATE SET
-				'limit' = excluded.'limit',
-				available = excluded.available,
-				balance = excluded.balance,
 				ignore_transactions = excluded.ignore_transactions`
+	astmt, err := txn.PrepareNamed(aquery)
+	// astmt, err := dbCon.PrepareNamed(aquery)
+	if err != nil {
+		panic(err)
+	}
+	return astmt
+}
+
+func PrepAccountUpsertNameSt(txn *sqlx.Tx) *sqlx.NamedStmt {
+	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
+	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype, ignore_transactions)
+				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype, :ignore_transactions) 
+				ON CONFLICT (account_id, provider) DO UPDATE SET
+				name = excluded.name`
 	astmt, err := txn.PrepareNamed(aquery)
 	// astmt, err := dbCon.PrepareNamed(aquery)
 	if err != nil {

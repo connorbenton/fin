@@ -46,43 +46,64 @@
           </thead>
           <tbody>
             <template v-for="(item, index1) in plaid(itemTokens)">
-            <!-- <tr v-for="(item, index1) in plaid(itemTokens)" :key="index1"> -->
-              <tr :key="index1">
-              <td>{{item.institution}}</td>
-              <td>{{ localeDate(item.last_downloaded_transactions) }}</td>
-              <td v-if="item.needs_re_login == 1">
-                <v-btn
-                  color="warning"
-                  :loading="plaidRefresh"
-                  dark
-                  @click.native="startReLogin(item.item_id)"
-                >
-                  Refresh Connection
-                  <br />(needs New Login)
-                </v-btn>
-              </td>
-              <td v-else>
-                <v-icon color="success">check</v-icon>
-              </td>
-              <td>
-               <v-btn icon><v-icon>build</v-icon></v-btn>
-              </td>
+              <!-- <tr v-for="(item, index1) in plaid(itemTokens)" :key="index1"> -->
+              <tr :key="`${index1}-${item.id}`">
+                <td>{{item.institution}}</td>
+                <td>{{ localeDate(item.last_downloaded_transactions) }}</td>
+                <td v-if="item.needs_re_login == 1">
+                  <v-btn
+                    color="warning"
+                    :loading="plaidRefresh"
+                    dark
+                    @click.native="startReLogin(item.item_id)"
+                  >
+                    Refresh Connection
+                    <br />(needs New Login)
+                  </v-btn>
+                </td>
+                <td v-else>
+                  <v-icon color="success">check</v-icon>
+                </td>
+                <td>
+                  <v-tooltip right nudge-right="16">
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-btn
+                        icon
+                        v-bind="attrs"
+                        v-on="on"
+                        @click="toggleAccounts(index1, showPlaidAccounts)"
+                      >
+                        <v-icon small>build</v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Toggle Edit Account Names</span>
+                  </v-tooltip>
+                </td>
               </tr>
-              <tr v-for="(account, j) in matchAccounts(item.item_id)" :key="j">
+              <!-- <template v-if="showPlaidAccounts[index1]"> -->
+              <!-- <template> -->
+              <tr
+                v-for="(account, j) in matchAccounts(item.item_id)"
+                :key="j"
+                v-show="showPlaidAccounts[index1]"
+              >
                 <!-- <td :colspan="3" class="pl-10"> -->
                 <td class="pl-10">
-                  <v-btn icon>
-                <v-icon dense>create</v-icon>
+                  <v-btn icon @click="editAccountName(account)">
+                    <v-icon small>create</v-icon>
                   </v-btn>
-                {{account.name}}
+                  {{account.name}}
                 </td>
-                <td class="pl-10">
+                <td class="pl-10">{{account.type}}</td>
+                <td class="pl-10" :colspan="2">
+                  <!-- <td class="pl-10"> -->
                   {{formatBalance(account.balance, account.currency)}}
                 </td>
-                <td class="pl-10">
-                  {{account.type}}
-                </td>
+                <!-- <td>
+                  {{index1}}{{showPlaidAccounts[index1]}}
+                </td>-->
               </tr>
+              <!-- </template> -->
             </template>
           </tbody>
         </template>
@@ -119,39 +140,80 @@
               <th>Name</th>
               <th>Last Transaction Fetch</th>
               <th>Last Refresh</th>
-              <th>Next Refresh Available In</th>
+              <th :colspan="2">Next Refresh Available In</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index2) in saltEdge(itemTokens)" :key="index2">
-              <td>{{item.institution}}</td>
-              <td
-                v-show="item.last_downloaded_transactions !== null"
-              >{{localeDate(item.last_downloaded_transactions)}}</td>
-              <td
-                v-show="item.last_downloaded_transactions == null"
-              >{{"last transaction fetch: " + "Never"}}</td>
-              <td v-if="item.interactive == 1">{{localeDate(item.last_refresh)}}</td>
-              <td v-else>
-                <v-icon>remove</v-icon>
-              </td>
-              <td v-if="item.interactive == 1 && showRefresh">
-                <v-btn
-                  :loading="loading4"
-                  :disabled="loading4"
-                  color="primary"
-                  dark
-                  @click.native="startRefreshInteractive(item.item_id)"
-                >
-                  Refresh Connection
-                  <br />(needs Credentials)
-                </v-btn>
-              </td>
-              <td v-else-if="item.interactive == 1">{{ timeToRefresh(item.next_refresh_possible) }}</td>
-              <td v-else>
-                <v-icon>remove</v-icon>
-              </td>
-            </tr>
+            <template v-for="(item, index2) in saltEdge(itemTokens)">
+              <!-- <tr v-for="(item, index2) in saltEdge(itemTokens)" :key="index2"> -->
+              <tr :key="`${index2}-${item.id}`">
+                <td>{{item.institution}}</td>
+                <td
+                  v-show="item.last_downloaded_transactions !== null"
+                >{{localeDate(item.last_downloaded_transactions)}}</td>
+                <td
+                  v-show="item.last_downloaded_transactions == null"
+                >{{"last transaction fetch: " + "Never"}}</td>
+                <td v-if="item.interactive == 1">{{localeDate(item.last_refresh)}}</td>
+                <td v-else>
+                  <v-icon>remove</v-icon>
+                </td>
+                <td v-if="item.interactive == 1 && showRefresh">
+                  <v-btn
+                    :loading="loading4"
+                    :disabled="loading4"
+                    color="primary"
+                    dark
+                    @click.native="startRefreshInteractive(item.item_id)"
+                  >
+                    Refresh Connection
+                    <br />(needs Credentials)
+                  </v-btn>
+                </td>
+                <td
+                  v-else-if="item.interactive == 1"
+                >{{ timeToRefresh(item.next_refresh_possible) }}</td>
+                <td v-else>
+                  <v-icon>remove</v-icon>
+                </td>
+                <td>
+                  <v-tooltip right nudge-right="16">
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-btn
+                        icon
+                        v-bind="attrs"
+                        v-on="on"
+                        @click="toggleAccounts(index2, showSaltEdgeAccounts)"
+                      >
+                        <v-icon small>build</v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Toggle Edit Account Names</span>
+                  </v-tooltip>
+                </td>
+              </tr>
+              <tr
+                v-for="(account, j) in matchAccounts(item.item_id)"
+                :key="j"
+                v-show="showSaltEdgeAccounts[index2]"
+              >
+                <!-- <td :colspan="3" class="pl-10"> -->
+                <td class="pl-10">
+                  <v-btn icon @click="editAccountName(account)">
+                    <v-icon small>create</v-icon>
+                  </v-btn>
+                  {{account.name}}
+                </td>
+                <td class="pl-10">{{account.type}}</td>
+                <td class="pl-10" :colspan="3">
+                  <!-- <td class="pl-10"> -->
+                  {{formatBalance(account.balance, account.currency)}}
+                </td>
+                <!-- <td>
+                  {{index1}}{{showPlaidAccounts[index1]}}
+                </td>-->
+              </tr>
+            </template>
           </tbody>
         </template>
       </v-simple-table>
@@ -196,6 +258,32 @@
       </v-row>
     </v-col>
 
+    <v-dialog v-model="dialogChangeName" max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Edit Account Name</span>
+        </v-card-title>
+
+        <v-card-text>
+          <v-container>
+            <v-row>
+              <!-- <v-col cols="12" sm="8" md="6"> -->
+              <v-text-field v-model="editedItem.name" label="Account name"></v-text-field>
+              <!-- </v-col> -->
+            </v-row>
+          </v-container>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <!-- <v-btn color="blue darken-1" text @click="close">Cancel</v-btn> -->
+          <!-- <v-btn color="blue darken-1" text @click="save">Save</v-btn> -->
+          <v-btn text @click="close">Cancel</v-btn>
+          <v-btn text @click="save">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- <v-row>
       <v-btn color="warning" dark class="my-8" @click.native="resetToken()">reset token</v-btn>
     </v-row>-->
@@ -211,6 +299,7 @@ const Papa = require("papaparse");
 export default {
   data() {
     return {
+      // console: null,
       apiStateLoaded: false,
       showRefresh: false,
       fetch: false,
@@ -219,8 +308,15 @@ export default {
       dialogName: "Fetching Transactions",
       dialog: false,
       dialog2: false,
+      dialogChangeName: false,
       vh: null,
       transactions: [],
+      showPlaidAccounts: [],
+      showSaltEdgeAccounts: [],
+      editedIndex: -1,
+      editedItem: {
+        name: "",
+      },
       files: null,
       environment:
         process.env.VUE_APP_PLAID_ENVIRONMENT || window._env_.PLAID_ENVIRONMENT,
@@ -250,6 +346,7 @@ export default {
 
   created() {
     // console.log(this.PLAID_PUBLIC_KEY);
+    // this.console = window.console;
     this.apiStateLoaded = this.$store.state.apiStateLoaded;
     if (this.apiStateLoaded) {
       this.initialData();
@@ -282,8 +379,43 @@ export default {
       document.getElementById("sEdgeRef").src = "about:blank";
       this.fetchRefreshData();
     },
+    editAccountName(account) {
+      this.editedIndex = this.accounts.indexOf(account);
+      this.editedItem = Object.assign({}, account);
+      this.dialogChangeName = true;
+    },
+    close() {
+      this.dialogChangeName = false;
+      this.$nextTick(() => {
+        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      });
+    },
+
+    async save() {
+      // if (this.editedIndex > -1) {
+      const itemToUpdate = this.editedItem;
+        Object.assign(this.accounts[this.editedIndex], this.editedItem);
+      // } else {
+        // this.accounts.push(this.editedItem);
+      // }
+      this.close();
+      // console.log(this.editedItem);
+      await this.$store.commit('updateAccountName', itemToUpdate);
+      await api.upsertAccountName(itemToUpdate);
+      this.fetch = true;
+      await this.$store.dispatch('getTransactions');
+      this.fetch = false;
+    },
     matchAccounts(id) {
       return this.accounts.filter(acc => acc.item_id === id);
+    },
+    toggleAccounts(index, array) {
+      // const temp = this.showPlaidAccounts[index]
+      const tempVal = array[index] == undefined ? true : !array[index];
+      this.$set(array, index, tempVal);
+      // this.showPlaidAccounts.$set(tempVal, temp)
+      // console.log(this.showPlaidAccounts);
     },
     localeDate(date) {
       // console.log(date)
@@ -330,7 +462,6 @@ export default {
       vm.sEdge = false;
       document.getElementById("sEdgeRef").src = "about:blank";
       vm.fetchRefreshData();
-
     },
     async resetDB() {
       this.dialogName = "Resetting Database";
@@ -435,7 +566,6 @@ export default {
       this.dialogName =
         "Checking for new SaltEdge connections to add and fetching transactions";
       this.fetch = true;
-;
       let res = await api.fetchTransactions();
       this.itemTokens = await api.getItemTokens();
       this.accounts = await api.getAccounts();
@@ -484,9 +614,7 @@ export default {
       this.$store.dispatch("getAll");
       this.fetch = false;
       this.dialogName = "Fetching Transactions";
-
     }
-
-  },
+  }
 };
 </script>

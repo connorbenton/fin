@@ -37,7 +37,7 @@ func GetFunction() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func UpsertFunction() func(http.ResponseWriter, *http.Request) {
+func UpsertIgnoreFunction() func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		p := types.Account{}
@@ -48,9 +48,40 @@ func UpsertFunction() func(http.ResponseWriter, *http.Request) {
 		}
 
 		txn := db.DBCon.MustBegin()
-		astmt := types.PrepAccountUpsertSt(txn)
+		astmt := types.PrepAccountUpsertIgnoreSt(txn)
 
 		astmt.MustExec(p)
+		errC := txn.Commit()
+		if errC != nil {
+			panic(errC)
+		}
+
+		res.WriteHeader(http.StatusOK)
+	}
+}
+
+func UpsertNameFunction() func(http.ResponseWriter, *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+
+		p := types.Account{}
+
+		err := json.NewDecoder(req.Body).Decode(&p)
+		if err != nil {
+			panic(err)
+		}
+
+		txn := db.DBCon.MustBegin()
+		astmt := types.PrepAccountUpsertNameSt(txn)
+
+		astmt.MustExec(p)
+
+		poststmt, err := txn.Preparex(`UPDATE transactions SET account_name = $1 WHERE account_id = $2`)
+		if err != nil {
+			panic(err)
+		}
+
+		poststmt.MustExec(p.Name, p.AccountID)
+
 		errC := txn.Commit()
 		if errC != nil {
 			panic(errC)

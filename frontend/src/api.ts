@@ -282,8 +282,11 @@ export default {
     // return this.execute('get', `/api/itemTokensFetchTransactions`)
     // return x.request.response
   },
-  upsertAccount(data: any) {
-    return this.execute('post', `/api/accountUpsert`, data);
+  upsertAccountIgnore(data: any) {
+    return this.execute('post', `/api/accountUpsertIgnore`, data);
+  },
+  upsertAccountName(data: any) {
+    return this.execute('post', `/api/accountUpsertName`, data);
   },
   upsertTransaction(data: any) {
     return this.execute('post', `/api/transactionUpsert`, data);

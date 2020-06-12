@@ -133,10 +133,15 @@ const store = new Vuex.Store({
       transToUpdate.category_name = transaction.category_name;
       });
     },
-    updateAccount(state, account) {
+    updateAccountIgnore(state, account) {
       const accSet: any[] = state.accounts;
       const accToUpdate = accSet.find((x) => x.id === account.id);
       accToUpdate.ignore_transactions = account.ignore_transactions;
+    },
+    updateAccountName(state, account) {
+      const accSet: any[] = state.accounts;
+      const accToUpdate = accSet.find((x) => x.id === account.id);
+      accToUpdate.name = account.name;
     },
     updateTrees(state, trees) {
       state.analysisTrees = trees;

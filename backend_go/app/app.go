@@ -31,8 +31,13 @@ func (app *App) SetupRouter() {
 
 	app.Router.
 		Methods("POST").
-		Path("/api/accountUpsert").
-		HandlerFunc(accounts.UpsertFunction())
+		Path("/api/accountUpsertName").
+		HandlerFunc(accounts.UpsertNameFunction())
+
+	app.Router.
+		Methods("POST").
+		Path("/api/accountUpsertIgnore").
+		HandlerFunc(accounts.UpsertIgnoreFunction())
 
 	app.Router.
 		Methods("POST").

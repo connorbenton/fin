@@ -192,8 +192,8 @@ export default {
     toggleAccountShow(acct) {
       try {
       acct.ignore_transactions = !acct.ignore_transactions;
-      api.upsertAccount(acct);
-      this.$store.commit( "updateAccount", acct);
+      api.upsertAccountIgnore(acct);
+      this.$store.commit( "updateAccountIgnore", acct);
       } catch(err) {
         acct.ignore_transactions = !acct.ignore_transactions;
         console.error(err)
