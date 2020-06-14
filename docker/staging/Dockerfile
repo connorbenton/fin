@@ -34,6 +34,8 @@ COPY ./backend_go /usr/src/app/backend_go
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./s6 /
  
-RUN apk add --no-cache nginx && apk add --no-cache bash && chmod +x env_load.sh
+RUN apk add --no-cache nginx bash curl ca-certificates && chmod +x env_load.sh && \
+    curl -L -s https://github.com/just-containers/s6-overlay/releases/download/v2.0.0.0/s6-overlay-amd64.tar.gz | tar xvzf - -C / \
+    && apk del --no-cache curl
 
 ENTRYPOINT ["/init"]
