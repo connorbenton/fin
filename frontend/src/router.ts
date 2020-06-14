@@ -16,26 +16,11 @@ const router = new Router({
       name: 'transactions',
       component: () => import('./views/Transactions.vue'),
     },
-    // {
-    //   path: '/bills',
-    //   name: 'bills',
-    //   component: () => import('./views/Bills.vue'),
-    // },
-    // {
-    //   path: '/investments',
-    //   name: 'investments',
-    //   component: () => import('./views/Investments.vue'),
-    // },
     {
       path: '/analysis',
       name: 'analysis',
       component: () => import('./views/Analysis.vue'),
     },
-    // {
-    //   path: '/categories',
-    //   name: 'categories',
-    //   component: () => import('./views/Categories.vue'),
-    // },
     {
       path: '/databasego',
       name: 'databasego',

@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	// "fmt"
 	"fintrack-go/db"
 
 	_ "github.com/jmoiron/sqlx"

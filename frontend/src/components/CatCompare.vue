@@ -167,31 +167,8 @@ export default {
       this.$store.commit("assignDone", this.compareCats);
       this.dialog = false;
     }
-    // emitYes() {
-    // this.$store.commit("answerGiven", "yes");
-    // }
+
   },
-  filters: {
-    // pretty: function(value) {
-    // return JSON.stringify(value, null, 2);
-    // }
-  },
-  computed: {
-    // getTrans1: {
-    //   get() {
-    //     return this.$store.getters.getTrans1;
-    //   }
-    // },
-    // getTrans2: {
-    //   get() {
-    //     return this.$store.getters.getTrans2;
-    //   }
-    // },
-    // dialog: {
-    //   get() {
-    //     return this.$store.state.compareMatch;
-    //   }
-    // }
-  }
+
 };
 </script>

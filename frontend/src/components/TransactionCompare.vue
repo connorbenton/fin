@@ -12,7 +12,7 @@
         <pre>{{ getTrans1 | pretty }}</pre>
         </v-card>
         <v-card class="pa-6"> 
-        <pre>{{ getTrans2 | pretty }}</pre> </v-col>
+        <pre>{{ getTrans2 | pretty }}</pre> 
         </v-card>
         </v-row>
         <br>

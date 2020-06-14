@@ -1,6 +1,6 @@
 # fintrack
 
-## Project setup
+## Dev project setup
 ```
 npm install
 ```

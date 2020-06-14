@@ -1,68 +1,17 @@
 import axios from 'axios';
 import store from './store';
-// import io from 'socket.io-client';
-// import rateLimit from 'axios-rate-limit'
 import { EventEmitter } from 'events';
 
-// class Socket {
-//   public ee: EventEmitter;
-//   public ws: WebSocket;
-//   constructor(wsurl: any, ee = new EventEmitter()) {
-//       const ws = new WebSocket(wsurl);
-//       this.ee = ee;
-//       this.ws = ws;
-//       ws.onmessage = this.message.bind(this);
-//       ws.onopen = this.open.bind(this);
-//       ws.onclose = this.close.bind(this);
-//   }
-//   public on(this: Socket, name: any, fn: any) {
-//       this.ee.on(name, fn);
-//   }
-//   public off(name: any, fn: any) {
-//       this.ee.removeListener(name, fn);
-//   }
-//   public emit(name: any, data: any) {
-//       const message = JSON.stringify({name, data});
-//       this.ws.send(message);
-//   }
-//   public message(e: any) {
-//       try {
-//           const msgData = JSON.parse(e.data);
-//           this.ee.emit(msgData.name, msgData.data);
-//       } catch (err) {
-//           const error = {
-//               message: err,
-//           };
-//           console.log(err);
-//           this.ee.emit(error.message);
-//       }
-//   }
-//   public open() {
-//       this.ee.emit('connected');
-//   }
-//   public close() {
-//       this.ee.emit('disconnected');
-//   }
-// }
-
 const client = axios.create({
-  //  maxRequests: 50,
-  //  perMilliseconds: 10,
   timeout: 60 * 4 * 1000, // wait 4 min for the long import calls
-  // json: true
 });
 
 export default {
   async execute(method: any, resource: any, data: any = '') {
-    // inject the accessToken for each request
-    // let accessToken = await Vue.prototype.$auth.getAccessToken()
     return client({
       method,
       url: resource,
       data,
-      // headers: {
-      //  Authorization: `Bearer ${accessToken}`
-      // }
     }).then((req) => {
       return req.data;
     });
@@ -136,65 +85,16 @@ export default {
       }
     }
 
-    // console.log(catres);
-    // console.log(identifiedAccounts);
-
     const importData: any = {};
     importData.catres = catres;
     importData.identifiedAccounts = identifiedAccounts;
     importData.transactions = data;
 
-    // const resImport = await this.execute('post', `/api/importTransactions`, data);
     await this.execute('post', `/api/importTransactions`, importData);
     return;
   },
-  // async importTransactions(data: any) {
-  //   // const socket = new Socket('ws://localhost/ws');
-  //   // const ioClient = io();
-  //   // socket.on('connected', () => { console.log('Connected'); });
-  //   // const socket = new Socket('ws://fintrack-go:6060/ws');
-  //   try {
-  //   // ioClient.on('compare', (compareSet: any, fn: any) => {
-  //   socket.on('compare', (compareSet: any, fn: any) => {
-  //       if (compareSet.type === 'trans') {
-  //         store.state.comparematch = true;
-  //         store.state.trans1 = compareset.trans1;
-  //         store.state.trans2 = compareset.trans2;
-  //         store.subscribe((mutation, state) => {
-  //           if (mutation.type === 'answergiven') {
-  //             fn(mutation.payload);
-  //             store.state.comparematch = false;
-  //           }
-  //         });
-  //       }
-  //       if (compareSet.type === 'cats') {
-  //         store.commit('newAssignCats', compareSet);
-  //         store.subscribe((mutation, state) => {
-  //           if (mutation.type === 'assignDone') {
-  //             fn(mutation.payload);
-  //           }
-  //         });
-  //       }
-  //     });
-  //   const res: any = await client.post(`/api/importTransactions`, data);
-  //   //  .then( ioClient.on('compare', function(data) {
-  //     // store.state.compareMatch = true;
-  //     // store.state.trans1 = data.trans1;
-  //     // store.state.trans2 = data.trans2;
-  //     // console.log(data);
-  //   //  })
-  //   // ).then(function (response: any) {
-  //   // ioClient.off('compare');
-  //   socket.off('compare');
-  //     // console.log(response);
-  //   return res;
-  //   } catch (error) {
-  //     // console.error(error);
-  //   }
-  //   // return this.execute('post', '/api/importTransactions', data)
-  // },
+
   updateTransaction(id: any, data: any) {
-    // return this.execute('put', `/api/transactions/${id}`, data)
     return this.execute('put', `/api/transactions`, data);
   },
   deleteTransaction(id: any) {
@@ -222,65 +122,17 @@ export default {
     return this.execute('get', `/api/accounts/${id}`);
   },
   async fetchTransactions() {
-    // let ioClient = io("https://192.168.2.2:3000");
-    // const ioClient = io();
-    //   reconnectionDelay: 1000,
-    //   reconnection: true,
-    //   reconnectionAttemps: 10,
-    //   // transports: ['websocket'],
-    //   agent: false,
-    //   upgrade: false,
-    //   rejectUnauthorized: false
-    // });
-    // ioClient.on("seq-num", (msg) => console.info(msg));
-    // client.get(`/api/itemTokensFetchTransactions`)
-    //  .then(x => x.request.response).then(store.state.isFetchTransactions = false).catch(error => error);
-
     store.commit('isFetch', true);
-    // store.state.isFetchTransactions = true;
-    // ioClient.on('check', function(data) {
-    //   store.state.fetchTransactionsItemDone = data.curr;
-    //   store.state.fetchTransactionsItemTotal = data.len;
-    //   console.log(data.curr);
-    // });
-    // let config = {
-    //   onDownloadProgress: progressEvent => {
-    //     const dataChunk = progressEvent.currentTarget.response;
-    //     store.state.fetchTransactionsItemDone = dataChunk.curr;
-    //     store.state.fetchTransactionsItemTotal = dataChunk.len;
-    //     console.log(store.state);
-    //     console.log(dataChunk);
-    //  }
-    //  }
+
     try {
-      //  ioClient.on('check', (data: any, fn: any) => {
-      //   store.subscribe((mutation, state) => {
-      //     if (mutation.type === 'newName') {
-      //       fn();
-      //     }
-      //   });
-      // store.state.fetchTransactionsItemDone = data.curr;
-      // store.state.fetchTransactionsItemTotal = data.len;
-      // store.commit('newName', data.name);
-      // store.state.currName = data.name;
-      // console.log(data.curr);
-      //  });
       const res: any = await client.get(`/api/itemTokensFetchTransactions`);
-      // ).then(function (response) {
-      //  ioClient.off('check');
       store.commit('isFetch', false);
-      // store.state.isFetchTransactions = false;
       store.dispatch('getAll');
       return res;
-      // console.log(response);
     } catch (error) {
       // console.error(error);
     }
-    // }).catch(error => error);
-    //  .then(x => x.request.response).then(store.state.isFetchTransactions = false).catch(error => error);
 
-    // return this.execute('get', `/api/itemTokensFetchTransactions`)
-    // return x.request.response
   },
   upsertAccountIgnore(data: any) {
     return this.execute('post', `/api/accountUpsertIgnore`, data);
@@ -318,10 +170,6 @@ export default {
   getPlaidCategories() {
     return this.execute('get', '/api/plaid_Categories');
   },
-  // getSaltEdgeConnections() {
-  //   // setTimeout(() => {store.state.isFetchTransactions = false}, 2000);
-  //   return this.execute('get', '/api/saltEdgeConnections');
-  // },
   refreshInteractive(id: any) {
     return this.execute('get', `/api/saltEdgeRefreshInteractive/${id}`);
   },
@@ -331,9 +179,6 @@ export default {
   resetDB() {
     return this.execute('get', `/api/resetDB`);
   },
-  // resetToken() {
-  //   return this.execute('get', `/api/resetToken`);
-  // },
   resetDBFull() {
     return this.execute('get', `/api/resetDBFull`);
   },

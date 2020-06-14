@@ -46,7 +46,6 @@
           </thead>
           <tbody>
             <template v-for="(item, index1) in plaid(itemTokens)">
-              <!-- <tr v-for="(item, index1) in plaid(itemTokens)" :key="index1"> -->
               <tr :key="`${index1}-${item.id}`">
                 <td>{{item.institution}}</td>
                 <td>{{ localeDate(item.last_downloaded_transactions) }}</td>
@@ -80,14 +79,11 @@
                   </v-tooltip>
                 </td>
               </tr>
-              <!-- <template v-if="showPlaidAccounts[index1]"> -->
-              <!-- <template> -->
               <tr
                 v-for="(account, j) in matchAccounts(item.item_id)"
                 :key="j"
                 v-show="showPlaidAccounts[index1]"
               >
-                <!-- <td :colspan="3" class="pl-10"> -->
                 <td class="pl-10">
                   <v-btn icon @click="editAccountName(account)">
                     <v-icon small>create</v-icon>
@@ -96,14 +92,9 @@
                 </td>
                 <td class="pl-10">{{account.type}}</td>
                 <td class="pl-10" :colspan="2">
-                  <!-- <td class="pl-10"> -->
                   {{formatBalance(account.balance, account.currency)}}
                 </td>
-                <!-- <td>
-                  {{index1}}{{showPlaidAccounts[index1]}}
-                </td>-->
               </tr>
-              <!-- </template> -->
             </template>
           </tbody>
         </template>
@@ -145,7 +136,6 @@
           </thead>
           <tbody>
             <template v-for="(item, index2) in saltEdge(itemTokens)">
-              <!-- <tr v-for="(item, index2) in saltEdge(itemTokens)" :key="index2"> -->
               <tr :key="`${index2}-${item.id}`">
                 <td>{{item.institution}}</td>
                 <td
@@ -197,7 +187,6 @@
                 :key="j"
                 v-show="showSaltEdgeAccounts[index2]"
               >
-                <!-- <td :colspan="3" class="pl-10"> -->
                 <td class="pl-10">
                   <v-btn icon @click="editAccountName(account)">
                     <v-icon small>create</v-icon>
@@ -206,12 +195,8 @@
                 </td>
                 <td class="pl-10">{{account.type}}</td>
                 <td class="pl-10" :colspan="3">
-                  <!-- <td class="pl-10"> -->
                   {{formatBalance(account.balance, account.currency)}}
                 </td>
-                <!-- <td>
-                  {{index1}}{{showPlaidAccounts[index1]}}
-                </td>-->
               </tr>
             </template>
           </tbody>
@@ -241,13 +226,11 @@
         >Import CSV</v-btn>
       </v-flex>
     </v-col>
-    <!-- <v-row class = "ma-2 pa-0"> -->
     <v-col class="px-4 py-2">
       <v-row>
         <v-btn color="warning" dark @click.native="resetDB()">Reset Database</v-btn>
       </v-row>
     </v-col>
-    <!-- <v-row class = "ma-2 pa-0"> -->
     <v-col class="px-4 py-2">
       <v-row>
         <v-btn
@@ -267,26 +250,18 @@
         <v-card-text>
           <v-container>
             <v-row>
-              <!-- <v-col cols="12" sm="8" md="6"> -->
               <v-text-field v-model="editedItem.name" label="Account name"></v-text-field>
-              <!-- </v-col> -->
             </v-row>
           </v-container>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer></v-spacer>
-          <!-- <v-btn color="blue darken-1" text @click="close">Cancel</v-btn> -->
-          <!-- <v-btn color="blue darken-1" text @click="save">Save</v-btn> -->
           <v-btn text @click="close">Cancel</v-btn>
           <v-btn text @click="save">Save</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <!-- <v-row>
-      <v-btn color="warning" dark class="my-8" @click.native="resetToken()">reset token</v-btn>
-    </v-row>-->
   </v-container>
 </template>
 
@@ -328,11 +303,7 @@ export default {
       updateToken: null,
       itemTokens: [],
       accounts: [],
-      //connections: [],
       plaidRefresh: false,
-      // loader: null,
-      // loader2: null,
-      // loader3: null,
       loading: false,
       loading2: false,
       loading3: false,
@@ -393,12 +364,8 @@ export default {
     },
 
     async save() {
-      // if (this.editedIndex > -1) {
       const itemToUpdate = this.editedItem;
         Object.assign(this.accounts[this.editedIndex], this.editedItem);
-      // } else {
-        // this.accounts.push(this.editedItem);
-      // }
       this.close();
       // console.log(this.editedItem);
       await this.$store.commit('updateAccountName', itemToUpdate);
@@ -411,10 +378,8 @@ export default {
       return this.accounts.filter(acc => acc.item_id === id);
     },
     toggleAccounts(index, array) {
-      // const temp = this.showPlaidAccounts[index]
       const tempVal = array[index] == undefined ? true : !array[index];
       this.$set(array, index, tempVal);
-      // this.showPlaidAccounts.$set(tempVal, temp)
       // console.log(this.showPlaidAccounts);
     },
     localeDate(date) {
@@ -425,7 +390,6 @@ export default {
     },
     timeToRefresh(time) {
       let diffmin = moment().diff(moment(time), "minutes");
-      // let diffmin = moment().diff(moment("2020-05-07T15:33:49.000Z"), 'minutes');
       let diffsec = moment().diff(moment(time), "seconds");
       if (diffsec > 0) this.showRefresh = true;
       if (diffsec > -60) return diffsec * -1 + " seconds";

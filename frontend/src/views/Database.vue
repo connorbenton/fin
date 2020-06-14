@@ -14,8 +14,5 @@
   background-color:#BDBDBD;
 }
 
-.class2 {
-}
-
 </style>
 

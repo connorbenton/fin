@@ -1,12 +1,7 @@
 package app
 
 import (
-	// "database/sql"
-	// "encoding/json"
-	// "log"
-
 	"github.com/gorilla/mux"
-	// "github.com/jmoiron/sqlx"
 
 	"fintrack-go/routes/accounts"
 	"fintrack-go/routes/analysisTrees"
@@ -20,7 +15,6 @@ import (
 
 type App struct {
 	Router *mux.Router
-	// Database *sqlx.DB
 }
 
 func (app *App) SetupRouter() {
@@ -74,12 +68,6 @@ func (app *App) SetupRouter() {
 		Path("/api/transactions").
 		HandlerFunc(transactions.GetFunction())
 
-		//This one will go away when we do all filtering and trees server side
-	// app.Router.
-	// 	Methods("GET").
-	// 	Path("/transactionsRange/{range}").
-	// 	HandlerFunc(transactions.GetRangeFunction())
-
 	app.Router.
 		Methods("PUT").
 		Path("/api/transactions").
@@ -101,13 +89,6 @@ func (app *App) SetupRouter() {
 		Methods("GET").
 		Path("/api/analysisTrees").
 		HandlerFunc(analysisTrees.GetFunction())
-
-		//This will become a generic itemToken refresh connections function for both SE and Plaid
-		//Actually just going to include in fetch transactions
-	// app.Router.
-	// 	Methods("GET").
-	// 	Path("/saltEdgeConnections").
-	// 	HandlerFunc(saltedge.RefreshConnectionsFunction())
 
 	app.Router.
 		Methods("GET").
@@ -134,18 +115,4 @@ func (app *App) SetupRouter() {
 		Path("/api/customTree").
 		HandlerFunc(analysisTrees.CustomAnalyze())
 
-	// app.Router.
-	// 	Methods("GET").
-	// 	Path("/api/resetToken").
-	// 	HandlerFunc(plaid.ResetToken())
-
-	// app.Router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-	// 	socket.ServeWs(socket.ExportHub, w, r)
-	// })
-
-	// app.Router.HandleFunc("/ws", itemTokens.FetchTransactionsFunction())
-	// app.Router.
-	// Methods("GET").
-	// Path("/").
-	// HandlerFunc()
 }

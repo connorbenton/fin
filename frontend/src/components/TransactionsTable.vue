@@ -31,12 +31,21 @@
         class="elevation-1"
       >
         <template v-slot:header.category_name="">Category 
+          <v-btn icon v-on:click.stop="openFilterMenu($event)">
+            <v-icon :color="catIsFiltered?'primary':''">filter_alt</v-icon>
+          </v-btn>
+          <v-btn icon v-show="catIsFiltered" v-on:click.stop="clearFilter($event)">
+            <v-icon>not_interested</v-icon>
+          </v-btn>
           <v-btn 
+            
             class="ml-4"
             v-if="selected.length > 0" 
             color="success" 
             small
-            v-on:click.stop="openEditMenu($event)">Change Category</v-btn>
+            v-on:click.stop="openEditMenu($event)">
+            <v-icon>build</v-icon>
+            </v-btn>
         </template>
         <template v-slot:item="{ item, isSelected, select }">
           <tr
@@ -46,10 +55,8 @@
             v-on:click.ctrl.left.exact="ctrlToggle(isSelected, select, $event)"
             v-on:mousedown.shift.exact.prevent
           >
-            <!-- <td>{{item.date}}</td> -->
             <td>{{item.date.split("T")[0]}}</td>
             <td>{{item.description}}</td>
-              <!-- @click="openEditMenu($event, item)" -->
             <td
               :class="{ 'font-weight-bold': item.category_name == 'Uncategorized' }"
             >{{item.category_name}}</td>
@@ -57,15 +64,6 @@
             <td>{{item.account_name}}</td>
           </tr>
         </template>
-        <!-- <template v-slot:item.account="{ item }">{{item.account_name}}</template>
-        <template v-slot:item.amount="{ item }">{{formatBalance(item.amount, item.currency_code)}}</template>
-        <template v-slot:item.category_name="{ item }">
-          <v-card-text
-            class="pa-0"
-            @click="openEditMenu($event, item)"
-            :class="{ 'font-weight-bold': item.category_name == 'Uncategorized' }"
-          >{{item.category_name}}</v-card-text>
-        </template>-->
       </v-data-table>
     </v-col>
 
@@ -105,6 +103,42 @@
         </v-menu>
       </v-list>
     </v-menu>
+    <v-menu v-model="filterMenu" :position-x="x" :position-y="y" absolute offset-y>
+      <v-list class="pa-0">
+        <v-menu
+          offset-x
+          open-on-hover
+          v-for="(cat, index) in filtertop_category(categories)"
+          :key="index"
+        >
+          <template v-slot:activator="{ on }">
+            <v-hover v-slot:default="{ hover }">
+              <v-list-item
+                @click="filterCategory(cat.top_category, categories)"
+                v-on="on"
+                :class="`${hover? 'class1': 'class2'}`"
+              >
+                <v-list-item-title>{{cat.top_category}}</v-list-item-title>
+              </v-list-item>
+            </v-hover>
+          </template>
+          <v-list
+            v-for="(subcat, index) in filtersub_category(cat.top_category,categories)"
+            :key="index"
+            class="pa-0"
+          >
+            <v-hover v-slot:default="{ hover }">
+              <v-list-item
+                @click="filterCategory(subcat.sub_category, categories)"
+                :class="`${hover? 'class1': 'class2'}`"
+              >
+                <v-list-item-title>{{subcat.sub_category}}</v-list-item-title>
+              </v-list-item>
+            </v-hover>
+          </v-list>
+        </v-menu>
+      </v-list>
+    </v-menu>
   </v-content>
 </template>
 
@@ -122,12 +156,14 @@ export default {
     return {
       // showConfirm: false,
       // reloadedData: 0,
+      catIsFiltered: false,
       singleSelectStatus: true,
       currentItems: [],
       searchDisplay: "",
       search: "",
       selected: [],
       editMenu: false,
+      filterMenu: false,
       // editedIndex: -1,
       x: 0,
       y: 0,
@@ -135,16 +171,13 @@ export default {
         { text: "Date", value: "date", dataType: "Date", width: "110" },
         { text: "Description", value: "description", width: "40%" },
         { text: "Category", value: "category_name" },
-        // //Eliminated currency since now balance is formatted instead
-        // {text: 'Currency', value: 'currency_code', align: 'end' },
-        // {text: "Currency", value: "currency_code" },
         { text: "Amount", value: "amount" },
         { text: "Account", value: "account_name" },
         { text: "accID", value: "account_id", align: " d-none" }
       ],
       sortDesc: true,
       sortBy: "date",
-      // transactions: this.transactionsToDisplay.map(t => Object.assign({}, t)),
+      masterTransactions: this.transactionsToDisplay,
       transactions: this.transactionsToDisplay,
       accounts: [],
       categories: []
@@ -157,6 +190,10 @@ export default {
       // this.transactions = newVal.map(t => Object.assign({}, t));
       this.transactions = [];
       this.transactions = newVal;
+      this.masterTransactions = newVal;
+      Object.freeze(this.transactions);
+      Object.freeze(this.masterTransactions);
+      this.catIsFiltered = false;
     }
   },
   created() {
@@ -165,6 +202,20 @@ export default {
     this.accounts = this.$store.getters.getAllAccounts;
   },
   methods: {
+    openFilterMenu: function(event) {
+      event.preventDefault();
+      this.filterMenu = false;
+      this.x = event.clientX;
+      this.y = event.clientY;
+      // this.editedIndex = this.transactions.indexOf(item);
+      this.$nextTick(() => {
+        this.filterMenu = true;
+      });
+    },
+    clearFilter() {
+      this.transactions = this.masterTransactions;
+      this.catIsFiltered = false;
+    },
     //Multi-selects current page items with shift
     shiftToggle(item) {
       if (this.selected.length > 2) {
@@ -246,6 +297,25 @@ export default {
       });
     },
 
+    filterCategory(cat, categories) {
+      let catToSave = cat;
+      // console.log(catToSave);
+      let foundCat = categories.find(x => x.sub_category === catToSave);
+      // console.log(foundCat)
+      let newTransSet = [];
+      if (foundCat.sub_category === foundCat.top_category) {
+        let subCats = categories.filter(x => x.top_category === foundCat.top_category);
+        newTransSet = this.transactions.filter(x => {
+          return (subCats.filter(e => e.id === x.category).length > 0);
+        });
+      } else {
+        newTransSet = this.transactions.filter(x => x.category === foundCat.id);
+      }
+      // console.log(newTransSet);
+      this.transactions = newTransSet;
+      this.catIsFiltered = true;
+      this.filterMenu = false;
+    },
     //Updates first backend, then store with new category
     //Now using selected
     async editCategory(cat, categories) {
@@ -256,48 +326,25 @@ export default {
         let editArray = [];
      this.selected.forEach(item => {
 
-      // for (let i in this.selected) {
-        // console.log(this.selected[i].description);
-        // let a = this.transactions.find(x => x.id === this.selected[i].id);
         let a = this.transactions.find(x => x.id === item.id);
-        // console.log(a.description);
-      // return;
-      // this.showConfirm = true;
-      // this.transactions[this.editedIndex].category = foundCat.id;
-      // this.transactions[this.editedIndex].category_name = foundCat.sub_category;
+
       a.category = foundCat.id;
       a.category_name = foundCat.sub_category;
       editArray.push(a)
 
-      // api.updateTransaction(a.id, a);
-      // api.upsertTransaction(a);
-
-      // this.$store.commit( "updateTransaction", a);
-      // return 'update done';
       });
-      // console.log(editArray)
-      
 
-      // await Promise.all(editArray).then(() => {
         await this.$store.commit("updateTransaction", editArray);
         await api.upsertTransaction(editArray).then(() => {
 
-      // }
-
       this.selected = [];
       this.editMenu = false;
-      // this.$forceUpdate;
-      // this.reloadedData += 1;
+
       this.$emit("changed");
-      // this.$store.dispatch("reanalyze");
       });
-      // .then(() => this.$store.dispatch("reanalyze")); 
-      // this.dispatchReanalyze();
+
     },
-    // async dispatchReanalyze() {
-      // this.$store.dispatch("reanalyze");
-    // },
-    //Populate array of sub categories for category dropdown
+
     filtersub_category(topCat, categories) {
       let filterTop = topCat;
       let filtered = categories.filter(function(item) {

@@ -9,14 +9,12 @@ import (
 	"sync"
 	"time"
 
-	// "fmt"
 	"fintrack-go/db"
 	"fintrack-go/types"
 
 	_ "github.com/jmoiron/sqlx"
 	"github.com/rickb777/date"
 
-	// "github.com/shopspring/decimal"
 	"github.com/shopspring/decimal"
 )
 
@@ -48,7 +46,6 @@ func CustomAnalyze() func(http.ResponseWriter, *http.Request) {
 
 		dbcatsBase := []types.Category{}
 
-		// dbdata := []types.Transaction{}
 		err = db.DBCon.Select(&dbcatsBase, "SELECT * FROM `categories`")
 		if err != nil {
 			panic(err)
@@ -63,7 +60,7 @@ func CustomAnalyze() func(http.ResponseWriter, *http.Request) {
 		end = customRange.End
 		stDt, _ := date.ParseISO(customRange.Start)
 		endDt, _ := date.ParseISO(customRange.End)
-		dbEnd = endDt.AddDate(0, 0, 1).Format("2006-01-02")
+		dbEnd = endDt.AddDate(0, 0, 1).String()
 		err = db.DBCon.Select(&rangedata, "SELECT * FROM `transactions` WHERE DATE between '"+st+"' and '"+dbEnd+"'")
 		// log.Println("number in ", name, len(rangedata))
 		if err != nil {
@@ -89,12 +86,11 @@ func CustomAnalyze() func(http.ResponseWriter, *http.Request) {
 }
 
 func ReAnalyze() {
-	log.Println("today: ", date.Today().Format("2006-01-02"), date.Today().FormatISO(4), date.Today().String())
+	log.Println("today: ", date.Today().String(), date.Today().FormatISO(4), date.Today().String())
 
 	start := time.Now()
 	dbcatsBase := []types.Category{}
 
-	// dbdata := []types.Transaction{}
 	err := db.DBCon.Select(&dbcatsBase, "SELECT * FROM `categories`")
 	if err != nil {
 		panic(err)
@@ -147,16 +143,14 @@ func ReAnalyze() {
 				st = dbst.String
 				stDt, _ = date.ParseISO(st)
 				endDt = today
-				// err = db.DBCon.Select(&rangedata, "SELECT * FROM `transactions`")
-				// log.Println("number in ", name, len(rangedata))
 			case "custom":
 				stDt = today.AddDate(0, 0, -29)
 				endDt = today
 			}
 
-			st = stDt.Format("2006-01-02")
-			end = endDt.Format("2006-01-02")
-			dbEnd = endDt.AddDate(0, 0, 1).Format("2006-01-02")
+			st = stDt.String()
+			end = endDt.String()
+			dbEnd = endDt.AddDate(0, 0, 1).String()
 
 			err = db.DBCon.Select(&rangedata, "SELECT * FROM `transactions` WHERE DATE between '"+st+"' and '"+dbEnd+"'")
 			// log.Println("number in ", name, len(rangedata))
@@ -169,48 +163,7 @@ func ReAnalyze() {
 
 			tree := SetupTree(dbcatsBase, rangedata, name, st, end, diff)
 
-			// dbcats := append(dbcatsBase[:0:0], dbcatsBase...)
-			// // for _, tx := range rangedata {
-			// for _, tx := range rangedata {
-			// 	for i := range dbcats {
-			// 		if tx.Category == dbcats[i].ID && !tx.NormalizedAmount.IsZero() {
-			// 			dbcats[i].Count++
-			// 			dbcats[i].Total = dbcats[i].Total.Add(tx.NormalizedAmount)
-			// 			break
-			// 		}
-			// 	}
-			// }
-
-			// var Zero = decimal.New(0, 1)
-			// dbcatsNoInvest := append(dbcats[:0:0], dbcats...)
-			// for i := range dbcatsNoInvest {
-			// 	if dbcatsNoInvest[i].ID == 69 {
-			// 		dbcatsNoInvest[i].Count = 0
-			// 		dbcatsNoInvest[i].Total = Zero
-			// 		break
-			// 	}
-			// }
-
-			// tree := types.Tree{}
-			// tree.Name = name
-			// tree.FirstDate = st
-			// tree.LastDate = end
-			// tree.Data = GenerateDataTree(dbcats)
-			// tree.DataNoInvest = GenerateDataTree(dbcatsNoInvest)
-
 			tstmt.MustExec(tree)
-
-			// log.Println(dbcats[103])
-
-			// for _, cat := range dbcats {
-			// 	var err error
-			// 	err = db.DBCon.Get(&cat.Count, "SELECT COUNT(id) FROM `transactions` WHERE DATE between '"+st+"' and '"+dbEnd+"' AND category = '"+strconv.Itoa(cat.ID)+"'")
-			// 	err = db.DBCon.Get(&cat.Total, "SELECT SUM(normalized_amount) FROM `transactions` WHERE DATE between '"+st+"' and '"+dbEnd+"' AND category = '"+strconv.Itoa(cat.ID)+"'")
-			// 	if err != nil {
-			// 		panic(err)
-			// 	}
-			// 	// log.Println("Count ", cat.Count, " Total ", cat.Total)
-			// }
 
 		}(name)
 	}
@@ -225,7 +178,6 @@ func ReAnalyze() {
 
 func SetupTree(dbcatsBase []types.Category, rangedata []types.Transaction, name, st, end string, diff int64) types.Tree {
 	dbcats := append(dbcatsBase[:0:0], dbcatsBase...)
-	// for _, tx := range rangedata {
 	for _, tx := range rangedata {
 		for i := range dbcats {
 			if tx.Category == dbcats[i].ID && !tx.NormalizedAmount.IsZero() {
@@ -261,13 +213,12 @@ func GenerateDataTree(dbcats []types.Category, diff, trueTotal int64, useTrueTot
 	var Zero = decimal.New(0, 1)
 	treeData := types.TreeData{}
 
-	// tree.Data = treeData
 	treeData.Name = "Transactions by Category"
 	treeData.Children = []types.ChildTop{}
 	treeData.Value = Zero
-	// treeData.TrueValue = Zero
 	treeData.Count = 0
 	treeData.TrueCount = 0
+	treeData.IncomeTotal = Zero
 
 	for _, cat := range dbcats {
 		if cat.SubCategory == cat.TopCategory {
@@ -275,7 +226,6 @@ func GenerateDataTree(dbcats []types.Category, diff, trueTotal int64, useTrueTot
 			topChild.Name = cat.TopCategory
 			topChild.Children = []types.ChildSub{}
 			topChild.Value = Zero
-			// topChild.TrueValue = Zero
 			topChild.Count = 0
 			topChild.TrueCount = 0
 			topChild.DbID = 0
@@ -285,7 +235,6 @@ func GenerateDataTree(dbcats []types.Category, diff, trueTotal int64, useTrueTot
 					subChild := types.ChildSub{}
 					subChild.Name = ""
 					subChild.Value = Zero
-					// subChild.TrueValue = Zero
 					subChild.Count = 0
 					subChild.TrueCount = 0
 					subChild.DbID = 0
@@ -302,7 +251,12 @@ func GenerateDataTree(dbcats []types.Category, diff, trueTotal int64, useTrueTot
 					subChild.Per30 = subChild.Value.Div(decimal.NewFromInt(diff)).Mul(decimal.NewFromInt(30))
 					subChild.Count = int64(cat2.Count)
 					subChild.TrueCount = int64(cat2.Count)
-					if cat2.ExcludeFromAnalysis || cat2.TopCategory == "Income" {
+					if cat2.ExcludeFromAnalysis {
+						subChild.Value = Zero
+						subChild.Count = 0
+					}
+					if cat2.TopCategory == "Income" {
+						treeData.IncomeTotal = treeData.IncomeTotal.Add(subChild.Value.Abs())
 						subChild.Value = Zero
 						subChild.Count = 0
 					}
@@ -319,6 +273,11 @@ func GenerateDataTree(dbcats []types.Category, diff, trueTotal int64, useTrueTot
 				} else {
 					topChild.Children[i].Percent = "0%"
 				}
+				if topChild.Children[i].Value.IsNegative() {
+					topChild.Value = topChild.Value.Sub(topChild.Children[i].Value)
+					topChild.Count = topChild.Count - topChild.Children[i].Count
+					topChild.Children[i].Value = Zero
+				}
 			}
 			treeData.Children = append(treeData.Children, topChild)
 			treeData.Value = treeData.Value.Add(topChild.Value)
@@ -332,6 +291,11 @@ func GenerateDataTree(dbcats []types.Category, diff, trueTotal int64, useTrueTot
 			treeData.Children[i].Per30 = treeData.Children[i].Value.Div(decimal.NewFromInt(diff)).Mul(decimal.NewFromInt(30))
 		} else {
 			treeData.Children[i].Percent = "0%"
+		}
+		if treeData.Children[i].Value.IsNegative() {
+			treeData.Value = treeData.Value.Sub(treeData.Children[i].Value)
+			treeData.Count = treeData.Count - treeData.Children[i].Count
+			treeData.Children[i].Value = decimal.New(0, 1)
 		}
 	}
 	treeData.Per30 = treeData.Value.Div(decimal.NewFromInt(diff)).Mul(decimal.NewFromInt(30))

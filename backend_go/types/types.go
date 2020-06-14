@@ -32,10 +32,6 @@ type ItemToken struct {
 	AccessToken string `json:"-" db:"access_token"`
 	ItemID      string `json:"item_id" db:"item_id"`
 	Provider    string `json:"provider" db:"provider"`
-	// Institution                string    `json:"institution" db:"institution"`
-	// AccessToken                string    `json:"-" db:"access_token"`
-	// ItemID                     string    `json:"item_id" db:"item_id"`
-	// Provider                   string    `json:"provider" db:"provider"`
 	Interactive                bool      `json:"interactive" db:"interactive"`
 	NeedsReLogin               bool      `json:"needs_re_login" db:"needs_re_login"`
 	LastRefresh                time.Time `json:"last_refresh" db:"last_refresh"`
@@ -54,8 +50,6 @@ type Category struct {
 	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
 	Count               int
 	Total               decimal.Decimal
-	// Count               sql.NullString
-	// Total               sql.NullString
 }
 
 type CategorySE struct {
@@ -114,7 +108,6 @@ type Tree struct {
 	Name      string `json:"name" db:"name"`
 	FirstDate string `json:"first_date" db:"first_date"`
 	LastDate  string `json:"last_date" db:"last_date"`
-	// Data      TreeData `json:"data" db:"data"`
 	Data         string    `json:"data" db:"data"`
 	DataNoInvest string    `json:"data_no_invest" db:"data_no_invest"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
@@ -126,9 +119,9 @@ type TreeData struct {
 	Children []ChildTop      `json:"children"`
 	Value    decimal.Decimal `json:"value"`
 	Count    int64           `json:"count"`
-	// TrueValue decimal.Decimal `json:"trueValue"`
-	TrueCount int64           `json:"trueCount"`
-	Per30     decimal.Decimal `json:"per30"`
+	TrueCount   int64           `json:"trueCount"`
+	Per30       decimal.Decimal `json:"per30"`
+	IncomeTotal decimal.Decimal `json:"income_total"`
 }
 
 type ChildTop struct {
@@ -136,7 +129,6 @@ type ChildTop struct {
 	Children []ChildSub      `json:"children"`
 	Value    decimal.Decimal `json:"value"`
 	Count    int64           `json:"count"`
-	// TrueValue decimal.Decimal `json:"trueValue"`
 	TrueCount int64           `json:"trueCount"`
 	DbID      int             `json:"dbID"`
 	Percent   string          `json:"percent"`
@@ -149,7 +141,6 @@ type ChildSub struct {
 	Value   decimal.Decimal `json:"value"`
 	Count   int64           `json:"count"`
 	Percent string          `json:"percent"`
-	// TrueValue decimal.Decimal `json:"trueValue"`
 	TrueCount int64           `json:"trueCount"`
 	Per30     decimal.Decimal `json:"per30"`
 }
@@ -203,55 +194,11 @@ type CompareTransSingle struct {
 	Type    string       `json:"type"`
 }
 
-// type CompareCatsSet struct {
-// 	CompareCats []string   `json:"compareCats"`
-// 	DbCats      []Category `json:"dbCats"`
-// 	Type        string     `json:"type"`
-// }
-
 type CompareCatsSingle struct {
 	Category        string `json:"category"`
 	AssignedCat     int    `json:"assignedCat"`
 	AssignedCatName string `json:"assignedCatName"`
 }
-
-// type WsMsg struct {
-// 	Name string `json:"name"`
-// 	Data []byte `json:"data"`
-// }
-
-// type MintComparison struct {
-// 	MintName string
-// 	CatID    int
-// }
-
-// // var MintComparisonIndex []MintComparison
-// var MintComparisonIndex = []MintComparison{
-// 	MintComparison{MintName: "Buy", CatID: 69},
-// 	MintComparison{MintName: "Investments", CatID: 99},
-// 	MintComparison{MintName: "Dividend & Cap Gains", CatID: 63},
-// 	MintComparison{MintName: "Sports", CatID: 51},
-// 	MintComparison{MintName: "Coffee Shops", CatID: 37},
-// 	MintComparison{MintName: "Gift", CatID: 42},
-// 	MintComparison{MintName: "Shipping", CatID: 76},
-// 	MintComparison{MintName: "Hide from Budgets & Trends", CatID: 109},
-// 	MintComparison{MintName: "Business Services", CatID: 76},
-// 	MintComparison{MintName: "Home Improvement", CatID: 54},
-// 	MintComparison{MintName: "Home Services", CatID: 54},
-// 	MintComparison{MintName: "Withdrawal", CatID: 107},
-// 	MintComparison{MintName: "Office Supplies", CatID: 57},
-// 	MintComparison{MintName: "Pets", CatID: 76},
-// 	MintComparison{MintName: "Credit Card Payment", CatID: 100},
-// 	MintComparison{MintName: "Brokerage", CatID: 99},
-// 	MintComparison{MintName: "Interest Income", CatID: 63},
-// 	MintComparison{MintName: "Brokerage Investment", CatID: 99},
-// 	MintComparison{MintName: "Printing", CatID: 76},
-// }
-
-// var MintCatMap = map[string]int{}
-// for _, v := range MintComparisonIndex {
-// 	MintCatMap[v.MintName] = v.CatID
-// }
 
 type ImportTransaction struct {
 	Date                string          `json:"date"`
@@ -487,7 +434,6 @@ func PrepTransUpsertSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 }
 
 func PrepAccountSt(txn *sqlx.Tx) *sqlx.NamedStmt {
-	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype)
 				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype) 
 				ON CONFLICT (account_id, provider) DO UPDATE SET
@@ -495,7 +441,6 @@ func PrepAccountSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 				available = excluded.available,
 				balance = excluded.balance`
 	astmt, err := txn.PrepareNamed(aquery)
-	// astmt, err := dbCon.PrepareNamed(aquery)
 	if err != nil {
 		panic(err)
 	}
@@ -503,13 +448,11 @@ func PrepAccountSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 }
 
 func PrepAccountUpsertIgnoreSt(txn *sqlx.Tx) *sqlx.NamedStmt {
-	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype, ignore_transactions)
 				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype, :ignore_transactions) 
 				ON CONFLICT (account_id, provider) DO UPDATE SET
 				ignore_transactions = excluded.ignore_transactions`
 	astmt, err := txn.PrepareNamed(aquery)
-	// astmt, err := dbCon.PrepareNamed(aquery)
 	if err != nil {
 		panic(err)
 	}
@@ -517,13 +460,11 @@ func PrepAccountUpsertIgnoreSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 }
 
 func PrepAccountUpsertNameSt(txn *sqlx.Tx) *sqlx.NamedStmt {
-	// func PrepAccountSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	aquery := `INSERT INTO accounts(name, institution, provider, account_id, item_id, type, 'limit', available, balance, currency, subtype, ignore_transactions)
 				VALUES(:name, :institution, :provider, :account_id, :item_id, :type, :limit, :available, :balance, :currency, :subtype, :ignore_transactions) 
 				ON CONFLICT (account_id, provider) DO UPDATE SET
 				name = excluded.name`
 	astmt, err := txn.PrepareNamed(aquery)
-	// astmt, err := dbCon.PrepareNamed(aquery)
 	if err != nil {
 		panic(err)
 	}
@@ -531,7 +472,6 @@ func PrepAccountUpsertNameSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 }
 
 func PrepItemSt(txn *sqlx.Tx) *sqlx.NamedStmt {
-	// func PrepItemSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	iquery := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id, needs_re_login, access_token, last_downloaded_transactions)
 				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id, :needs_re_login, :access_token, :last_downloaded_transactions) 
 				ON CONFLICT (item_id, provider) DO UPDATE SET
@@ -541,7 +481,6 @@ func PrepItemSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 				needs_re_login = excluded.needs_re_login,
 				last_downloaded_transactions = excluded.last_downloaded_transactions`
 	istmt, err := txn.PrepareNamed(iquery)
-	// istmt, err := dbCon.PrepareNamed(iquery)
 	if err != nil {
 		panic(err)
 	}
@@ -549,13 +488,11 @@ func PrepItemSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 }
 
 func PrepItemStOnlyTx(txn *sqlx.Tx) *sqlx.NamedStmt {
-	// func PrepItemSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	iquery := `INSERT INTO item_tokens(institution, provider, interactive, last_refresh, next_refresh_possible, item_id, needs_re_login, access_token, last_downloaded_transactions)
 				VALUES(:institution, :provider, :interactive, :last_refresh, :next_refresh_possible, :item_id, :needs_re_login, :access_token, :last_downloaded_transactions) 
 				ON CONFLICT (item_id, provider) DO UPDATE SET
 				last_downloaded_transactions = excluded.last_downloaded_transactions`
 	istmt, err := txn.PrepareNamed(iquery)
-	// istmt, err := dbCon.PrepareNamed(iquery)
 	if err != nil {
 		panic(err)
 	}
@@ -563,7 +500,6 @@ func PrepItemStOnlyTx(txn *sqlx.Tx) *sqlx.NamedStmt {
 }
 
 func PrepTreeSt(txn *sqlx.Tx) *sqlx.NamedStmt {
-	// func PrepItemSt(dbCon *sqlx.DB) *sqlx.NamedStmt {
 	iquery := `INSERT INTO analysis_trees(name, first_date, last_date, data, data_no_invest)
 				VALUES(:name, :first_date, :last_date, :data, :data_no_invest) 
 				ON CONFLICT (name) DO UPDATE SET
@@ -572,7 +508,6 @@ func PrepTreeSt(txn *sqlx.Tx) *sqlx.NamedStmt {
 				data = excluded.data,
 				data_no_invest = excluded.data_no_invest`
 	istmt, err := txn.PrepareNamed(iquery)
-	// istmt, err := dbCon.PrepareNamed(iquery)
 	if err != nil {
 		panic(err)
 	}

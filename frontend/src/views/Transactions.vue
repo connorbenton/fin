@@ -1,7 +1,5 @@
 <template>
-  <!-- <v-content v-if="apiStateLoaded"> -->
   <v-content :key="apiStateLoaded">
-    <!-- <v-card class="d-flex mb-6"> -->
       <v-col align="center">
       <v-col class="d-flex mb-2 pa-2" style="maxWidth:2400px">
       <v-col class="flex-grow-0 flex-shrink-1 mx-auto">
@@ -54,15 +52,11 @@
                       </v-col>
                     </v-row>
                     <v-row v-if="showAcc" no-gutters align="center" class="px-4" style="flex-wrap: nowrap">
-                    <!-- <v-list> -->
-                      <!-- <v-list-item> -->
                         <v-switch dense inset class="ma-0 pa-0" 
                         v-model="acct.ignore_transactions" 
                         :label="`Account is Hidden from Sum: ${acct.ignore_transactions.toString()}`"
                         @click.stop="toggleAccountShow(acct)"
                         ></v-switch>
-                      <!-- </v-list-item> -->
-                    <!-- </v-list> -->
                   </v-row>
                   </v-col>
                   </v-list-item>
@@ -73,21 +67,11 @@
         </v-expansion-panels>
         <v-row class="ma-4">
                         <v-switch v-model="showAcc" label="Choose Accounts to Include in Sum"></v-switch>
-          <!-- <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-            <v-btn icon v-on="on">
-        <v-icon large>build</v-icon>
-            </v-btn>
-            </template>
-            <span>Choose Accounts to Sum</span>
-          </v-tooltip> -->
         </v-row>
       </v-col>
       <TransactionsTable v-bind:transactionsToDisplay="filteredItems"></TransactionsTable>
-      <!-- <TransactionsTable v-if="apiStateLoaded" v-bind:transactionsToDisplay="filteredItems"></TransactionsTable> -->
       </v-col>
       </v-col>
-    <!-- </v-card> -->
   </v-content>
 </template>
 

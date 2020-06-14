@@ -1,7 +1,6 @@
 package db
 
 import (
-	// "database/sql"
 
 	"io/ioutil"
 
