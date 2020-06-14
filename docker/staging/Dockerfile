@@ -26,7 +26,7 @@ FROM alpine:3.12.0 as production-stage
 
 WORKDIR /usr/share/nginx/html
 COPY --from=build-stage /app/dist ./
-COPY ./entrypoints/env_load.sh .env ./
+COPY ./entrypoints/env_load.sh ./
 
 COPY --from=go-build /server /server
 COPY ./backend_go /usr/src/app/backend_go
