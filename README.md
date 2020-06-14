@@ -9,6 +9,8 @@ Data is displayed in the analysis tab according to the amount of each transactio
 
 The [development build](#development-environment) also includes two instances of [sqlite-web](https://github.com/coleifer/sqlite-web) running in the frontend to view the two databases (one for currency rates, the other for the main connections/accounts/transactions data).
 
+Credit to [Alberto Pereira's Vue zoomable treemap](https://github.com/albertopereira/vuejs-treemap) for inspration and framework for the analysis treemap.
+
 ## Example docker-compose
 A simple docker-compose port mapping to the container's 9028 port can be used if preferred for proxying (instead of the docker-networking shown in this example). The only inputs required are an [.env file](#example-env-file) path and a volume mount where the two databases will be stored.
 ```
