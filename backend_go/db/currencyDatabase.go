@@ -151,11 +151,15 @@ func GetNewXML() {
 		// log.Println("ready to fetch")
 		url1 := "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/D..EUR.SP00.A?updatedAfter="
 		url2 := "T16%3A30%3A00%2B00%3A00&detail=dataonly"
-		urlDate := fx.FxDate.String()
+		// urlDate := fx.FxDate.Format("2006-01-02")
+		urlDate := fx.FxDate.Format("2006-01-02")
 
 		client := new(http.Client)
 
-		request, err := http.NewRequest("GET", url1+urlDate+url2, nil)
+		url := url1+urlDate+url2
+		log.Println(url)
+
+		request, err := http.NewRequest("GET", url, nil)
 		// request.Header.Add("Accept-Encoding", "gzip")
 
 		// resp, err := http.Get(url1 + urlDate + url2)
@@ -225,7 +229,7 @@ func GetNormalizedAmount(code string, baseCurrency string, dt string, amt decima
 			// finding the nearest 'EUR' rate by doing a search with USD and swapping in 1.0 for rate
 			CC = "USD"
 			query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN 
-					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, tdate.String())
+					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, tdate.Format("2006-01-02"))
 			err := CurrencyDBCon.Get(&fx, query)
 			CC = "EUR"
 			if err != nil && err != sql.ErrNoRows {
@@ -235,7 +239,7 @@ func GetNormalizedAmount(code string, baseCurrency string, dt string, amt decima
 		} else {
 			// otherwise finding the nearest rate in +/- 10 days
 			query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date BETWEEN 
-					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, tdate.String())
+					%q AND %q ORDER BY abs(%q - fx_date) LIMIT 1`, CC, firstDate, lastDate, tdate.Format("2006-01-02"))
 			err := CurrencyDBCon.Get(&fx, query)
 			if err != nil && err != sql.ErrNoRows {
 				panic(err)
@@ -243,7 +247,7 @@ func GetNormalizedAmount(code string, baseCurrency string, dt string, amt decima
 		}
 		// Setting to zero and skipping if rate not found within +/- 10 days
 		if (types.Fx{}) == fx {
-			log.Println("Currency rate not found for " + CC + " within +/- 10 days of " + tdate.String())
+			log.Println("Currency rate not found for " + CC + " within +/- 10 days of " + tdate.Format("2006-01-02"))
 			NormalizedAmount = decimal.Zero
 		} else {
 			if baseCurrency == "EUR" {
@@ -252,14 +256,14 @@ func GetNormalizedAmount(code string, baseCurrency string, dt string, amt decima
 			} else {
 				// Finding second rate for base currency other than EUR
 				bfx := types.Fx{}
-				query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date = %q`, baseCurrency, fx.FxDate.String())
+				query := fmt.Sprintf(`SELECT * FROM %q WHERE fx_date = %q`, baseCurrency, fx.FxDate.Format("2006-01-02"))
 				err := CurrencyDBCon.Get(&bfx, query)
 				if err != nil && err != sql.ErrNoRows {
 					panic(err)
 				}
 				if (types.Fx{}) == bfx {
 					// Setting to zero and skipping if base rate not found
-					log.Println("Currency rate for base currency " + baseCurrency + " not found on date " + fx.FxDate.String())
+					log.Println("Currency rate for base currency " + baseCurrency + " not found on date " + fx.FxDate.Format("2006-01-02"))
 					NormalizedAmount = decimal.Zero
 				} else {
 					// Decimal math to find normalized amount with rate and base rate
