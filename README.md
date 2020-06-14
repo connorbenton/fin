@@ -85,7 +85,7 @@ $ docker logs -f fin
 ```
 $ git clone https://github.com/connorbenton/fin
 ```
-Once you've edited the docker-compose.yml in ./docker/dev to expose/access the frontend on your own network:
+Once you've edited the docker-compose.yml in ./docker/dev to expose/access the frontend on your own network, set up an .env file, and mount a DB volume, to start the containers:
 ```
 $ cd docker/dev
 $ docker-compose up -d --build

@@ -7,6 +7,8 @@ touch ./env-config.js
 # Add assignment 
 echo "window._env_ = {" >> ./env-config.js
 
+printenv >> ./temp.env
+
 # Read each line in .env file
 # Each line represents key=value pairs
 while read -r line || [[ -n "$line" ]];
@@ -28,6 +30,7 @@ do
   
   # Append configuration property to JS file
   echo "  $varname: \"$value\"," >> ./env-config.js
-done < .env
+done < ./temp.env
+rm -rf ./temp.env
 
 echo "}" >> ./env-config.js

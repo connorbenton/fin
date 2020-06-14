@@ -85,21 +85,23 @@ func insertXMLData(bytesXML []byte, isInitialLoad bool) {
 
 	for xml := range parser.Stream() {
 		var curr string
-		for _, fxKey := range xml.Childs["generic:SeriesKey"][0].Childs["generic:Value"] {
-			if fxKey.Attrs["id"] == "CURRENCY" {
-				curr = fxKey.Attrs["value"]
-				txn.MustExec(tblStr1 + curr + tblStr2)
-				break
+		if len(xml.Childs["generic:SeriesKey"]) > 0 {
+			for _, fxKey := range xml.Childs["generic:SeriesKey"][0].Childs["generic:Value"] {
+				if fxKey.Attrs["id"] == "CURRENCY" {
+					curr = fxKey.Attrs["value"]
+					txn.MustExec(tblStr1 + curr + tblStr2)
+					break
+				}
 			}
-		}
-		txStr := upsertStr1 + curr + upsertStr2
-		fxSt := types.PrepFXTableSt(txn, txStr)
+			txStr := upsertStr1 + curr + upsertStr2
+			fxSt := types.PrepFXTableSt(txn, txStr)
 
-		for _, fx := range xml.Childs["generic:Obs"] {
+			for _, fx := range xml.Childs["generic:Obs"] {
 
-			if isNumDot(fx.Childs["generic:ObsValue"][0].Attrs["value"]) {
-				fxSt.MustExec(fx.Childs["generic:ObsDimension"][0].Attrs["value"], fx.Childs["generic:ObsValue"][0].Attrs["value"])
+				if isNumDot(fx.Childs["generic:ObsValue"][0].Attrs["value"]) {
+					fxSt.MustExec(fx.Childs["generic:ObsDimension"][0].Attrs["value"], fx.Childs["generic:ObsValue"][0].Attrs["value"])
 
+				}
 			}
 		}
 	}
