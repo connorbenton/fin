@@ -3,7 +3,7 @@
 
 To use this service beyond the limited [Mint CSV](https://help.mint.com/Accounts-and-Transactions/888960591/How-can-I-download-my-transactions.htm) import functionality, you will need development API keys to one or both of [SaltEdge Spectre](https://www.saltedge.com/products/spectre) and [Plaid](https://plaid.com/). 
 
-Users can also format additional transaction data to import according to the [example CSV](https://github.com/connorbenton/fin/example.csv) (Mint CSVs will import without any modification necessary), where the optional column currency_code can be populated with the transaction currency (defaults to USD if left blank/column not present). Imports should always be done after accounts are linked and transactions fetched from APIs, because the server will try to identify duplicate transactions during import in order to associate imported transactions with already-existing accounts.
+Users can also format additional transaction data to import according to the [example CSV](https://github.com/connorbenton/fin/blob/master/example.csv) (Mint CSVs will import without any modification necessary), where the optional column currency_code can be populated with the transaction currency (defaults to USD if left blank/column not present). Imports should always be done after accounts are linked and transactions fetched from APIs, because the server will try to identify duplicate transactions during import in order to associate imported transactions with already-existing accounts.
 
 Data is displayed in the analysis tab according to the amount of each transaction normalized to the 'base currency' selected in the [.env file](#example-env-file), using daily exchange rates pulled from the [ECB SDMX API](https://sdw-wsrest.ecb.europa.eu/).
 
