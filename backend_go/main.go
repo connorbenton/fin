@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"fintrack-go/app"
-	"fintrack-go/db"
+	"fin-go/app"
+	"fin-go/db"
 
 	"github.com/gorilla/mux"
 )

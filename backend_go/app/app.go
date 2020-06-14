@@ -3,14 +3,14 @@ package app
 import (
 	"github.com/gorilla/mux"
 
-	"fintrack-go/routes/accounts"
-	"fintrack-go/routes/analysisTrees"
-	"fintrack-go/routes/categories"
-	"fintrack-go/routes/itemTokens"
-	"fintrack-go/routes/plaid"
-	"fintrack-go/routes/resetDB"
-	"fintrack-go/routes/saltedge"
-	"fintrack-go/routes/transactions"
+	"fin-go/routes/accounts"
+	"fin-go/routes/analysisTrees"
+	"fin-go/routes/categories"
+	"fin-go/routes/itemTokens"
+	"fin-go/routes/plaid"
+	"fin-go/routes/resetDB"
+	"fin-go/routes/saltedge"
+	"fin-go/routes/transactions"
 )
 
 type App struct {

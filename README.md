@@ -1,4 +1,4 @@
-# fintrack
+# fin
 
 ## Dev project setup
 ```

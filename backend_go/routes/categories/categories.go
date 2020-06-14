@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"fintrack-go/db"
-	"fintrack-go/types"
+	"fin-go/db"
+	"fin-go/types"
 
 	_ "github.com/jmoiron/sqlx"
 )

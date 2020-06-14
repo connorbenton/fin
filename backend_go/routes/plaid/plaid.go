@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"fintrack-go/db"
-	"fintrack-go/types"
+	"fin-go/db"
+	"fin-go/types"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/plaid/plaid-go/plaid"

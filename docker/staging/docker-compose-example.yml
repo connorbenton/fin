@@ -1,6 +1,6 @@
 version: '3.3'
 services:
-    fintrack-stage:
+    fin-stage:
         build:
           context: ../../
           dockerfile: ./docker/staging/Dockerfile
@@ -9,7 +9,7 @@ services:
         volumes:
           - ../../db_stage:/usr/src/app/db
         network_mode: {YOUR_PROXY_NETWORK_HERE} 
-        container_name: fintrack-stage
+        container_name: fin-stage
         expose:
             - '9028'
-        image: fintrack-stage
+        image: fin-stage

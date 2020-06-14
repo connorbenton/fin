@@ -45,7 +45,7 @@ module.exports = {
     },
     proxy: {
       '^/api': {
-        target: 'http://fintrack-go:6060',
+        target: 'http://fin-go:6060',
         secure: false,
         ws: false,
       },

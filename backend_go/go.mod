@@ -1,4 +1,4 @@
-module fintrack-go
+module fin-go
 
 go 1.14
 

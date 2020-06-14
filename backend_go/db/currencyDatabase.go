@@ -15,7 +15,7 @@ import (
 
 	"time"
 
-	"fintrack-go/types"
+	"fin-go/types"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"

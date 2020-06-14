@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"fintrack-go/db"
-	"fintrack-go/types"
+	"fin-go/db"
+	"fin-go/types"
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"

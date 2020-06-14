@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"fintrack-go/db"
-	"fintrack-go/types"
+	"fin-go/db"
+	"fin-go/types"
 
 	_ "github.com/jmoiron/sqlx"
 	"github.com/rickb777/date"

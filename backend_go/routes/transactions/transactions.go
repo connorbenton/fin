@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"fintrack-go/db"
-	"fintrack-go/routes/accounts"
-	"fintrack-go/routes/analysisTrees"
-	"fintrack-go/types"
+	"fin-go/db"
+	"fin-go/routes/accounts"
+	"fin-go/routes/analysisTrees"
+	"fin-go/types"
 
 	_ "github.com/jmoiron/sqlx"
 	"github.com/rickb777/date"

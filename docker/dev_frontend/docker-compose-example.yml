@@ -1,6 +1,6 @@
 version: '3.3'
 services:
-    fintrack-dev:
+    fin-dev:
         build:
           context: ../../
           dockerfile: ./docker/dev_frontend/Dockerfile
@@ -11,7 +11,7 @@ services:
             - ../../:/usr/src/app
             - /usr/src/app/frontend/node_modules
         network_mode: {YOUR_PROXY_NETWORK_HERE} 
-        container_name: fintrack-dev
+        container_name: fin-dev
         expose:
             - '9028'
-        image: fintrack-dev
+        image: fin-dev

@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"fintrack-go/db"
+	"fin-go/db"
 
 	_ "github.com/jmoiron/sqlx"
 )

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"sync"
 
-	"fintrack-go/db"
-	"fintrack-go/routes/analysisTrees"
-	"fintrack-go/routes/plaid"
-	"fintrack-go/routes/saltedge"
-	"fintrack-go/types"
+	"fin-go/db"
+	"fin-go/routes/analysisTrees"
+	"fin-go/routes/plaid"
+	"fin-go/routes/saltedge"
+	"fin-go/types"
 
 	_ "github.com/jmoiron/sqlx"
 )

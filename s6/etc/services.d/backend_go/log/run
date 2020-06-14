@@ -1,2 +1,2 @@
 #!/bin/sh
-exec logutil-service /var/log/fintrack
+exec logutil-service /var/log/fin

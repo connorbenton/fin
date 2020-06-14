@@ -80,7 +80,7 @@ export default {
     data() {
         return {
             isDark: null,
-            appTitle: 'Fintrack',
+            appTitle: 'fin',
             drawer: false,
             itemsDev: [
                 { title: 'Transactions', url: '/transactions' },
