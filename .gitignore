@@ -11,7 +11,7 @@ backend_go/bin
 #DB
 /db
 /db_dev
-/db_stage
+/db_stage*
 data.sqlite
 *.sqlite
 
