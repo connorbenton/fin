@@ -2,7 +2,7 @@
   <!-- <v-content :key="reloadedData"> -->
   <v-content>
     <v-col class="flex-grow-1 flex-shrink-0 mx-auto">
-        <!-- v-on:keyup.enter="$event.target.blur()" -->
+      <!-- v-on:keyup.enter="$event.target.blur()" -->
       <v-text-field
         class="mt-0 pt-0"
         v-model="searchDisplay"
@@ -14,7 +14,8 @@
         v-on:keyup.enter.prevent="selected=[];search = searchDisplay"
       ></v-text-field>
       <v-data-table
-        :headers="headers"
+        :mobile-breakpoint="NaN"
+        :headers="computedHeaders"
         :search="search"
         :items="transactions"
         :custom-sort="customSort"
@@ -30,22 +31,23 @@
         multi-sort
         class="elevation-1"
       >
-        <template v-slot:header.category_name="">Category 
+        <template v-slot:header.category_name>
+          Category
           <v-btn icon v-on:click.stop="openFilterMenu($event)">
             <v-icon :color="catIsFiltered?'primary':''">filter_alt</v-icon>
           </v-btn>
           <v-btn icon v-show="catIsFiltered" v-on:click.stop="clearFilter($event)">
             <v-icon>not_interested</v-icon>
           </v-btn>
-          <v-btn 
-            
+          <v-btn
             class="ml-4"
-            v-if="selected.length > 0" 
-            color="success" 
+            v-if="selected.length > 0"
+            color="success"
             small
-            v-on:click.stop="openEditMenu($event)">
+            v-on:click.stop="openEditMenu($event)"
+          >
             <v-icon>build</v-icon>
-            </v-btn>
+          </v-btn>
         </template>
         <template v-slot:item="{ item, isSelected, select }">
           <tr
@@ -55,9 +57,16 @@
             v-on:click.ctrl.left.exact="ctrlToggle(isSelected, select, $event)"
             v-on:mousedown.shift.exact.prevent
           >
-            <td>{{item.date.split("T")[0]}}</td>
+            <td
+              v-if="$vuetify.breakpoint.smAndUp"
+            >{{item.date.split("T")[0]}}</td>
+            <td
+              v-else
+            >{{item.date.split("T")[0].substr(item.date.split("T")[0].length - 5)}}</td>
+            <!-- <td>{{item.date}}</td> -->
             <td>{{item.description}}</td>
             <td
+              v-if="$vuetify.breakpoint.smAndUp"
               :class="{ 'font-weight-bold': item.category_name == 'Uncategorized' }"
             >{{item.category_name}}</td>
             <td>{{formatBalance(item.amount, item.currency_code)}}</td>
@@ -169,11 +178,21 @@ export default {
       y: 0,
       headers: [
         { text: "Date", value: "date", dataType: "Date", width: "110" },
-        { text: "Description", value: "description", width: "40%" },
+        // { text: "Date", value: "date", dataType: "Date"},
+        // { text: "Description", value: "description", width: "40%" },
+        { text: "Description", value: "description" },
         { text: "Category", value: "category_name" },
         { text: "Amount", value: "amount" },
-        { text: "Account", value: "account_name" },
-        { text: "accID", value: "account_id", align: " d-none" }
+        { text: "Account", value: "account_name" }
+      ],
+      headersSm: [
+        { text: "Date", value: "date", dataType: "Date"},
+        // { text: "Date", value: "date", dataType: "Date"},
+        // { text: "Description", value: "description", width: "40%" },
+        { text: "Description", value: "description"},
+        { text: "Category", value: "category_name", align: " d-none" },
+        { text: "Amount", value: "amount"},
+        { text: "Account", value: "account_name"}
       ],
       sortDesc: true,
       sortBy: "date",
@@ -183,6 +202,15 @@ export default {
       categories: []
       // console
     };
+  },
+  computed: {
+    computedHeaders() {
+      if (this.$vuetify.breakpoint.smAndUp) {
+        return this.headers;
+      } else {
+        return this.headersSm;
+      }
+    }
   },
   watch: {
     //Loads new transactions from the parent when accounts are set to filter there
@@ -220,22 +248,25 @@ export default {
     shiftToggle(item) {
       if (this.selected.length > 2) {
         this.selected = this.currentItems.filter(x => x.id === item.id);
-      return;
+        return;
       } else {
-      this.singleSelectStatus = false;
+        this.singleSelectStatus = false;
         let a = this.currentItems.findIndex(x => x.id === this.selected[0].id);
         let b = this.currentItems.findIndex(x => x.id === item.id);
 
-        this.selected = (a >= b) ? this.currentItems.slice(b, a + 1) : this.currentItems.slice(a, b + 1); 
+        this.selected =
+          a >= b
+            ? this.currentItems.slice(b, a + 1)
+            : this.currentItems.slice(a, b + 1);
 
-          // this.selected = this.currentItems.slice(
-            // this.currentItems.findIndex(x => x.id === this.selected[0].id),
-            // this.currentItems.findIndex(x => x.id === this.selected[1].id + 1),
-          // )
+        // this.selected = this.currentItems.slice(
+        // this.currentItems.findIndex(x => x.id === this.selected[0].id),
+        // this.currentItems.findIndex(x => x.id === this.selected[1].id + 1),
+        // )
 
-          // console.log(this.selected);
-          // console.log(this.currentItems);
-          this.singleSelectStatus = true;
+        // console.log(this.selected);
+        // console.log(this.currentItems);
+        this.singleSelectStatus = true;
       }
     },
     //Ctrl+selects current page item for category change
@@ -304,9 +335,11 @@ export default {
       // console.log(foundCat)
       let newTransSet = [];
       if (foundCat.sub_category === foundCat.top_category) {
-        let subCats = categories.filter(x => x.top_category === foundCat.top_category);
+        let subCats = categories.filter(
+          x => x.top_category === foundCat.top_category
+        );
         newTransSet = this.transactions.filter(x => {
-          return (subCats.filter(e => e.id === x.category).length > 0);
+          return subCats.filter(e => e.id === x.category).length > 0;
         });
       } else {
         newTransSet = this.transactions.filter(x => x.category === foundCat.id);
@@ -323,26 +356,22 @@ export default {
       let foundCat = categories.find(x => x.sub_category === catToSave);
 
       // let editArray = this.selected.map(item => {
-        let editArray = [];
-     this.selected.forEach(item => {
-
+      let editArray = [];
+      this.selected.forEach(item => {
         let a = this.transactions.find(x => x.id === item.id);
 
-      a.category = foundCat.id;
-      a.category_name = foundCat.sub_category;
-      editArray.push(a)
-
+        a.category = foundCat.id;
+        a.category_name = foundCat.sub_category;
+        editArray.push(a);
       });
 
-        await this.$store.commit("updateTransaction", editArray);
-        await api.upsertTransaction(editArray).then(() => {
+      await this.$store.commit("updateTransaction", editArray);
+      await api.upsertTransaction(editArray).then(() => {
+        this.selected = [];
+        this.editMenu = false;
 
-      this.selected = [];
-      this.editMenu = false;
-
-      this.$emit("changed");
+        this.$emit("changed");
       });
-
     },
 
     filtersub_category(topCat, categories) {
@@ -362,3 +391,29 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+
+/* * {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-tap-higlight-color: transparent;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+} */
+
+/* .v-data-table
+  /deep/
+  tbody
+  /deep/
+  tr:hover:not(.v-data-table__expanded__content) {
+  background: rgba(255,255,255,0) !important;
+} */
+
+/* td {
+  padding: 0px;
+} */
+
+</style>

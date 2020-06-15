@@ -14,6 +14,7 @@ const vuetify = new Vuetify({
         // primary: '#b39670',
         // secondary: '#2d2d2d',
         // secondary: '#EEEEEE',
+        accent: '#121212',
         // accent: '#dddddd',
       },
     },

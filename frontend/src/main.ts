@@ -6,9 +6,11 @@ import './registerServiceWorker';
 import vuetify from './plugins/vuetify';
 import { createNamespacedHelpers } from 'vuex';
 import TransactionsTable from './components/TransactionsTable.vue';
+import AccountsBar from './components/AccountsBar.vue';
 
 Vue.config.productionTip = false;
 Vue.component('TransactionsTable', TransactionsTable);
+Vue.component('AccountsBar', AccountsBar);
 
 export const vm = new Vue({
   router,

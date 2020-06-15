@@ -18,6 +18,8 @@ const store = new Vuex.Store({
     catsToCompare: [],
     finishedCats: [],
 
+    filteredTrans: [] as any,
+
     customStart: '',
     customEnd: '',
 
@@ -49,8 +51,13 @@ const store = new Vuex.Store({
     getTrans1: (state) => state.trans1,
     getTrans2: (state) => state.trans2,
     getDark: (state) => state.isDark,
+    getFilteredTrans: (state) => state.filteredTrans,
   },
   mutations: {
+    updateFilteredTrans(state, payload) {
+      state.filteredTrans = payload;
+      // console.log(payload);
+    },
     incrementItem(state) {
       state.fetchTransactionsItemDone++;
     },
@@ -72,6 +79,7 @@ const store = new Vuex.Store({
     updateTransactions(state, transactions) {
       Object.freeze(transactions);
       state.transactions = transactions;
+      state.filteredTrans = transactions;
     },
     updateTransaction(state, transactions) {
       const transSet: any[] = state.transactions;
