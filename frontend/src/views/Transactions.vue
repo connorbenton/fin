@@ -53,6 +53,10 @@
 .v-expansion-panel-content__wrap {
   padding: 0px;
 }
+
+/* * {  -webkit-backface-visibility:  hidden;
+     -webkit-tap-highlight-color:  transparent;
+  } */
 </style>
 
 <script>
@@ -64,6 +68,7 @@ export default {
   data() {
     return {
       // accountsButton: true,
+      tab: null,
       apiStateLoaded: "",
       transactions: [],
       accounts: [],

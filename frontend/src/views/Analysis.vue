@@ -2,24 +2,40 @@
   <v-content v-show="apiStateLoaded" :key="reloadedData">
     <v-col cols="12" align="center">
       <v-col cols="10" style="maxWidth:2400px" align="center" justify="center">
-        <v-row justify="center" align="start" style="maxWidth: 1400px">
-          <v-col cols="1" class="mr-4">
-            <v-switch
-              class="mt-0"
-              v-model="showInvestment"
-              label="Show Invest"
-              @click="loadTxData(select, showInvestment, true)"
-            ></v-switch>
-          </v-col>
+        <v-row justify="center" align="center" style="maxWidth: 1400px">
+          <!-- <v-col cols="1" class="mr-4"> -->
+          <!-- <v-col cols="1"> -->
           <v-col class="flex-grow-0 flex-shrink-0">
+            <!-- <v-row align="center" justify="center"> -->
             <v-btn
-              class="ma-2"
+              class="mt-n7"
+              small
+              @click="loadTxData(select, showInvestment, true)"
+              :ripple="false"
+            >
+            {{investText}}
+            <v-icon small class="ml-2" v-if="showInvestment">done</v-icon>
+            <v-icon small class="ml-2" v-else>close</v-icon>
+              <!-- class="mt-0"
+              v-model="showInvestment" -->
+            </v-btn>
+              <!-- label="Show Invest" -->
+            <!-- </v-row> -->
+            <!-- <v-row align="center" justify="center"> -->
+              <!-- <v-text-field full-width dense solo flat readonly value="Show Invest"></v-text-field> -->
+              <!-- <div class="mt-n4">Show Invest</div></v-row> -->
+            <!-- </v-row> -->
+          </v-col>
+          <v-col class="flex-grow-0 flex-shrink-0" v-if="$vuetify.breakpoint.smAndUp">
+          <!-- <v-col cols="1"> -->
+            <v-btn
+              class="mt-n7"
               small
               @click="customFilter()"
               :disabled="isNaN(daysNum) || select !== 'Custom'"
             >{{prefix}} {{daysNum}} days</v-btn>
           </v-col>
-          <v-col cols="2">
+          <v-col cols="2" v-if="$vuetify.breakpoint.smAndUp">
             <v-menu
               ref="menu0"
               v-model="menu0"
@@ -34,7 +50,7 @@
                   v-model="startDate"
                   outlined
                   dense
-                  hint="Start date"
+                  :hint="$vuetify.breakpoint.smAndDown ? '':'Start date'"
                   persistent-hint
                   prepend-icon="event"
                   :readonly="select !== 'Custom'"
@@ -51,7 +67,7 @@
               ></v-date-picker>
             </v-menu>
           </v-col>
-          <v-col cols="2">
+          <v-col cols="2" v-if="$vuetify.breakpoint.smAndUp">
             <v-menu
               ref="menu1"
               v-model="menu1"
@@ -66,7 +82,7 @@
                   v-model="endDate"
                   outlined
                   dense
-                  hint="End date"
+                  :hint="$vuetify.breakpoint.smAndDown ? '':'End date'"
                   persistent-hint
                   prepend-icon="event"
                   :readonly="select !== 'Custom'"
@@ -83,13 +99,14 @@
               ></v-date-picker>
             </v-menu>
           </v-col>
-          <v-col cols="2">
+          <v-col :cols="($vuetify.breakpoint.smAndUp) ? 2:6">
             <v-select
+            :class="($vuetify.breakpoint.smAndUp) ? '':'my-n5'"
               :items="dateRanges"
               outlined
               dense
               persistent-hint
-              hint="Date Range"
+                  :hint="$vuetify.breakpoint.smAndDown ? '':'Date Ranges'"
               v-model="select"
               @change="loadTxData(select, showInvestment)"
             ></v-select>
@@ -400,7 +417,12 @@ export default {
       if (isNaN(c)) return "＿";
       return c;
     },
+    investText() {
+      if (this.$vuetify.breakpoint.smAndDown) return "Invest";
+      return "Show Invest";
+    },
     prefix() {
+      if (this.$vuetify.breakpoint.smAndDown) return "";
       if (this.select === "Custom" && !this.isCustomFilterApplied)
         return "Custom Filter";
       return "Showing";
@@ -460,6 +482,7 @@ export default {
   },
   methods: {
     setTreemapSize() {
+      if (this.$vuetify.breakpoint.smAndDown) return;
       this.height = window.innerHeight * 0.7;
       this.width = window.innerWidth * 0.8;
       this.reloadData();
@@ -496,6 +519,7 @@ export default {
       this.dialog = false;
     },
     loadTxData(range, showInvestment, toggleFinancial = 0) {
+      // this.showInvestment = !this.showInvestment;
       if (toggleFinancial) this.showInvestment = !showInvestment;
       this.selected = this.rootNode.id;
       switch (range) {

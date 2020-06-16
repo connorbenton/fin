@@ -22,7 +22,8 @@
         :sort-by.sync="sortBy"
         :sort-desc.sync="sortDesc"
         :footer-props="{
-            'items-per-page-options': [20, 50, 100, -1]
+            'items-per-page-options': [20, 50, 100, -1],
+            'items-per-page-text': $vuetify.breakpoint.smAndUp ? 'Rows per page:':'Rows',
           }"
         :items-per-page="25"
         :single-select="singleSelectStatus"

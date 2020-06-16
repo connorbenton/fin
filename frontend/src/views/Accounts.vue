@@ -21,6 +21,7 @@
     </v-dialog>
 
     <v-btn
+      class="mt-2"
       :loading="loading3"
       :disabled="loading3"
       color="success"
@@ -55,15 +56,12 @@
                     :loading="plaidRefresh"
                     dark
                     @click.native="startReLogin(item.item_id)"
-                  >
-                    Refresh Connection
-                    <br />(needs New Login)
-                  </v-btn>
+                  >{{refreshText}}</v-btn>
                 </td>
                 <td v-else>
                   <v-icon color="success">check</v-icon>
                 </td>
-                <td>
+                <td v-if="$vuetify.breakpoint.smAndUp">
                   <v-tooltip right nudge-right="16">
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn
@@ -91,9 +89,7 @@
                   {{account.name}}
                 </td>
                 <td class="pl-10">{{account.type}}</td>
-                <td class="pl-10" :colspan="2">
-                  {{formatBalance(account.balance, account.currency)}}
-                </td>
+                <td class="pl-10" :colspan="2">{{formatBalance(account.balance, account.currency)}}</td>
               </tr>
             </template>
           </tbody>
@@ -129,7 +125,8 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Last Transaction Fetch</th>
+              <th v-if="$vuetify.breakpoint.smAndUp">Last Transaction Fetch</th>
+              <th v-else>Last Tx Fetch</th>
               <th>Last Refresh</th>
               <th :colspan="2">Next Refresh Available In</th>
             </tr>
@@ -156,8 +153,9 @@
                     dark
                     @click.native="startRefreshInteractive(item.item_id)"
                   >
-                    Refresh Connection
-                    <br />(needs Credentials)
+                    {{refreshText}}
+                    <!-- Refresh Connection
+                    <br />(needs Credentials)-->
                   </v-btn>
                 </td>
                 <td
@@ -166,7 +164,7 @@
                 <td v-else>
                   <v-icon>remove</v-icon>
                 </td>
-                <td>
+                <td v-if="$vuetify.breakpoint.smAndUp">
                   <v-tooltip right nudge-right="16">
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn
@@ -194,9 +192,7 @@
                   {{account.name}}
                 </td>
                 <td class="pl-10">{{account.type}}</td>
-                <td class="pl-10" :colspan="3">
-                  {{formatBalance(account.balance, account.currency)}}
-                </td>
+                <td class="pl-10" :colspan="3">{{formatBalance(account.balance, account.currency)}}</td>
               </tr>
             </template>
           </tbody>
@@ -210,36 +206,37 @@
       :disabled="loading4"
       @click.native="startCreateInteractive()"
     >Open Salt Edge To Add New Account</v-btn>
-    <v-col style="max-width: 700px">
-      <h1 class="title mt-3">Import CSV from Mint.com</h1>
-      <v-flex mt-4>
-        <v-file-input
-          prepend-icon="attach_file"
-          accept=".csv"
-          v-model="files"
-          label="Choose CSV from mint.com to import"
-        ></v-file-input>
-        <v-btn
-          :loading="loading2"
-          :disabled="loading2"
-          @click.native="importTransactions()"
-        >Import CSV</v-btn>
-      </v-flex>
-    </v-col>
-    <v-col class="px-4 py-2">
-      <v-row>
-        <v-btn color="warning" dark @click.native="resetDB()">Reset Database</v-btn>
-      </v-row>
-    </v-col>
-    <v-col class="px-4 py-2">
-      <v-row>
-        <v-btn
-          color="warning"
-          dark
-          @click.native="resetDBFull()"
-        >Reset Database (Including Item Tokens)</v-btn>
-      </v-row>
-    </v-col>
+    <!-- <v-col style="max-width: 700px"> -->
+    <h1 class="title mt-3">Import CSV from Mint.com</h1>
+    <v-flex mt-4>
+      <v-file-input
+        prepend-icon="attach_file"
+        accept=".csv"
+        v-model="files"
+        style="max-width: 400px"
+        label="Choose CSV from mint.com to import"
+      ></v-file-input>
+      <v-btn
+        :loading="loading2"
+        :disabled="loading2"
+        @click.native="importTransactions()"
+      >Import CSV</v-btn>
+    </v-flex>
+    <!-- </v-col> -->
+    <!-- <v-col class="px-6 py-2"> -->
+    <v-row class="px-3 py-4">
+      <v-btn color="warning" dark @click.native="resetDB()">Reset Database</v-btn>
+    </v-row>
+    <!-- </v-col> -->
+    <!-- <v-col class="px-6 py-2"> -->
+    <v-row class="px-3">
+      <v-btn
+        color="warning"
+        dark
+        @click.native="resetDBFull()"
+      >Reset Database (Including Item Tokens)</v-btn>
+    </v-row>
+    <!-- </v-col> -->
 
     <v-dialog v-model="dialogChangeName" max-width="500px">
       <v-card>
@@ -290,7 +287,7 @@ export default {
       showSaltEdgeAccounts: [],
       editedIndex: -1,
       editedItem: {
-        name: "",
+        name: ""
       },
       files: null,
       environment:
@@ -343,6 +340,15 @@ export default {
     this.unsub();
   },
   components: { PlaidLink },
+  computed: {
+    refreshText() {
+      if (this.$vuetify.breakpoint.smAndUp) {
+        return "Refresh Connection";
+      } else {
+        return "Refresh";
+      }
+    }
+  },
   methods: {
     closeSEdge() {
       this.loading4 = false;
@@ -365,13 +371,13 @@ export default {
 
     async save() {
       const itemToUpdate = this.editedItem;
-        Object.assign(this.accounts[this.editedIndex], this.editedItem);
+      Object.assign(this.accounts[this.editedIndex], this.editedItem);
       this.close();
       // console.log(this.editedItem);
-      await this.$store.commit('updateAccountName', itemToUpdate);
+      await this.$store.commit("updateAccountName", itemToUpdate);
       await api.upsertAccountName(itemToUpdate);
       this.fetch = true;
-      await this.$store.dispatch('getTransactions');
+      await this.$store.dispatch("getTransactions");
       this.fetch = false;
     },
     matchAccounts(id) {
@@ -386,7 +392,13 @@ export default {
       // console.log(date)
       if (date == null) {
         return "Never";
-      } else return new Date(date).toLocaleString();
+      } else {
+        if (this.$vuetify.breakpoint.smAndUp) {
+          return new Date(date).toLocaleString();
+        } else {
+          return moment(date).format("MMM D hh:mm");
+        }
+      }
     },
     timeToRefresh(time) {
       let diffmin = moment().diff(moment(time), "minutes");
