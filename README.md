@@ -56,7 +56,8 @@ PLAID_PUBLIC_KEY=XXX
 PLAID_SECRET_DEVELOPMENT=XXX
 PLAID_SECRET_SANDBOX=XXX
 
-# SaltEdge credentials go here (don't use quotes)
+# SaltEdge credentials go here (don't use quotes) - this must be a Service Key (not an App Key),
+# the 'Public key' field can be left blank in SaltEdge dashboard when creating keys
 SALTEDGE_APP_ID=XXX
 SALTEDGE_APP_SECRET=XXX
 SALTEDGE_CUSTOMER_ID=XXX
