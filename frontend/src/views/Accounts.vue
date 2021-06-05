@@ -308,13 +308,15 @@ export default {
       refreshUrl: null,
       reactive: true,
       redraw: 0,
-      redraw2: 1
+      redraw2: 1,
+      redraw3: 2,
     };
   },
 
   created() {
     // console.log(this.PLAID_PUBLIC_KEY);
     // this.console = window.console;
+
     this.apiStateLoaded = this.$store.state.apiStateLoaded;
     if (this.apiStateLoaded) {
       this.initialData();
@@ -335,6 +337,11 @@ export default {
     });
 
     // this.refreshData();
+  },
+  mounted() {
+      // let recaptchaScript = document.createElement('script')
+      // document.head.appendChild(recaptchaScript)
+      let vm = this;
   },
   beforeDestroy() {
     this.unsub();
@@ -537,6 +544,7 @@ export default {
       this.accounts = this.$store.getters.getAllAccounts;
       this.redraw -= 1;
       this.redraw2 += 1;
+      this.redraw3 += 1;
     },
     async fetchRefreshData() {
       this.dialogName =
@@ -549,12 +557,14 @@ export default {
       this.dialogName = "Fetching Transactions";
       this.redraw -= 1;
       this.redraw2 += 1;
+      this.redraw3 += 1;
     },
     async refreshData() {
       this.itemTokens = await api.getItemTokens();
       this.accounts = await api.getAccounts();
       this.redraw -= 1;
       this.redraw2 += 1;
+      this.redraw3 += 1;
     },
     async fetchTransactions() {
       this.fetch = true;
@@ -562,6 +572,7 @@ export default {
       this.fetch = false;
       this.redraw -= 1;
       this.redraw2 += 1;
+      this.redraw3 += 1;
     },
     async importTransactions() {
       if (this.files == null) return;

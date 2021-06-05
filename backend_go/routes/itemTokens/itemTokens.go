@@ -95,7 +95,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 
 		// Make sure currencies are up to date
 
-		// Refresh Plaid and SaltEdge connections
+		// Refresh connections
 
 		// Then we iterate through item tokens and process in either saltedge or plaid
 
@@ -112,7 +112,7 @@ func FetchTransactionsFunction() func(http.ResponseWriter, *http.Request) {
 
 				if itemToken.Provider == "SaltEdge" && useSE {
 					saltedge.FetchTransactionsForItemToken(itemToken, istmtOnlyTx, astmt, tstmt, baseCurrency)
-				} else if usePlaid {
+				} else if usePlaid && itemToken.Provider == "Plaid" {
 					plaid.FetchTransactionsForItemToken(itemToken, istmtOnlyTx, astmt, tstmt, baseCurrency)
 				}
 			}(itemTok)

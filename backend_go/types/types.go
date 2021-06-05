@@ -27,11 +27,11 @@ type Account struct {
 }
 
 type ItemToken struct {
-	ID          int    `json:"id"`
-	Institution string `json:"institution" db:"institution"`
-	AccessToken string `json:"-" db:"access_token"`
-	ItemID      string `json:"item_id" db:"item_id"`
-	Provider    string `json:"provider" db:"provider"`
+	ID                         int       `json:"id"`
+	Institution                string    `json:"institution" db:"institution"`
+	AccessToken                string    `json:"-" db:"access_token"`
+	ItemID                     string    `json:"item_id" db:"item_id"`
+	Provider                   string    `json:"provider" db:"provider"`
 	Interactive                bool      `json:"interactive" db:"interactive"`
 	NeedsReLogin               bool      `json:"needs_re_login" db:"needs_re_login"`
 	LastRefresh                time.Time `json:"last_refresh" db:"last_refresh"`
@@ -105,9 +105,9 @@ var TreeRanges = [8]string{
 }
 
 type Tree struct {
-	Name      string `json:"name" db:"name"`
-	FirstDate string `json:"first_date" db:"first_date"`
-	LastDate  string `json:"last_date" db:"last_date"`
+	Name         string    `json:"name" db:"name"`
+	FirstDate    string    `json:"first_date" db:"first_date"`
+	LastDate     string    `json:"last_date" db:"last_date"`
 	Data         string    `json:"data" db:"data"`
 	DataNoInvest string    `json:"data_no_invest" db:"data_no_invest"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
@@ -115,20 +115,20 @@ type Tree struct {
 }
 
 type TreeData struct {
-	Name     string          `json:"name"`
-	Children []ChildTop      `json:"children"`
-	Value    decimal.Decimal `json:"value"`
-	Count    int64           `json:"count"`
+	Name        string          `json:"name"`
+	Children    []ChildTop      `json:"children"`
+	Value       decimal.Decimal `json:"value"`
+	Count       int64           `json:"count"`
 	TrueCount   int64           `json:"trueCount"`
 	Per30       decimal.Decimal `json:"per30"`
 	IncomeTotal decimal.Decimal `json:"income_total"`
 }
 
 type ChildTop struct {
-	Name     string          `json:"name"`
-	Children []ChildSub      `json:"children"`
-	Value    decimal.Decimal `json:"value"`
-	Count    int64           `json:"count"`
+	Name      string          `json:"name"`
+	Children  []ChildSub      `json:"children"`
+	Value     decimal.Decimal `json:"value"`
+	Count     int64           `json:"count"`
 	TrueCount int64           `json:"trueCount"`
 	DbID      int             `json:"dbID"`
 	Percent   string          `json:"percent"`
@@ -136,11 +136,11 @@ type ChildTop struct {
 }
 
 type ChildSub struct {
-	Name    string          `json:"name"`
-	DbID    int             `json:"dbID"`
-	Value   decimal.Decimal `json:"value"`
-	Count   int64           `json:"count"`
-	Percent string          `json:"percent"`
+	Name      string          `json:"name"`
+	DbID      int             `json:"dbID"`
+	Value     decimal.Decimal `json:"value"`
+	Count     int64           `json:"count"`
+	Percent   string          `json:"percent"`
 	TrueCount int64           `json:"trueCount"`
 	Per30     decimal.Decimal `json:"per30"`
 }
