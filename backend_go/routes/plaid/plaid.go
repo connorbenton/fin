@@ -77,14 +77,53 @@ func CreateFromPublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 			res.Write([]byte(errString))
 		}
 
-		pRes, err := pClient.ExchangePublicToken(item.Token)
+		createLinkTokenResp, err := pClient.CreateLinkToken(LinkTokenConfigs{
+			User: &LinkTokenUser{
+				ClientUserID:             time.Now().String(),
+				LegalName:                "Fin User",
+				PhoneNumber:              "8008675309",
+				EmailAddress:             "test@email.com",
+				PhoneNumberVerifiedTime:  time.Now(),
+				EmailAddressVerifiedTime: time.Now(),
+			},
+			ClientName:   "Plaid Test",
+			Products:     []string{"auth"},
+			CountryCodes: []string{"US"},
+			Webhook:      "https://webhook-uri.com",
+			AccountFilters: &map[string]map[string][]string{
+				"depository": {
+					"account_subtypes": {"all"},
+				},
+			},
+			Language:              "en",
+			LinkCustomizationName: "default",
+		})
 		if err != nil {
 			// panic(err)
-			errString := fmt.Sprintf("Error with Create Token Client Exchange Token request: %v \n", err)
+			errString := fmt.Sprintf("Error with Create Link Token: %v \n", err)
 			log.Println(errString)
 			res.WriteHeader(http.StatusInternalServerError)
 			res.Write([]byte(errString))
 		}
+
+		pRes, err := pClient.ExchangePublicToken(createLinkTokenResp.LinkToken)
+		if err != nil {
+			// panic(err)
+			errString := fmt.Sprintf("Error with Exchange Public Token: %v \n", err)
+			log.Println(errString)
+			res.WriteHeader(http.StatusInternalServerError)
+			res.Write([]byte(errString))
+		}
+
+		// // Changing to Link token flow (public key deprecated)
+		// pRes, err := pClient.ExchangePublicToken(item.Token)
+		// if err != nil {
+		// 	// panic(err)
+		// 	errString := fmt.Sprintf("Error with Create Token Client Exchange Token request: %v \n", err)
+		// 	log.Println(errString)
+		// 	res.WriteHeader(http.StatusInternalServerError)
+		// 	res.Write([]byte(errString))
+		// }
 
 		txn := db.DBCon.MustBegin()
 
@@ -194,20 +233,52 @@ func GeneratePublicTokenFunction() func(http.ResponseWriter, *http.Request) {
 		pClient, err := newClient()
 		if err != nil {
 			// panic(err)
-			errString := fmt.Sprintf("Error with Generate Token Client Create: %v \n", err)
+			errString := fmt.Sprintf("Error with Create Token Client Create: %v \n", err)
 			log.Println(errString)
 			res.WriteHeader(http.StatusInternalServerError)
 			res.Write([]byte(errString))
 		}
 
-		pRes, err := pClient.CreatePublicToken(access)
+		pRes, err := pClient.CreateLinkToken(LinkTokenConfigs{
+			User: &LinkTokenUser{
+				ClientUserID:             time.Now().String(),
+				LegalName:                "Fin User",
+				PhoneNumber:              "8008675309",
+				EmailAddress:             "test@email.com",
+				PhoneNumberVerifiedTime:  time.Now(),
+				EmailAddressVerifiedTime: time.Now(),
+			},
+			ClientName:   "Plaid Test",
+			Products:     []string{"auth"},
+			CountryCodes: []string{"US"},
+			AccessToken: access,
+			Webhook:      "https://webhook-uri.com",
+			AccountFilters: &map[string]map[string][]string{
+				"depository": {
+					"account_subtypes": {"all"},
+				},
+			},
+			Language:              "en",
+			LinkCustomizationName: "default",
+		})
 		if err != nil {
 			// panic(err)
-			errString := fmt.Sprintf("Error with Generate Token Client Create Token request: %v \n", err)
+			errString := fmt.Sprintf("Error with Create Link Token: %v \n", err)
 			log.Println(errString)
 			res.WriteHeader(http.StatusInternalServerError)
 			res.Write([]byte(errString))
 		}
+
+		// Deprecated in favor of Link (above)
+
+		// pRes, err := pClient.CreatePublicToken(access)
+		// if err != nil {
+		// 	// panic(err)
+		// 	errString := fmt.Sprintf("Error with Generate Token Client Create Token request: %v \n", err)
+		// 	log.Println(errString)
+		// 	res.WriteHeader(http.StatusInternalServerError)
+		// 	res.Write([]byte(errString))
+		// }
 
 		if pRes.PublicToken == "" {
 			errString := fmt.Sprintf("PublicToken response seems to be empty")

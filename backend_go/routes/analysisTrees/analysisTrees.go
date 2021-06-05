@@ -86,7 +86,7 @@ func CustomAnalyze() func(http.ResponseWriter, *http.Request) {
 }
 
 func ReAnalyze() {
-	log.Println("today: ", date.Today().String(), date.Today().FormatISO(4), date.Today().String())
+	// log.Println("today: ", date.Today().String(), date.Today().FormatISO(4), date.Today().String())
 
 	start := time.Now()
 	dbcatsBase := []types.Category{}
