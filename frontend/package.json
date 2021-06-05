@@ -11,7 +11,7 @@
   "dependencies": {
     "@types/events": "^3.0.0",
     "@types/plaid-link": "^2.0.6",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "currency.js": "^1.2.2",
     "d3": "^4.13.0",
     "moment": "^2.25.3",
